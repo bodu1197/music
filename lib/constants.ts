@@ -8,6 +8,9 @@ export interface Country {
 // Unsupported languages fallback to "en"
 
 export const SUPPORTED_COUNTRIES: Country[] = [
+    // Global (전세계)
+    { code: "ZZ", name: "🌍 Global", lang: "en" },
+
     // A
     { code: "AE", name: "United Arab Emirates", lang: "ar" },
     { code: "AR", name: "Argentina", lang: "es" },
