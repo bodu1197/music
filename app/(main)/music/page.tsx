@@ -3,25 +3,89 @@
 import { useEffect, useState } from "react";
 import { Play, Globe } from "lucide-react";
 
-const SUPPORTED_COUNTRIES = [
+// Extensive list of YouTube Music supported locations (100+)
+const ALL_COUNTRIES = [
     { code: "US", name: "United States" },
     { code: "KR", name: "South Korea" },
     { code: "JP", name: "Japan" },
     { code: "GB", name: "United Kingdom" },
+    { code: "AR", name: "Argentina" },
+    { code: "AU", name: "Australia" },
+    { code: "AT", name: "Austria" },
+    { code: "BE", name: "Belgium" },
+    { code: "BO", name: "Bolivia" },
+    { code: "BR", name: "Brazil" },
+    { code: "BG", name: "Bulgaria" },
+    { code: "CA", name: "Canada" },
+    { code: "CL", name: "Chile" },
+    { code: "CO", name: "Colombia" },
+    { code: "CR", name: "Costa Rica" },
+    { code: "HR", name: "Croatia" },
+    { code: "CY", name: "Cyprus" },
+    { code: "CZ", name: "Czech Republic" },
+    { code: "DK", name: "Denmark" },
+    { code: "DO", name: "Dominican Republic" },
+    { code: "EC", name: "Ecuador" },
+    { code: "EG", name: "Egypt" },
+    { code: "SV", name: "El Salvador" },
+    { code: "EE", name: "Estonia" },
+    { code: "FI", name: "Finland" },
     { code: "FR", name: "France" },
     { code: "DE", name: "Germany" },
-    { code: "BR", name: "Brazil" },
+    { code: "GR", name: "Greece" },
+    { code: "GT", name: "Guatemala" },
+    { code: "HN", name: "Honduras" },
+    { code: "HK", name: "Hong Kong" },
+    { code: "HU", name: "Hungary" },
+    { code: "IS", name: "Iceland" },
     { code: "IN", name: "India" },
-    { code: "CA", name: "Canada" },
-    { code: "AU", name: "Australia" },
-    { code: "VN", name: "Vietnam" },
+    { code: "ID", name: "Indonesia" },
+    { code: "IE", name: "Ireland" },
+    { code: "IL", name: "Israel" },
+    { code: "IT", name: "Italy" },
+    { code: "LV", name: "Latvia" },
+    { code: "LI", name: "Liechtenstein" },
+    { code: "LT", name: "Lithuania" },
+    { code: "LU", name: "Luxembourg" },
+    { code: "MY", name: "Malaysia" },
+    { code: "MT", name: "Malta" },
+    { code: "MX", name: "Mexico" },
+    { code: "NL", name: "Netherlands" },
+    { code: "NZ", name: "New Zealand" },
+    { code: "NI", name: "Nicaragua" },
+    { code: "MK", name: "North Macedonia" },
+    { code: "NO", name: "Norway" },
+    { code: "PA", name: "Panama" },
+    { code: "PY", name: "Paraguay" },
+    { code: "PE", name: "Peru" },
     { code: "PH", name: "Philippines" },
+    { code: "PL", name: "Poland" },
+    { code: "PT", name: "Portugal" },
+    { code: "RO", name: "Romania" },
+    { code: "RU", name: "Russia" },
+    { code: "SA", name: "Saudi Arabia" },
+    { code: "RS", name: "Serbia" },
+    { code: "SG", name: "Singapore" },
+    { code: "SK", name: "Slovakia" },
+    { code: "SI", name: "Slovenia" },
+    { code: "ZA", name: "South Africa" },
+    { code: "ES", name: "Spain" },
+    { code: "SE", name: "Sweden" },
+    { code: "CH", name: "Switzerland" },
+    { code: "TW", name: "Taiwan" },
+    { code: "TH", name: "Thailand" },
+    { code: "TR", name: "Turkey" },
+    { code: "UA", name: "Ukraine" },
+    { code: "AE", name: "United Arab Emirates" },
+    { code: "UY", name: "Uruguay" },
+    { code: "VE", name: "Venezuela" },
+    { code: "VN", name: "Vietnam" }
 ];
 
 export default function MusicPage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [country, setCountry] = useState("US"); // Default
+    const [country, setCountry] = useState("US");
 
     const fetchMusic = async (countryCode: string) => {
         setLoading(true);
@@ -39,9 +103,8 @@ export default function MusicPage() {
     };
 
     useEffect(() => {
-        // Initial fetch
         fetchMusic(country);
-    }, []); // Only on mount, subsequent changes handled by handler
+    }, []);
 
     const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newCountry = e.target.value;
@@ -60,9 +123,9 @@ export default function MusicPage() {
                     <select
                         value={country}
                         onChange={handleCountryChange}
-                        className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer"
+                        className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer max-w-[200px]"
                     >
-                        {SUPPORTED_COUNTRIES.map((c) => (
+                        {ALL_COUNTRIES.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
                             <option key={c.code} value={c.code} className="bg-zinc-900">
                                 {c.name}
                             </option>
@@ -73,7 +136,7 @@ export default function MusicPage() {
 
             {loading ? (
                 <div className="flex justify-center pt-20 text-zinc-500 animate-pulse">
-                    Fetcing data for {SUPPORTED_COUNTRIES.find(c => c.code === country)?.name}...
+                    Fetcing data for {ALL_COUNTRIES.find(c => c.code === country)?.name}...
                 </div>
             ) : (
                 <div className="space-y-12">
