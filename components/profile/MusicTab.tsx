@@ -96,11 +96,8 @@ export function MusicTab({ country }: MusicTabProps) {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {sections.map((shelf: any, sIndex: number) => {
-                if (!shelf || !shelf.contents || !Array.isArray(shelf.contents)) return null;
-
-                // Filter items that have videoId (playable)
-                const playableContents = shelf.contents.filter((item: any) => item?.videoId);
-                if (playableContents.length === 0) return null;
+                // 데이터 절대 자르지 않음 - 빈 shelf만 건너뜀
+                if (!shelf || !shelf.contents || !Array.isArray(shelf.contents) || shelf.contents.length === 0) return null;
 
                 return (
                     <div key={sIndex} className="mb-8 pl-1">
@@ -112,23 +109,24 @@ export function MusicTab({ country }: MusicTabProps) {
                         {/* Horizontal Scroll Container */}
                         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4">
                             {shelf.contents.map((item: any, i: number) => {
-                                if (!item || !item.videoId) return null;
+                                if (!item) return null;
 
                                 const title = item.title || "No Title";
                                 const subtitle = item.artists
                                     ? item.artists.map((a: any) => a.name).join(", ")
-                                    : "Unknown";
+                                    : item.year || item.subscribers || ""; // 앨범 년도나 구독자수도 표시
                                 const image = item.thumbnails
                                     ? item.thumbnails[item.thumbnails.length - 1].url
-                                    : null;
+                                    : "/images/default-album.svg"; // 기본 이미지 사용
 
-                                if (!image) return null;
+                                // videoId가 있으면 재생 가능
+                                const isPlayable = !!item.videoId;
 
                                 return (
                                     <div
-                                        key={item.videoId || `item-${sIndex}-${i}`}
+                                        key={item.videoId || item.browseId || `item-${sIndex}-${i}`}
                                         className="flex-none w-[140px] group cursor-pointer"
-                                        onClick={() => handleTrackClick(shelf.contents, i)}
+                                        onClick={() => isPlayable && handleTrackClick(shelf.contents, i)}
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
@@ -137,12 +135,14 @@ export function MusicTab({ country }: MusicTabProps) {
                                                 alt={title}
                                                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                                             />
-                                            {/* Play overlay on hover */}
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
-                                                    <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                                            {/* Play overlay on hover - 재생 가능한 경우만 */}
+                                            {isPlayable && (
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
+                                                        <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
 
                                         {/* Text Info */}
