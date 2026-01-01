@@ -4,31 +4,34 @@ from ytmusicapi import YTMusic
 router = APIRouter()
 
 @router.get("")
-def get_charts(request: Request, country: str = None):
+def get_charts(request: Request, country: str = "US"):
     try:
-        # PRIORITY: User selected country > Vercel Header > Default US
-        # This allows the user to manually switch countries via the dropdown as requested.
+        # PURE IMPLEMENTATION AS REQUESTED
+        # According to ytmusicapi specs, get_home() works for unauthenticated users
+        # and returns a full layout of shelves (~10+ sections).
+        
+        # 1. Location Strategy
+        # Use query param if provided (dropdown), else fallback to Vercel IP header, else US.
         target_country = country if country else request.headers.get("x-vercel-ip-country", "US")
         
-        # Init YTMusic with the targeted location
-        # language is fixed to english for UI consistency, or could match country if needed.
-        # usually users prefer English UI but Local Content.
+        # 2. Initialization
+        # Language is English (UI), Location determines the content (KR, JP, etc.)
         yt = YTMusic(language="en", location=target_country)
         
-        # User reported getting only 2 sections. 
-        # Unauthenticated get_home() can be limited, but changing location often helps.
-        # We return the exact raw response.
-        data = yt.get_home()
+        # 3. Execution
+        # No extra searches. No manual appends. No "smart" logic.
+        # Just pure ytmusicapi get_home().
+        home_data = yt.get_home()
         
         return {
-            "charts": data, 
+            "charts": home_data,
             "meta": {
-                "country": target_country, 
-                "source": "get_home_proxy",
-                "length": len(data) if data else 0 
+                "country": target_country,
+                "note": "Pure get_home response"
             }
         }
         
     except Exception as e:
-        print(f"Error fetching music home for {country}: {e}")
+        print(f"Error in pure get_home: {e}")
+        # Return internal server error if the library itself fails
         raise HTTPException(status_code=500, detail=str(e))
