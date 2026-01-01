@@ -14,19 +14,25 @@ export default function PlayerSidebar() {
         toggleQueue,
     } = usePlayer();
 
-    if (!isQueueOpen) {
-        return null;
-    }
-
     return (
         <>
-            {/* Overlay for mobile */}
+            {/* Hidden YouTube Player - Always rendered for audio playback */}
             <div
-                className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                onClick={toggleQueue}
-            />
+                className="fixed -top-[9999px] -left-[9999px] w-[1px] h-[1px] overflow-hidden"
+                aria-hidden="true"
+            >
+                <YouTubePlayer />
+            </div>
 
-            {/* Sidebar */}
+            {/* Overlay for mobile - only when open */}
+            {isQueueOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={toggleQueue}
+                />
+            )}
+
+            {/* Sidebar - always in DOM but translated off-screen when closed */}
             <div
                 className={cn(
                     "fixed right-0 top-0 bottom-[139px] md:bottom-[90px] w-full md:w-[350px] lg:w-[400px]",
@@ -47,10 +53,18 @@ export default function PlayerSidebar() {
                     </button>
                 </div>
 
-                {/* Video Player */}
+                {/* Video Display - just shows the current track thumbnail */}
                 <div className="w-full px-4 py-4">
-                    <div className="w-full aspect-video bg-black rounded overflow-hidden">
-                        <YouTubePlayer className="w-full h-full" />
+                    <div className="w-full aspect-video bg-black rounded overflow-hidden flex items-center justify-center">
+                        {currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex] ? (
+                            <img
+                                src={currentPlaylist[currentTrackIndex].thumbnail || "/images/default-album.svg"}
+                                alt={currentPlaylist[currentTrackIndex].title}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="text-zinc-600 text-sm">No track playing</div>
+                        )}
                     </div>
                 </div>
 

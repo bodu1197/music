@@ -2,24 +2,75 @@
 
 import useSWR from "swr";
 import { api } from "@/lib/api";
+import { usePlayer, Track } from "@/contexts/PlayerContext";
+import { Play } from "lucide-react";
 
 interface MusicTabProps {
     country: { code: string; name: string; lang: string };
 }
 
+// Convert API item to Track
+function itemToTrack(item: any): Track | null {
+    if (!item.videoId) return null;
+    return {
+        videoId: item.videoId,
+        title: item.title || "Unknown",
+        artist: item.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        album: item.album?.name,
+    };
+}
+
 export function MusicTab({ country }: MusicTabProps) {
+    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+
     const { data, error, isLoading } = useSWR(
         ["/music/home", country.code, country.lang],
         () => api.music.home(100, country.code, country.lang),
         {
-            revalidateOnFocus: false, // Don't refetch just by clicking window
-            dedupingInterval: 60000, // Cache for 1 minute
-            keepPreviousData: true, // Keep showing old data while fetching new country
+            revalidateOnFocus: false,
+            dedupingInterval: 60000,
+            keepPreviousData: true,
         }
     );
 
-    if (isLoading && !data) return <div className="py-20 text-center text-zinc-500 animate-pulse">Loading vibes for {country.name || country.code}...</div>;
-    if (error) return <div className="py-20 text-center text-red-500">Error: {error.message || "Failed to load"}</div>;
+    // Handle clicking a track in a section
+    const handleTrackClick = (sectionContents: any[], clickedIndex: number) => {
+        // Convert all items with videoId to tracks
+        const tracks: Track[] = sectionContents
+            .map(itemToTrack)
+            .filter((t): t is Track => t !== null);
+
+        if (tracks.length === 0) return;
+
+        // Find the actual index in the filtered array
+        const clickedItem = sectionContents[clickedIndex];
+        const trackIndex = tracks.findIndex(t => t.videoId === clickedItem?.videoId);
+
+        // Set playlist starting from clicked track
+        setPlaylist(tracks, trackIndex >= 0 ? trackIndex : 0);
+
+        // Open queue sidebar
+        if (!isQueueOpen) {
+            toggleQueue();
+        }
+    };
+
+    if (isLoading && !data) {
+        return (
+            <div className="py-20 text-center text-zinc-500 animate-pulse">
+                Loading vibes for {country.name || country.code}...
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="py-20 text-center text-red-500">
+                Error: {error.message || "Failed to load"}
+            </div>
+        );
+    }
 
     const sections = Array.isArray(data) ? data : [];
 
@@ -37,36 +88,58 @@ export function MusicTab({ country }: MusicTabProps) {
             {sections.map((shelf: any, sIndex: number) => {
                 if (!shelf || !shelf.contents || !Array.isArray(shelf.contents)) return null;
 
+                // Filter items that have videoId (playable)
+                const playableContents = shelf.contents.filter((item: any) => item?.videoId);
+                if (playableContents.length === 0) return null;
+
                 return (
                     <div key={sIndex} className="mb-8 pl-1">
                         {/* Section Title */}
-                        {shelf.title && <h2 className="mb-3 text-lg font-bold text-zinc-100">{shelf.title}</h2>}
+                        {shelf.title && (
+                            <h2 className="mb-3 text-lg font-bold text-zinc-100">{shelf.title}</h2>
+                        )}
 
                         {/* Horizontal Scroll Container */}
                         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4">
                             {shelf.contents.map((item: any, i: number) => {
-                                if (!item) return null;
+                                if (!item || !item.videoId) return null;
+
                                 const title = item.title || "No Title";
-                                const subtitle = item.artists ? item.artists.map((a: any) => a.name).join(", ") : "Unknown";
-                                const image = item.thumbnails ? item.thumbnails[item.thumbnails.length - 1].url : null;
-                                const key = item.videoId || item.browseId || `item-${sIndex}-${i}`;
+                                const subtitle = item.artists
+                                    ? item.artists.map((a: any) => a.name).join(", ")
+                                    : "Unknown";
+                                const image = item.thumbnails
+                                    ? item.thumbnails[item.thumbnails.length - 1].url
+                                    : null;
 
                                 if (!image) return null;
 
                                 return (
-                                    <div key={key} className="flex-none w-[140px] group cursor-pointer">
-                                        {/* Image */}
+                                    <div
+                                        key={item.videoId || `item-${sIndex}-${i}`}
+                                        className="flex-none w-[140px] group cursor-pointer"
+                                        onClick={() => handleTrackClick(shelf.contents, i)}
+                                    >
+                                        {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
                                             <img
                                                 src={image}
                                                 alt={title}
                                                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                                             />
+                                            {/* Play overlay on hover */}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
+                                                    <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Text Info */}
                                         <div className="space-y-1">
-                                            <h3 className="text-sm font-medium text-white line-clamp-2 leading-tight">{title}</h3>
+                                            <h3 className="text-sm font-medium text-white line-clamp-2 leading-tight">
+                                                {title}
+                                            </h3>
                                             <p className="text-xs text-zinc-400 truncate">{subtitle}</p>
                                         </div>
                                     </div>

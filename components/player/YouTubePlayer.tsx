@@ -13,11 +13,13 @@ let apiLoading = false;
 
 export default function YouTubePlayer({ className }: YouTubePlayerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const playerIdRef = useRef(`youtube-player-${Math.random().toString(36).substr(2, 9)}`);
+    const playerIdRef = useRef(`yt-player-${Math.random().toString(36).substr(2, 9)}`);
     const initAttemptedRef = useRef(false);
+    const lastVideoIdRef = useRef<string | null>(null);
 
     const {
         currentTrack,
+        currentTrackIndex,
         playerRef,
         setPlayerReady,
         setIsPlaying,
@@ -27,6 +29,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         repeatMode,
         volume,
         isMuted,
+        playerReady,
     } = usePlayer();
 
     // Handle player state changes
@@ -43,7 +46,6 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                     break;
                 case PlayerState.ENDED:
                     setIsPlaying(false);
-                    // Handle repeat mode
                     if (repeatMode === "one") {
                         if (playerRef.current) {
                             try {
@@ -57,11 +59,6 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                         playNext();
                     }
                     break;
-                case PlayerState.BUFFERING:
-                    // Could show loading indicator
-                    break;
-                case PlayerState.UNSTARTED:
-                    break;
             }
         },
         [repeatMode, playNext, setIsPlaying, playerRef]
@@ -70,10 +67,10 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
     // Handle player ready
     const onPlayerReady = useCallback(
         (event: YT.PlayerEvent) => {
+            console.log("[YouTubePlayer] Player ready");
             playerRef.current = event.target;
             setPlayerReady(true);
 
-            // Set initial volume
             try {
                 event.target.setVolume(volume);
                 if (isMuted) {
@@ -82,24 +79,14 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             } catch (e) {
                 console.error("Error setting initial volume:", e);
             }
-
-            // If there's a current track, load it
-            if (currentTrack?.videoId) {
-                try {
-                    event.target.loadVideoById(currentTrack.videoId, 0);
-                } catch (e) {
-                    console.error("Error loading initial video:", e);
-                }
-            }
         },
-        [setPlayerReady, volume, isMuted, currentTrack, playerRef]
+        [setPlayerReady, volume, isMuted, playerRef]
     );
 
     // Handle player error
     const onPlayerError = useCallback(
         (event: YT.OnErrorEvent) => {
             console.error("YouTube Player Error:", event.data);
-            // Try next track on error
             playNext();
         },
         [playNext]
@@ -108,20 +95,15 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
     // Initialize YouTube player
     const initializePlayer = useCallback(() => {
         if (!containerRef.current || !window.YT || !window.YT.Player) {
+            console.log("[YouTubePlayer] Cannot initialize - missing dependencies");
             return;
         }
 
-        // Destroy existing player if any
         if (playerRef.current) {
-            try {
-                playerRef.current.destroy();
-            } catch (e) {
-                console.error("Error destroying player:", e);
-            }
-            playerRef.current = null;
+            console.log("[YouTubePlayer] Player already exists");
+            return;
         }
 
-        // Create player div if not exists
         let playerDiv = document.getElementById(playerIdRef.current);
         if (!playerDiv) {
             playerDiv = document.createElement("div");
@@ -129,6 +111,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             containerRef.current.appendChild(playerDiv);
         }
 
+        console.log("[YouTubePlayer] Creating new YT.Player");
         try {
             new window.YT.Player(playerIdRef.current, {
                 height: "100%",
@@ -159,14 +142,12 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         if (initAttemptedRef.current) return;
         initAttemptedRef.current = true;
 
-        // If API already loaded, initialize player
         if (window.YT && window.YT.Player) {
             apiLoaded = true;
             initializePlayer();
             return;
         }
 
-        // If already loading, wait for callback
         if (apiLoading) {
             const checkReady = setInterval(() => {
                 if (apiLoaded && window.YT && window.YT.Player) {
@@ -177,10 +158,8 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             return;
         }
 
-        // Load API script
         apiLoading = true;
 
-        // Set up global callback
         const originalCallback = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => {
             apiLoaded = true;
@@ -191,29 +170,48 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             initializePlayer();
         };
 
-        // Create script tag
         const script = document.createElement("script");
         script.src = "https://www.youtube.com/iframe_api";
         script.async = true;
         document.head.appendChild(script);
 
         return () => {
-            // Cleanup on unmount
             if (playerRef.current) {
                 try {
                     playerRef.current.destroy();
                 } catch (e) {
-                    console.error("Error destroying player on cleanup:", e);
+                    console.error("Error destroying player:", e);
                 }
                 playerRef.current = null;
             }
         };
     }, [initializePlayer, playerRef]);
 
+    // Watch for currentTrack changes and load video
+    useEffect(() => {
+        if (!playerReady || !playerRef.current || !currentTrack?.videoId) {
+            return;
+        }
+
+        // Only load if videoId changed
+        if (lastVideoIdRef.current === currentTrack.videoId) {
+            return;
+        }
+
+        console.log("[YouTubePlayer] Loading video:", currentTrack.videoId, currentTrack.title);
+        lastVideoIdRef.current = currentTrack.videoId;
+
+        try {
+            playerRef.current.loadVideoById(currentTrack.videoId, 0);
+        } catch (e) {
+            console.error("Error loading video:", e);
+        }
+    }, [currentTrack, playerReady, playerRef]);
+
     // Progress updater
     useEffect(() => {
         const interval = setInterval(() => {
-            if (playerRef.current) {
+            if (playerRef.current && playerReady) {
                 try {
                     const state = playerRef.current.getPlayerState();
                     if (state === PlayerState.PLAYING) {
@@ -231,7 +229,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [playerRef, setCurrentTime, setDuration]);
+    }, [playerRef, playerReady, setCurrentTime, setDuration]);
 
     return (
         <div

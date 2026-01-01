@@ -6,7 +6,6 @@ import React, {
     useState,
     useCallback,
     useRef,
-    useEffect,
     ReactNode,
 } from "react";
 
@@ -378,24 +377,8 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
         }
     }, [repeatMode, playNext]);
 
-    // Effect to handle track changes when currentTrackIndex changes
-    useEffect(() => {
-        if (
-            currentTrackIndex >= 0 &&
-            currentTrackIndex < currentPlaylist.length &&
-            playerRef.current &&
-            playerReady
-        ) {
-            const track = currentPlaylist[currentTrackIndex];
-            if (track.videoId) {
-                try {
-                    playerRef.current.loadVideoById(track.videoId, 0);
-                } catch (e) {
-                    console.error("Error loading video on index change:", e);
-                }
-            }
-        }
-    }, [currentTrackIndex]); // Only react to index changes
+    // Note: Video loading is handled by YouTubePlayer component
+    // which watches currentTrack changes and uses lastVideoIdRef to prevent duplicate loads
 
     const value: PlayerContextType = {
         // State
