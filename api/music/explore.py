@@ -1,22 +1,51 @@
-from fastapi import APIRouter, HTTPException, Request
+# ============================================
+# /api/music/explore - YouTube Music Explore
+# ============================================
+
+from fastapi import APIRouter, HTTPException
 from ytmusicapi import YTMusic
 
 router = APIRouter()
 
 @router.get("")
-def get_explore(request: Request, country: str = None):
+def explore():
+    """
+    Get explore page with moods, genres, and new releases.
+    """
     try:
-        # Dynamic Location for Explore as well
-        target_country = country if country else request.headers.get("x-vercel-ip-country", "US")
+        yt = YTMusic(language="en")
         
-        yt = YTMusic(language="en", location=target_country)
+        result = {
+            "moods": [],
+            "new_releases": []
+        }
         
-        # Explore typically implies "Charts" and "New Releases" in many apps if not using Home.
-        # We fetch charts for the specific country.
-        data = yt.get_charts(country=target_country)
+        # Get mood categories
+        try:
+            moods = yt.get_mood_categories()
+            result["moods"] = moods
+        except Exception as e:
+            print(f"get_mood_categories error: {e}")
         
-        return {"explore": data, "meta": {"country": target_country}}
+        # Get new releases
+        try:
+            releases = yt.get_new_releases()
+            result["new_releases"] = releases
+        except Exception as e:
+            print(f"get_new_releases error: {e}")
+        
+        return result
+        
     except Exception as e:
-        # Fallback or error report
-        print(f"Explore error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/moods/{params}")
+def get_mood_playlists(params: str):
+    """Get playlists for a specific mood/genre category."""
+    try:
+        yt = YTMusic(language="en")
+        playlists = yt.get_mood_playlists(params)
+        return {"playlists": playlists}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
