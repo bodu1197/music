@@ -1,57 +1,47 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from ytmusicapi import YTMusic
+import random
 
 router = APIRouter()
-yt = YTMusic()
-
-# Fallback Home Data
-FALLBACK_HOME = [
-    {
-        "title": "New Release Mix",
-        "contents": [
-             {
-                "title": "Super Shy",
-                "artists": [{"name": "NewJeans"}],
-                "thumbnails": [{"url": "https://lh3.googleusercontent.com/I2vM9r-b7g-I_vYg-E7tG8-HnDwXoCOZq-iZk5sV6dKkYj0H5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6g=w544-h544-l90-rj"}],
-                "videoId": "ArmDp-zijuc"
-            },
-            {
-               "title": "Seven (feat. Latto)",
-                "artists": [{"name": "Jung Kook"}],
-                 "thumbnails": [{"url": "https://lh3.googleusercontent.com/28x_6wL-t_YH8k_-yL7z_xH5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6g=w544-h544-l90-rj"}],
-                 "videoId": "QU9c0053UAU"
-            }
-        ]
-    },
-     {
-        "title": "Quick Picks",
-        "contents": [
-             {
-                "title": "Hype Boy",
-                "artists": [{"name": "NewJeans"}],
-                "thumbnails": [{"url": "https://lh3.googleusercontent.com/I2vM9r-b7g-I_vYg-E7tG8-HnDwXoCOZq-iZk5sV6dKkYj0H5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6g=w544-h544-l90-rj"}],
-                 "videoId": "11cta61wi0g"
-            },
-            {
-               "title": "Dynamite",
-                "artists": [{"name": "BTS"}],
-                 "thumbnails": [{"url": "https://lh3.googleusercontent.com/I_vYg-E7tG8-HnDwXoCOZq-iZk5sV6dKkYj0H5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6gI1wZ9s0wH5z6g=w544-h544-l90-rj"}],
-                 "videoId": "gdZLi9oWNZg"
-            }
-        ]
-    }
-]
 
 @router.get("")
 def get_home():
-    try:
-        # Note: language and location should ideally be dynamic based on request headers
-        # Unauthenticated get_home might fail or need fallback
-        home_data = yt.get_home()
-        if not home_data:
-             return {"home": FALLBACK_HOME}
-        return {"home": home_data}
-    except Exception as e:
-        print(f"Error fetching home data, using fallback: {e}")
-        # Return fallback data instead of empty error
-        return {"home": FALLBACK_HOME}
+    # Use explicit language/location to stabilize results
+    yt = YTMusic(language="en", location="US")
+    
+    # We construct a "Home Feed" using multiple specific searches.
+    # This guarantees REAL data and bypasses complex structure parsing issues of raw get_home().
+    home_sections = []
+    
+    # Define dynamic queries to keep the feed fresh
+    queries = [
+        {"title": "Global Trending", "q": "Global Top 100", "filter": "songs"},
+        {"title": "Fresh K-Pop", "q": "New K-Pop Songs 2025", "filter": "songs"},
+        {"title": "Hip-Hop Essentials", "q": "Trending Hip Hop", "filter": "songs"},
+        {"title": "Chill Vibes", "q": "Lo-Fi and Chill music", "filter": "songs"}
+    ]
+    
+    for query in queries:
+        try:
+            # Real API call
+            results = yt.search(query["q"], filter=query["filter"], limit=10)
+            
+            # Filter checks
+            cleaned = []
+            if results:
+                for item in results:
+                    if item.get('thumbnails') and item.get('title') and item.get('videoId'):
+                         cleaned.append(item)
+            
+            if cleaned:
+                home_sections.append({
+                    "title": query["title"],
+                    "contents": cleaned
+                })
+        except Exception as e:
+            print(f"Failed to fetch section {query['title']}: {e}")
+            continue
+
+    # Return whatever we managed to fetch. 
+    # If empty, frontend handles it. NO HARDCODED FALLBACKS.
+    return {"home": home_sections}
