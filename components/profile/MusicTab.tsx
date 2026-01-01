@@ -36,16 +36,26 @@ export function MusicTab({ country }: MusicTabProps) {
 
     // Handle clicking a track in a section
     const handleTrackClick = (sectionContents: any[], clickedIndex: number) => {
+        console.log("[MusicTab] Track clicked, index:", clickedIndex);
+
         // Convert all items with videoId to tracks
         const tracks: Track[] = sectionContents
             .map(itemToTrack)
             .filter((t): t is Track => t !== null);
 
-        if (tracks.length === 0) return;
+        console.log("[MusicTab] Converted tracks:", tracks.length, "items");
+
+        if (tracks.length === 0) {
+            console.log("[MusicTab] No playable tracks found");
+            return;
+        }
 
         // Find the actual index in the filtered array
         const clickedItem = sectionContents[clickedIndex];
         const trackIndex = tracks.findIndex(t => t.videoId === clickedItem?.videoId);
+
+        console.log("[MusicTab] Setting playlist, starting at index:", trackIndex);
+        console.log("[MusicTab] First track:", tracks[trackIndex >= 0 ? trackIndex : 0]);
 
         // Set playlist starting from clicked track
         setPlaylist(tracks, trackIndex >= 0 ? trackIndex : 0);

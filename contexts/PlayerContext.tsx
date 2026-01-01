@@ -103,6 +103,10 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
 
     // Set playlist and optionally start playing at index
     const setPlaylist = useCallback((tracks: Track[], startIndex = 0) => {
+        console.log("[PlayerContext] setPlaylist called:", tracks.length, "tracks, startIndex:", startIndex);
+        if (tracks.length > 0 && tracks[startIndex]) {
+            console.log("[PlayerContext] Starting with track:", tracks[startIndex].videoId, tracks[startIndex].title);
+        }
         setCurrentPlaylist(tracks);
         if (tracks.length > 0 && startIndex >= 0 && startIndex < tracks.length) {
             setCurrentTrackIndex(startIndex);
