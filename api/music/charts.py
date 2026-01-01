@@ -1,7 +1,8 @@
 # ============================================
-# /api/music/charts - YouTube Music Charts
+# /api/music/charts - YouTube Music Home Feed
 # ============================================
-# Returns chart data for the specified country
+# PURE MODE: Returns only get_home() data as-is
+# Respects ytmusicapi library output without modification
 
 from fastapi import APIRouter, HTTPException
 from ytmusicapi import YTMusic
@@ -11,59 +12,24 @@ router = APIRouter()
 @router.get("")
 def get_charts(country: str = "US"):
     """
-    Get music charts for a specific country.
-    Returns songs, videos, artists charts.
+    Get YouTube Music home feed for a specific country.
+    PURE MODE: Returns only what get_home() provides.
+    Section count varies by country (can be 2-16+ sections).
     """
     try:
-        # Initialize YTMusic (unauthenticated)
+        # Initialize YTMusic (unauthenticated, location-based)
         yt = YTMusic(language="en", location=country)
         
-        sections = []
+        # PURE get_home() - no additional data mixing
+        home_data = yt.get_home(limit=100)
         
-        # 1. Get Charts data (without country param - let location handle it)
-        try:
-            charts = yt.get_charts()
-            
-            if charts and charts.get("songs") and charts["songs"].get("items"):
-                sections.append({
-                    "title": f"Top Songs - {country}",
-                    "contents": charts["songs"]["items"]
-                })
-            
-            if charts and charts.get("videos") and charts["videos"].get("items"):
-                sections.append({
-                    "title": f"Top Videos - {country}",
-                    "contents": charts["videos"]["items"]
-                })
-            
-            if charts and charts.get("artists") and charts["artists"].get("items"):
-                sections.append({
-                    "title": f"Top Artists - {country}",
-                    "contents": charts["artists"]["items"]
-                })
-            
-            if charts and charts.get("trending") and charts["trending"].get("items"):
-                sections.append({
-                    "title": "Trending Now",
-                    "contents": charts["trending"]["items"]
-                })
-        except Exception as e:
-            print(f"get_charts error: {e}")
-        
-        # 2. Get home data for additional sections
-        try:
-            home_data = yt.get_home(limit=10)
-            if home_data and isinstance(home_data, list):
-                sections.extend(home_data)
-        except Exception as e:
-            print(f"get_home error: {e}")
-        
+        # Return exactly what ytmusicapi gives us
         return {
-            "charts": sections,
+            "charts": home_data if home_data else [],
             "meta": {
                 "country": country,
-                "total_sections": len(sections),
-                "source": "YTMusic API (Unauthenticated)"
+                "total_sections": len(home_data) if home_data else 0,
+                "source": "Pure get_home() - ytmusicapi"
             }
         }
         
