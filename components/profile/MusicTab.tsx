@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { Play } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 
 interface MusicTabProps {
     country: { code: string; name: string; lang: string };
@@ -21,8 +22,21 @@ function itemToTrack(item: any): Track | null {
     };
 }
 
+// Convert album track to Track
+function albumTrackToTrack(track: any, albumInfo: any): Track | null {
+    if (!track.videoId) return null;
+    return {
+        videoId: track.videoId,
+        title: track.title || "Unknown",
+        artist: track.artists?.map((a: any) => a.name).join(", ") || albumInfo?.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        thumbnail: albumInfo?.thumbnails?.[albumInfo.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        album: albumInfo?.title,
+    };
+}
+
 export function MusicTab({ country }: MusicTabProps) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const [loadingBrowseId, setLoadingBrowseId] = useState<string | null>(null);
 
     const { data, error, isLoading } = useSWR(
         ["/music/home", country.code, country.lang],
@@ -34,7 +48,7 @@ export function MusicTab({ country }: MusicTabProps) {
         }
     );
 
-    // Handle clicking a track in a section
+    // 케이스 1: 배너 1개 = videoId 1개 → 섹션 전체가 플레이리스트
     const handleTrackClick = (sectionContents: any[], clickedIndex: number) => {
         console.log("[MusicTab] Track clicked, index:", clickedIndex);
 
@@ -55,7 +69,6 @@ export function MusicTab({ country }: MusicTabProps) {
         const trackIndex = tracks.findIndex(t => t.videoId === clickedItem?.videoId);
 
         console.log("[MusicTab] Setting playlist, starting at index:", trackIndex);
-        console.log("[MusicTab] First track:", tracks[trackIndex >= 0 ? trackIndex : 0]);
 
         // Set playlist starting from clicked track
         setPlaylist(tracks, trackIndex >= 0 ? trackIndex : 0);
@@ -63,6 +76,57 @@ export function MusicTab({ country }: MusicTabProps) {
         // Open queue sidebar
         if (!isQueueOpen) {
             toggleQueue();
+        }
+    };
+
+    // 케이스 2: 배너 1개 = 여러 videoId → 앨범/플레이리스트의 트랙들이 플레이리스트
+    const handleAlbumClick = async (browseId: string) => {
+        console.log("[MusicTab] Album clicked, browseId:", browseId);
+        setLoadingBrowseId(browseId);
+
+        try {
+            const albumData = await api.music.album(browseId);
+            console.log("[MusicTab] Album data:", albumData);
+
+            if (!albumData?.tracks || albumData.tracks.length === 0) {
+                console.log("[MusicTab] No tracks in album");
+                return;
+            }
+
+            // Convert album tracks to Track format
+            const tracks: Track[] = albumData.tracks
+                .map((t: any) => albumTrackToTrack(t, albumData))
+                .filter((t: Track | null): t is Track => t !== null);
+
+            console.log("[MusicTab] Album tracks:", tracks.length, "items");
+
+            if (tracks.length === 0) {
+                console.log("[MusicTab] No playable tracks in album");
+                return;
+            }
+
+            // Set playlist starting from first track
+            setPlaylist(tracks, 0);
+
+            // Open queue sidebar
+            if (!isQueueOpen) {
+                toggleQueue();
+            }
+        } catch (e) {
+            console.error("[MusicTab] Error loading album:", e);
+        } finally {
+            setLoadingBrowseId(null);
+        }
+    };
+
+    // 클릭 핸들러 - videoId 있으면 섹션 플레이리스트, browseId만 있으면 앨범 플레이리스트
+    const handleItemClick = (item: any, sectionContents: any[], index: number) => {
+        if (item.videoId) {
+            // 케이스 1: 배너에 videoId가 있음 → 섹션 전체가 플레이리스트
+            handleTrackClick(sectionContents, index);
+        } else if (item.browseId) {
+            // 케이스 2: 배너에 browseId만 있음 (앨범) → 앨범의 트랙들이 플레이리스트
+            handleAlbumClick(item.browseId);
         }
     };
 
@@ -114,19 +178,20 @@ export function MusicTab({ country }: MusicTabProps) {
                                 const title = item.title || "No Title";
                                 const subtitle = item.artists
                                     ? item.artists.map((a: any) => a.name).join(", ")
-                                    : item.year || item.subscribers || ""; // 앨범 년도나 구독자수도 표시
+                                    : item.year || item.subscribers || "";
                                 const image = item.thumbnails
                                     ? item.thumbnails[item.thumbnails.length - 1].url
-                                    : "/images/default-album.svg"; // 기본 이미지 사용
+                                    : "/images/default-album.svg";
 
-                                // videoId가 있으면 재생 가능
-                                const isPlayable = !!item.videoId;
+                                // videoId 또는 browseId가 있으면 재생 가능
+                                const isPlayable = !!(item.videoId || item.browseId);
+                                const isLoading = loadingBrowseId === item.browseId;
 
                                 return (
                                     <div
                                         key={item.videoId || item.browseId || `item-${sIndex}-${i}`}
                                         className="flex-none w-[140px] group cursor-pointer"
-                                        onClick={() => isPlayable && handleTrackClick(shelf.contents, i)}
+                                        onClick={() => isPlayable && !isLoading && handleItemClick(item, shelf.contents, i)}
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
@@ -135,11 +200,23 @@ export function MusicTab({ country }: MusicTabProps) {
                                                 alt={title}
                                                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                                             />
-                                            {/* Play overlay on hover - 재생 가능한 경우만 */}
+                                            {/* Play overlay on hover */}
                                             {isPlayable && (
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
-                                                        <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                                                        {isLoading ? (
+                                                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                                        ) : (
+                                                            <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* Loading state overlay */}
+                                            {isLoading && (
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
+                                                        <Loader2 className="w-5 h-5 text-white animate-spin" />
                                                     </div>
                                                 </div>
                                             )}
