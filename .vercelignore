@@ -1,0 +1,11 @@
+# Ignore backend files for Vercel deployment
+# Vercel should only handle the Next.js Frontend.
+# The backend is now on Google Cloud Run.
+
+api/
+requirements.txt
+Dockerfile
+deploy_cloud_run.ps1
+.dockerignore
+__pycache__/
+*.pyc
