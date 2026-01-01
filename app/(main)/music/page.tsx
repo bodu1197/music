@@ -84,7 +84,7 @@ const ALL_COUNTRIES = [
 
 export default function MusicPage() {
     const [data, setData] = useState<any>(null);
-    const [meta, setMeta] = useState<any>(null); // New Meta State
+    const [meta, setMeta] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [country, setCountry] = useState("US");
 
@@ -96,9 +96,8 @@ export default function MusicPage() {
             const res = await fetch(`/api/music/charts?country=${countryCode}`);
             if (res.ok) {
                 const json = await res.json();
-                console.log("Full data:", json);
                 setData(json.charts);
-                setMeta(json.meta); // Capture meta
+                setMeta(json.meta);
             }
         } catch (e) {
             console.error(e);
@@ -118,16 +117,16 @@ export default function MusicPage() {
     };
 
     return (
-        <div className="max-w-full pb-20 md:pb-8 overflow-hidden">
+        <div className="w-full pb-20 md:pb-8 px-4 md:px-8">
             {/* Header Section */}
-            <div className="px-4 py-8 max-w-[936px] mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+            <div className="py-6 border-b border-zinc-800 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h1 className="text-3xl font-bold text-white">
                         Music Exploration
                     </h1>
 
                     {/* Country Selector */}
-                    <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-full border border-zinc-800 hover:border-zinc-700 transition-colors">
+                    <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors self-start md:self-auto">
                         <Globe className="w-4 h-4 text-zinc-400" />
                         <select
                             value={country}
@@ -143,46 +142,34 @@ export default function MusicPage() {
                     </div>
                 </div>
 
-                {loading && (
-                    <div className="flex flex-col items-center justify-center pt-20 animate-pulse gap-3">
-                        <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
-                        <p className="text-zinc-500">Fetching live data from {ALL_COUNTRIES.find(c => c.code === country)?.name}...</p>
-                    </div>
-                )}
-
                 {/* DEBUG PANEL */}
                 {meta && (
-                    <div className="mb-8 p-4 bg-zinc-900/80 border border-zinc-700 rounded-lg text-xs font-mono text-zinc-300">
-                        <div className="flex justify-between items-center mb-2 border-b border-zinc-700 pb-2">
-                            <p className="font-bold text-green-400">⚡ API RESPONSE STATUS</p>
-                            <span className="bg-zinc-800 px-2 py-1 rounded text-[10px]">VERCEL DEBUG</span>
-                        </div>
-                        <p className="mb-1">Detected Country: <span className="text-white">{meta.country}</span></p>
-                        <p className="mb-1">Total Sections Received: <span className="text-white font-bold text-lg">{meta.total_sections}</span></p>
-                        {meta.section_titles && (
-                            <div className="mt-2">
-                                <p className="text-zinc-500 mb-1">Received Metadata Titles:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {meta.section_titles.map((t: string, i: number) => (
-                                        <span key={i} className="bg-zinc-800 px-2 py-1 rounded text-[10px] border border-zinc-700">{t}</span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {(!data || data.length === 0) && !loading && (
-                    <div className="text-center py-20 text-zinc-500">
-                        <p className="text-lg mb-2">No content available for this region.</p>
-                        <p className="text-sm">Try switching to a major region like United States or South Korea.</p>
+                    <div className="mt-4 p-3 bg-zinc-900/50 border border-zinc-700/50 rounded-md text-[10px] font-mono text-zinc-400 flex flex-wrap gap-x-4 gap-y-1">
+                        <span className="text-green-400 font-bold">✓ STATUS: OK</span>
+                        <span>REGION: {meta.country}</span>
+                        <span>SECTIONS: {meta.total_sections}</span>
+                        <span>SOURCE: {meta.source || 'API'}</span>
                     </div>
                 )}
             </div>
 
+            {loading && (
+                <div className="flex flex-col items-center justify-center pt-20 animate-pulse gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
+                    <p className="text-zinc-500">Fetching live data from {ALL_COUNTRIES.find(c => c.code === country)?.name}...</p>
+                </div>
+            )}
+
+            {(!data || data.length === 0) && !loading && (
+                <div className="text-center py-20 text-zinc-500">
+                    <p className="text-lg mb-2">No content available for this region.</p>
+                    <p className="text-sm">Try switching to a major region like United States or South Korea.</p>
+                </div>
+            )}
+
             {/* Content Sections (Stacks) */}
             {!loading && Array.isArray(data) && (
-                <div className="space-y-12 pl-4">
+                <div className="space-y-10">
                     {data.map((shelf: any, sIndex: number) => {
                         const title = shelf.title || "Recommended";
                         const contents = shelf.contents || [];
@@ -190,16 +177,16 @@ export default function MusicPage() {
                         if (!Array.isArray(contents) || contents.length === 0) return null;
 
                         return (
-                            <div key={sIndex} className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[100ms] fill-mode-backwards" style={{ animationDelay: `${sIndex * 100}ms` }}>
-                                <div className="flex items-center justify-between mb-4 pr-4 max-w-[936px] mx-auto md:mx-0 md:max-w-none md:ml-[max(0px,calc(50vw-468px))]">
+                            <div key={sIndex} className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-backwards" style={{ animationDelay: `${sIndex * 100}ms` }}>
+                                <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-xl font-bold text-white/90">{title}</h2>
-                                    <button className="text-xs font-bold text-zinc-400 hover:text-white uppercase flex items-center gap-1">
-                                        More <ChevronRight className="w-3 h-3" />
+                                    <button className="text-xs font-bold text-zinc-500 hover:text-white uppercase flex items-center gap-1 transition-colors">
+                                        View All <ChevronRight className="w-3 h-3" />
                                     </button>
                                 </div>
 
-                                {/* Horizontal Scroll Container (Carousel) */}
-                                <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory pr-4 md:pl-[max(0px,calc(50vw-468px))]">
+                                {/* Standard Horizontal Scroll Container - No Weird Calcs */}
+                                <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory">
                                     {contents.map((item: any, i: number) => {
                                         const itemTitle = item.title || "Unknown";
                                         const itemArtist = item.artists ? item.artists.map((a: any) => a.name).join(", ") :
@@ -210,24 +197,24 @@ export default function MusicPage() {
 
                                         return (
                                             <div key={i} className="min-w-[160px] w-[160px] md:min-w-[180px] md:w-[180px] snap-start group cursor-pointer flex-shrink-0">
-                                                <div className="aspect-square bg-zinc-800 rounded-md mb-3 relative overflow-hidden shadow-lg group-hover:shadow-2xl transition-all border border-white/5">
+                                                <div className="aspect-square bg-zinc-800 rounded-lg mb-3 relative overflow-hidden shadow-md group-hover:shadow-xl transition-all border border-white/5">
                                                     <img
                                                         src={itemImg}
                                                         alt={itemTitle}
-                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                         loading="lazy"
                                                     />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                                                        <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform shadow-xl hover:bg-zinc-200">
-                                                            <Play className="w-5 h-5 fill-current ml-1" />
+                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                                                        <button className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform shadow-lg hover:bg-zinc-100">
+                                                            <Play className="w-4 h-4 fill-current ml-0.5" />
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <h3 className="text-sm font-bold truncate text-zinc-100 group-hover:text-white transition-colors" title={itemTitle}>
+                                                <div className="space-y-0.5">
+                                                    <h3 className="text-sm font-semibold truncate text-zinc-200 group-hover:text-white transition-colors" title={itemTitle}>
                                                         {itemTitle}
                                                     </h3>
-                                                    <p className="text-xs text-zinc-400 truncate hover:text-zinc-300 transition-colors">
+                                                    <p className="text-xs text-zinc-500 truncate group-hover:text-zinc-400 transition-colors">
                                                         {itemArtist}
                                                     </p>
                                                 </div>
