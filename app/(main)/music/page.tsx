@@ -2,50 +2,107 @@
 
 import { useEffect, useState } from "react";
 import { Play } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function MusicPage() {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                // We'll assume api.music.charts() calls the endpoint we just updated
+                // Since I haven't added api.music.charts to lib/api.ts yet, I should use fetch directly or add it.
+                // For safety in this step, let's use fetch directly or update lib/api.ts in parallel.
+                // Assuming lib/api.ts will be updated or we use the path directly.
+                const res = await fetch('/api/music/charts');
+                if (res.ok) {
+                    const json = await res.json();
+                    setData(json);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadData();
+    }, []);
+
+    if (loading) return <div className="flex justify-center pt-20 text-zinc-500">Loading charts...</div>;
+
+    const charts = data?.charts || {};
+    const newReleases = data?.new_releases || [];
+
+    // Helper to extract chart items
+    const topSongs = charts.videos?.items || []; // 'videos' often has the music videos chart
+    const topArtists = charts.artists?.items || [];
+    const trending = charts.trending?.items || [];
+
     return (
         <div className="max-w-[936px] mx-auto py-8 px-4 pb-20 md:pb-8">
             <h1 className="text-2xl font-bold mb-6">Music Charts & Trending</h1>
 
-            {/* Quick Picks / Charts Placeholder */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Chart 1 */}
-                <div className="bg-zinc-800 rounded-md p-6 flex flex-col items-start gap-4">
-                    <h2 className="text-xl font-bold">Top 100: Global</h2>
-                    <p className="text-zinc-400 text-sm">The most played tracks in the world.</p>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform">
-                        <Play className="w-4 h-4 fill-current" />
-                        Play All
-                    </button>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                {/* Global Top Videos */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-md p-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold">Top Music Videos</h2>
+                        <button className="text-xs font-bold text-zinc-400 hover:text-white">See All</button>
+                    </div>
+                    <div className="space-y-3">
+                        {topSongs.slice(0, 5).map((item: any, i: number) => (
+                            <div key={i} className="flex items-center gap-3 group cursor-pointer">
+                                <span className="font-bold text-lg text-zinc-600 w-4 text-center">{i + 1}</span>
+                                <div className="w-12 h-12 relative overflow-hidden rounded-md">
+                                    <img src={item.thumbnails[0]?.url} alt={item.title} className="object-cover w-full h-full" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold truncate">{item.title}</p>
+                                    <p className="text-xs text-zinc-400 truncate">{item.artists[0]?.name}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Chart 2 */}
-                <div className="bg-zinc-800 rounded-md p-6 flex flex-col items-start gap-4">
-                    <h2 className="text-xl font-bold">Top 100: Korea</h2>
-                    <p className="text-zinc-400 text-sm">The most played tracks in Korea.</p>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform">
-                        <Play className="w-4 h-4 fill-current" />
-                        Play All
-                    </button>
+                {/* Trending */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-md p-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold">Trending Now</h2>
+                        <button className="text-xs font-bold text-zinc-400 hover:text-white">See All</button>
+                    </div>
+                    <div className="space-y-3">
+                        {trending.slice(0, 5).map((item: any, i: number) => (
+                            <div key={i} className="flex items-center gap-3 group cursor-pointer">
+                                <span className="font-bold text-lg text-zinc-600 w-4 text-center">{i + 1}</span>
+                                <div className="w-12 h-12 relative overflow-hidden rounded-md">
+                                    <img src={item.thumbnails[0]?.url} alt={item.title} className="object-cover w-full h-full" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold truncate">{item.title}</p>
+                                    <p className="text-xs text-zinc-400 truncate">{item.artists[0]?.name}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* New Releases */}
-            <h2 className="text-xl font-bold mt-12 mb-4">New Releases</h2>
+            {/* New Releases Grid */}
+            <h2 className="text-xl font-bold mb-4">New Releases</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {[...Array(10)].map((_, i) => (
+                {newReleases.map((album: any, i: number) => (
                     <div key={i} className="group cursor-pointer">
                         <div className="aspect-square bg-zinc-800 rounded-md mb-2 relative overflow-hidden">
-                            <div className="w-full h-full bg-zinc-700 flex items-center justify-center text-zinc-500">
-                                Cover
-                            </div>
+                            <img src={album.thumbnails[album.thumbnails.length - 1]?.url} alt={album.title} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <Play className="w-12 h-12 text-white fill-current" />
                             </div>
                         </div>
-                        <h3 className="text-sm font-bold truncate">Song Title {i + 1}</h3>
-                        <p className="text-xs text-zinc-400 truncate">Artist Name</p>
+                        <h3 className="text-sm font-bold truncate">{album.title}</h3>
+                        <p className="text-xs text-zinc-400 truncate">{album.artists[0]?.name}</p>
                     </div>
                 ))}
             </div>
