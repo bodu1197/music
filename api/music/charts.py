@@ -18,46 +18,45 @@ def get_charts(country: str = "US"):
         # Initialize YTMusic (unauthenticated)
         yt = YTMusic(language="en", location=country)
         
-        # Get charts data
-        charts = yt.get_charts(country=country)
-        
         sections = []
         
-        # Songs chart
-        if charts.get("songs", {}).get("items"):
-            sections.append({
-                "title": f"Top Songs - {country}",
-                "contents": charts["songs"]["items"]
-            })
+        # 1. Get Charts data (without country param - let location handle it)
+        try:
+            charts = yt.get_charts()
+            
+            if charts and charts.get("songs") and charts["songs"].get("items"):
+                sections.append({
+                    "title": f"Top Songs - {country}",
+                    "contents": charts["songs"]["items"]
+                })
+            
+            if charts and charts.get("videos") and charts["videos"].get("items"):
+                sections.append({
+                    "title": f"Top Videos - {country}",
+                    "contents": charts["videos"]["items"]
+                })
+            
+            if charts and charts.get("artists") and charts["artists"].get("items"):
+                sections.append({
+                    "title": f"Top Artists - {country}",
+                    "contents": charts["artists"]["items"]
+                })
+            
+            if charts and charts.get("trending") and charts["trending"].get("items"):
+                sections.append({
+                    "title": "Trending Now",
+                    "contents": charts["trending"]["items"]
+                })
+        except Exception as e:
+            print(f"get_charts error: {e}")
         
-        # Videos chart
-        if charts.get("videos", {}).get("items"):
-            sections.append({
-                "title": f"Top Videos - {country}",
-                "contents": charts["videos"]["items"]
-            })
-        
-        # Artists chart
-        if charts.get("artists", {}).get("items"):
-            sections.append({
-                "title": f"Top Artists - {country}",
-                "contents": charts["artists"]["items"]
-            })
-        
-        # Trending
-        if charts.get("trending", {}).get("items"):
-            sections.append({
-                "title": "Trending Now",
-                "contents": charts["trending"]["items"]
-            })
-        
-        # Also get home data for additional sections
+        # 2. Get home data for additional sections
         try:
             home_data = yt.get_home(limit=10)
-            if home_data:
+            if home_data and isinstance(home_data, list):
                 sections.extend(home_data)
-        except:
-            pass
+        except Exception as e:
+            print(f"get_home error: {e}")
         
         return {
             "charts": sections,
