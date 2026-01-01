@@ -115,7 +115,7 @@ export default function MusicPage() {
     };
 
     return (
-        <div className="w-full pb-20 md:pb-8 px-4 md:px-8">
+        <div className="w-full max-w-4xl mx-auto pb-20 md:pb-8 px-4 md:px-8">
             {/* Header Section */}
             <div className="py-6 border-b border-zinc-800 mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -14,7 +14,7 @@ export default function MainLayout({
             <aside>
                 <Sidebar />
             </aside>
-            <main className="flex-1 md:ml-[245px] lg:mr-[320px] pb-16 md:pb-0 min-h-screen">
+            <main className="flex-1 md:ml-[245px] lg:pr-[340px] pb-16 md:pb-0 min-h-screen overflow-x-hidden">
                 {children}
             </main>
             <aside className="hidden lg:block">
