@@ -136,10 +136,10 @@ def get_home(limit: int = 100, country: str = "US", language: str = "en"):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/charts")
-def get_charts(country: str = "US"):
+def get_charts(country: str = "US", language: str = "en"):
     try:
         # Pass country and language to get_ytmusic
-        yt = get_ytmusic(country=country, language=language) # Use country-specific IP
+        yt = get_ytmusic(country=country, language=language)
         return run_with_retry(yt.get_charts, country=country)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
