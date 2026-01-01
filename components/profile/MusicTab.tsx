@@ -241,7 +241,8 @@ export function MusicTab({ country }: MusicTabProps) {
 
                                 // videoId, browseId, playlistId 중 하나라도 있으면 재생 가능
                                 const isPlayable = !!(item.videoId || item.browseId || item.playlistId);
-                                const isItemLoading = loadingId === item.browseId || loadingId === item.playlistId;
+                                // loadingId가 있을 때만 비교 (null === null 버그 방지)
+                                const isItemLoading = !!(loadingId && (loadingId === item.browseId || loadingId === item.playlistId));
 
                                 return (
                                     <div
