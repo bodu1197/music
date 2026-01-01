@@ -11,7 +11,6 @@ export default function Sidebar() {
     const navItems = [
         { name: "Home", href: "/", icon: Home },
         { name: "Search", href: "/explore", icon: Search },
-        { name: "Music", href: "/music", icon: Music },
         { name: "Shop", href: "/shop", icon: ShoppingBag },
         { name: "Messages", href: "/messages", icon: Send },
         { name: "Create", href: "/create", icon: PlusSquare },

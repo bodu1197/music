@@ -1,18 +1,73 @@
 "use client";
 
 import Image from "next/image";
-import { Settings, Grid, Bookmark, UserSquare2 } from "lucide-react";
+import { Settings, Grid, Bookmark, UserSquare2, Music2 } from "lucide-react";
+import { MusicTab } from "@/components/profile/MusicTab";
+import { CountrySelector } from "@/components/profile/CountrySelector";
+import { DEFAULT_COUNTRY, SUPPORTED_COUNTRIES, Country } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/auth-provider";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { preload } from "swr";
+import { api } from "@/lib/api";
 
 export default function ProfilePage() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("posts");
+    const [currentCountry, setCurrentCountry] = useState<Country | null>(null);
+
+    // Initial Country Detection
+    useEffect(() => {
+        async function detect() {
+            // 1. Check localStorage
+            const savedCode = localStorage.getItem("user_country_code");
+            if (savedCode) {
+                const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
+                if (found) {
+                    setCurrentCountry(found);
+                    return;
+                }
+            }
+
+            // 2. IP Detection (if no saved preference)
+            try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                const detected = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
+                if (detected) {
+                    setCurrentCountry(detected);
+                    return;
+                }
+            } catch (e) {
+                console.error("IP Detect failed:", e);
+            }
+
+            // 3. Fallback
+            setCurrentCountry(DEFAULT_COUNTRY);
+        }
+
+        detect();
+    }, []);
+
+    // Prefetch logic - only runs when currentCountry is set
+    useEffect(() => {
+        if (currentCountry) {
+            preload(
+                ["/music/home", currentCountry.code, currentCountry.lang],
+                () => api.music.home(100, currentCountry.code, currentCountry.lang)
+            );
+        }
+    }, [currentCountry]);
+
+    const handleCountryChange = (c: Country) => {
+        setCurrentCountry(c);
+        localStorage.setItem("user_country_code", c.code);
+    };
 
     const tabs = [
         { id: "posts", icon: Grid, label: "POSTS" },
+        { id: "music", icon: Music2, label: "MUSIC" },
         { id: "saved", icon: Bookmark, label: "SAVED" },
         { id: "tagged", icon: UserSquare2, label: "TAGGED" },
     ];
@@ -107,17 +162,41 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-3 gap-1 mt-4">
-                {/* Empty State */}
-                <div className="col-span-3 py-20 flex flex-col items-center justify-center text-zinc-500">
-                    <div className="w-16 h-16 border-2 border-zinc-800 rounded-full flex items-center justify-center mb-4">
-                        <Grid className="w-8 h-8" />
+            {/* Content Area */}
+            <div className="mt-4">
+                {activeTab === "posts" && (
+                    <div className="grid grid-cols-3 gap-1">
+                        <div className="col-span-3 py-20 flex flex-col items-center justify-center text-zinc-500">
+                            <div className="w-16 h-16 border-2 border-zinc-800 rounded-full flex items-center justify-center mb-4">
+                                <Grid className="w-8 h-8" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Share Photos</h2>
+                            <p className="mb-4">When you share photos, they will appear on your profile.</p>
+                            <Button variant="ghost" className="text-blue-400 font-bold p-0 hover:bg-transparent hover:text-blue-300">Share your first photo</Button>
+                        </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Share Photos</h2>
-                    <p className="mb-4">When you share photos, they will appear on your profile.</p>
-                    <Button variant="ghost" className="text-blue-400 font-bold p-0 hover:bg-transparent hover:text-blue-300">Share your first photo</Button>
-                </div>
+                )}
+
+                {activeTab === "music" && (
+                    <div className="flex flex-col">
+                        {currentCountry ? (
+                            <>
+                                <div className="flex justify-end px-4 mb-2">
+                                    <CountrySelector value={currentCountry} onChange={handleCountryChange} />
+                                </div>
+                                <MusicTab country={currentCountry} />
+                            </>
+                        ) : (
+                            <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
+                        )}
+                    </div>
+                )}
+
+                {(activeTab === "saved" || activeTab === "tagged") && (
+                    <div className="py-20 text-center text-zinc-500">
+                        <p>No content yet.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
