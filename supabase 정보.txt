@@ -1,0 +1,24 @@
+rkdskadptkfwk1!Q
+슈퍼베이스Database password
+
+https://bsoqfgwexmgxribhzzkf.supabase.co
+Project URL
+
+sb_publishable_MGVMKIyffIf8Yg9euUjAFQ_2gWccmIc
+Publishable API Key
+---------------------------------------------------------------
+Project ID
+bsoqfgwexmgxribhzzkf
+..........................................................
+Project URL
+https://bsoqfgwexmgxribhzzkf.supabase.co
+
+------------------------
+Secret keys
+sb_secret_aSFBYpghkNXvfdPwbixyRQ_pk55ofjR
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Publishable key
+sb_publishable_MGVMKIyffIf8Yg9euUjAFQ_2gWccmIc
+
+

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
-import Sidebar from "@/components/layout/Sidebar";
-import BottomNav from "@/components/layout/BottomNav";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -20,15 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-black text-white`}>
-        <div className="flex min-h-screen">
-          <aside>
-            <Sidebar />
-          </aside>
-          <main className="flex-1 md:ml-[245px] pb-16 md:pb-0 min-h-screen">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
