@@ -147,30 +147,51 @@ YouTubePlayer를 **보이는 위치**에 렌더링합니다.
 
 음악 탭에서 배너 클릭 처리:
 
-**두 가지 케이스:**
+**세 가지 케이스 자동 감지 (CRITICAL):**
+
+데이터가 랜덤으로 날아오므로 자동 감지해서 처리해야 합니다.
 
 ```typescript
-// 케이스 1: 배너에 videoId가 있음 (노래/비디오)
+// 케이스 1: videoId 있음 (노래/비디오)
 // → 섹션 전체가 플레이리스트
 if (item.videoId) {
     handleTrackClick(sectionContents, index);
 }
 
-// 케이스 2: 배너에 browseId만 있음 (앨범)
-// → 앨범 API 호출 → 앨범의 트랙들이 플레이리스트
+// 케이스 2: browseId 있음 (앨범/싱글)
+// → album API 호출 → 앨범 트랙들이 플레이리스트
 else if (item.browseId) {
     handleAlbumClick(item.browseId);
 }
+
+// 케이스 3: playlistId 있음 (플레이리스트, 차트, 커뮤니티 재생목록)
+// → watch API 호출 → 플레이리스트 트랙들이 플레이리스트
+else if (item.playlistId) {
+    handlePlaylistClick(item.playlistId);
+}
 ```
+
+**데이터 유형별 ID 패턴:**
+| 유형 | ID 필드 | 예시 | API |
+|------|---------|------|-----|
+| 노래/비디오 | `videoId` | `9L9ynqxHZ2k` | 없음 (섹션 전체) |
+| 앨범/싱글 | `browseId` | `MPREb_JCxqCCAndci` | `/album/{browseId}` |
+| 플레이리스트 | `playlistId` | `RDCLAK5uy_...`, `PL...` | `/watch?playlistId=` |
+
+**섹션별 예시:**
+- 빠른 선곡, 뮤직비디오, Shorts → `videoId` (케이스 1)
+- 맞춤 추천 앨범, 최신 음악 → `browseId` (케이스 2)
+- Vibe higher, 차트, 커뮤니티 재생목록 → `playlistId` (케이스 3)
 
 ## 데이터 흐름
 
 ```
 1. 사용자가 배너 클릭
    ↓
-2. MusicTab.handleItemClick()
+2. MusicTab.handleItemClick() - 자동 감지
    ├── videoId 있음 → handleTrackClick() → setPlaylist(섹션 전체)
-   └── browseId만 있음 → handleAlbumClick() → api.album() → setPlaylist(앨범 트랙들)
+   ├── browseId 있음 → handleAlbumClick() → api.album() → setPlaylist(앨범 트랙들)
+   └── playlistId 있음 → handlePlaylistClick() → api.watch() → setPlaylist(플레이리스트 트랙들)
    ↓
 3. PlayerContext.setPlaylist()
    - currentPlaylist 업데이트
@@ -218,4 +239,4 @@ else if (item.browseId) {
 
 **작성일**: 2026-01-02
 **작성자**: Claude Opus 4.5
-**버전**: 1.0
+**버전**: 1.1 (playlistId 케이스 추가)
