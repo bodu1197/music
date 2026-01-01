@@ -16,14 +16,6 @@ export default function PlayerSidebar() {
 
     return (
         <>
-            {/* Hidden YouTube Player - Always rendered for audio playback */}
-            <div
-                className="fixed -top-[9999px] -left-[9999px] w-[1px] h-[1px] overflow-hidden"
-                aria-hidden="true"
-            >
-                <YouTubePlayer />
-            </div>
-
             {/* Overlay for mobile - only when open */}
             {isQueueOpen && (
                 <div
@@ -53,18 +45,10 @@ export default function PlayerSidebar() {
                     </button>
                 </div>
 
-                {/* Video Display - just shows the current track thumbnail */}
+                {/* Video Display - ACTUAL YouTube Player */}
                 <div className="w-full px-4 py-4">
-                    <div className="w-full aspect-video bg-black rounded overflow-hidden flex items-center justify-center">
-                        {currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex] ? (
-                            <img
-                                src={currentPlaylist[currentTrackIndex].thumbnail || "/images/default-album.svg"}
-                                alt={currentPlaylist[currentTrackIndex].title}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="text-zinc-600 text-sm">No track playing</div>
-                        )}
+                    <div className="w-full aspect-video bg-black rounded overflow-hidden">
+                        <YouTubePlayer className="w-full h-full" />
                     </div>
                 </div>
 
