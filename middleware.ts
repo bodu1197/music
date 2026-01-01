@@ -1,31 +1,58 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-    const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+    let response = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    })
 
-    // Create a Supabase client configured to use cookies
-    const supabase = createMiddlewareClient({ req, res })
+    // Create an environment variable fallback to prevent crash if not set at build time (though runtime needs them)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
 
-    // Refresh session if expired - required for Server Components
-    const { data: { session } } = await supabase.auth.getSession()
+    const supabase = createServerClient(
+        supabaseUrl,
+        supabaseKey,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll()
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+                    response = NextResponse.next({
+                        request: {
+                            headers: request.headers,
+                        },
+                    })
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        response.cookies.set(name, value, options)
+                    )
+                },
+            },
+        }
+    )
 
-    const requestUrl = new URL(req.url)
+    // This will refresh session if needed
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Auth Guard
-    if (!session && !requestUrl.pathname.startsWith('/login') && !requestUrl.pathname.startsWith('/signup') && !requestUrl.pathname.startsWith('/auth')) {
-        return NextResponse.redirect(new URL('/login', req.url))
+    // Protect routes
+    if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && !request.nextUrl.pathname.startsWith('/auth')) {
+        return NextResponse.redirect(new URL('/login', request.url))
     }
 
     // Redirect to home if logged in and trying to access auth pages
-    if (session && (requestUrl.pathname.startsWith('/login') || requestUrl.pathname.startsWith('/signup'))) {
-        return NextResponse.redirect(new URL('/', req.url))
+    if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+        return NextResponse.redirect(new URL('/', request.url))
     }
 
-    return res
+    return response
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 }
