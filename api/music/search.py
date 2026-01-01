@@ -4,7 +4,7 @@ from ytmusicapi import YTMusic
 router = APIRouter()
 yt = YTMusic()
 
-@router.get("/")
+@router.get("")
 def search(query: str):
     try:
         results = yt.search(query)

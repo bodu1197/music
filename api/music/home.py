@@ -4,7 +4,7 @@ from ytmusicapi import YTMusic
 router = APIRouter()
 yt = YTMusic()
 
-@router.get("/")
+@router.get("")
 def get_home():
     try:
         # Note: language and location should ideally be dynamic based on request headers
