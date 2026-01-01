@@ -4,7 +4,7 @@ from ytmusicapi import YTMusic
 router = APIRouter()
 yt = YTMusic()
 
-@router.get("/")
+@router.get("")
 def get_charts(country: str = "US"):
     try:
         charts = yt.get_charts(country=country)

@@ -4,7 +4,7 @@ from ytmusicapi import YTMusic
 router = APIRouter()
 yt = YTMusic()
 
-@router.get("/")
+@router.get("")
 def get_explore():
     try:
         data = yt.get_charts(country="US") # Explore usually maps to charts/new releases
