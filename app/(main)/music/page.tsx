@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Play, Globe, ChevronRight } from "lucide-react";
+import { api } from "@/lib/api";
 
 // Extensive list of YouTube Music supported locations (100+)
 const ALL_COUNTRIES = [
@@ -93,12 +94,9 @@ export default function MusicPage() {
         setData(null);
         setMeta(null);
         try {
-            const res = await fetch(`/api/music/charts?country=${countryCode}`);
-            if (res.ok) {
-                const json = await res.json();
-                setData(json.charts);
-                setMeta(json.meta);
-            }
+            const data = await api.music.charts(countryCode);
+            setData(data.charts);
+            setMeta(data.meta);
         } catch (e) {
             console.error(e);
         } finally {

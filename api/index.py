@@ -6,7 +6,21 @@ from api.music.charts import router as charts_router
 from api.music.artist import router as artist_router
 from api.music.album import router as album_router
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# ... imports ...
+
 app = FastAPI()
+
+# Enable CORS for Frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For production, replace with specific Vercel domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(search_router, prefix="/api/music/search", tags=["search"])
 app.include_router(home_router, prefix="/api/music/home", tags=["home"])
