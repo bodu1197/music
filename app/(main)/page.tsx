@@ -7,14 +7,16 @@ import { api } from "@/lib/api";
 export default function HomePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         const homeData = await api.music.home();
         setData(homeData);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setError(e.message || "Failed to load");
       } finally {
         setLoading(false);
       }
@@ -23,46 +25,21 @@ export default function HomePage() {
   }, []);
 
   if (loading) return <div className="flex justify-center pt-20 text-zinc-500">Loading your vibe...</div>;
+  if (error) return <div className="flex justify-center pt-20 text-red-500">Error: {error}</div>;
 
-  // Transform API data into feed posts
-  // YouTube Music 'home' data usually contains sections like 'New Releases', 'Charts', etc.
-  // We will map these items to 'Posts' to mimic Instagram.
+  // Render raw sections to prove we are getting real data
+  const sections = Array.isArray(data?.home) ? data.home : [];
 
-  let feedItems: any[] = [];
-
-  if (data && data.home) {
-    // Flatten sections to get items
-    // Warning: The structure depends on ytmusicapi response. 
-    // Typically it returns a list of shelves (dictionaries).
-
-    // Safety check if data.home is array
-    if (Array.isArray(data.home)) {
-      data.home.forEach((shelf: any) => {
-        if (shelf.contents && Array.isArray(shelf.contents)) {
-          shelf.contents.forEach((item: any) => {
-            // Only take items that have thumbnails and titles
-            if (item.thumbnails && item.title) {
-              feedItems.push({
-                id: item.videoId || item.browseId || Math.random(),
-                title: item.title,
-                subtitle: item.artists ? item.artists.map((a: any) => a.name).join(", ") : "Unknown Artist",
-                image: item.thumbnails[item.thumbnails.length - 1].url, // Best quality
-                section: shelf.title || "Recommended"
-              });
-            }
-          });
-        }
-      });
-    }
+  if (sections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center pt-20 px-4 text-center">
+        <p className="text-zinc-400 mb-2">No data received from YouTube Music.</p>
+        <p className="text-xs text-zinc-600">The server might be blocked or returning empty content for this region.</p>
+      </div>
+    );
   }
 
-  // Fallback if no data or parsing failed
-  if (feedItems.length === 0) {
-    feedItems = [
-      { id: 'mock1', title: 'Welcome to VibeStation', subtitle: 'Global Music Community', image: 'https://music.youtube.com/img/onboarding/onboarding_welcome_v3.png', section: 'Admin' }
-    ];
-  }
-
+  // Flatten logic with Section Headers
   return (
     <div className="max-w-[470px] mx-auto pt-8 pb-20 md:pb-8">
       {/* Stories */}
@@ -77,62 +54,66 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Feed */}
-      <div className="space-y-6">
-        {feedItems.map((post: any, index: number) => (
-          <article key={`${post.id}-${index}`} className="border-b border-zinc-900 pb-6 mb-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-zinc-800" />
-                <span className="text-sm font-bold hover:text-zinc-300 cursor-pointer">
-                  {post.subtitle}
-                </span>
-                <span className="text-zinc-500 text-sm">• {post.section}</span>
-              </div>
-              <MoreHorizontal className="w-5 h-5 cursor-pointer" />
-            </div>
+      {/* Feed by Sections */}
+      <div className="space-y-8">
+        {sections.map((shelf: any, sIndex: number) => {
+          if (!shelf.contents || !Array.isArray(shelf.contents)) return null;
 
-            {/* Image */}
-            <div className="relative aspect-square w-full bg-zinc-900 rounded-sm mb-3 border border-zinc-800 flex items-center justify-center overflow-hidden">
-              <img src={post.image} alt={post.title} className="object-cover w-full h-full" />
-            </div>
+          return (
+            <div key={sIndex} className="border-b-4 border-zinc-900 pb-4">
+              {/* Section Title */}
+              {shelf.title && <h2 className="px-1 mb-4 text-sm font-bold text-zinc-400 uppercase tracking-wider">{shelf.title}</h2>}
 
-            {/* Actions */}
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-4">
-                <Heart className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
-                <MessageCircle className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
-                <Send className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
-              </div>
-              <Bookmark className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
-            </div>
+              {shelf.contents.map((item: any, i: number) => {
+                // Robust check for data existence
+                const title = item.title || "No Title";
+                const subtitle = item.artists ? item.artists.map((a: any) => a.name).join(", ") : "Unknown";
+                const image = item.thumbnails ? item.thumbnails[item.thumbnails.length - 1].url : null;
+                const key = item.videoId || item.browseId || `item-${sIndex}-${i}`;
 
-            {/* Likes */}
-            <div className="px-1 mb-2">
-              <span className="text-sm font-bold">{Math.floor(Math.random() * 10000).toLocaleString()} likes</span>
-            </div>
+                if (!image) return null; // Skip items without images
 
-            {/* Caption */}
-            <div className="px-1 mb-2">
-              <span className="text-sm">
-                <span className="font-bold mr-2">{post.subtitle}</span>
-                {post.title} - Listen now on VibeStation! 🎵
-              </span>
-            </div>
+                return (
+                  <article key={key} className="mb-8">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-zinc-800" />
+                        <span className="text-sm font-bold hover:text-zinc-300 cursor-pointer">
+                          {subtitle}
+                        </span>
+                      </div>
+                      <MoreHorizontal className="w-5 h-5 cursor-pointer" />
+                    </div>
 
-            {/* Comments */}
-            <div className="px-1">
-              <span className="text-sm text-zinc-500 cursor-pointer">
-                View all {Math.floor(Math.random() * 50)} comments
-              </span>
-            </div>
+                    {/* Image */}
+                    <div className="relative aspect-square w-full bg-zinc-900 rounded-sm mb-3 border border-zinc-800 flex items-center justify-center overflow-hidden">
+                      <img src={image} alt={title} className="object-cover w-full h-full" />
+                    </div>
 
-            <div className="px-1 mt-2">
-              <input type="text" placeholder="Add a comment..." className="bg-transparent text-sm w-full focus:outline-none" />
+                    {/* Actions */}
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <div className="flex items-center gap-4">
+                        <Heart className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
+                        <MessageCircle className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
+                        <Send className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
+                      </div>
+                      <Bookmark className="w-6 h-6 cursor-pointer hover:text-zinc-400" />
+                    </div>
+
+                    {/* Caption */}
+                    <div className="px-1 mb-2">
+                      <span className="text-sm">
+                        <span className="font-bold mr-2">{subtitle}</span>
+                        {title}
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-          </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
