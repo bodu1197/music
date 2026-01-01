@@ -34,9 +34,22 @@ function albumTrackToTrack(track: any, albumInfo: any): Track | null {
     };
 }
 
+// Convert playlist track to Track (watch API 응답용)
+function playlistTrackToTrack(track: any): Track | null {
+    if (!track.videoId) return null;
+    return {
+        videoId: track.videoId,
+        title: track.title || "Unknown",
+        artist: track.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        thumbnail: Array.isArray(track.thumbnail)
+            ? track.thumbnail[track.thumbnail.length - 1]?.url
+            : track.thumbnail?.url || "/images/default-album.svg",
+    };
+}
+
 export function MusicTab({ country }: MusicTabProps) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-    const [loadingBrowseId, setLoadingBrowseId] = useState<string | null>(null);
+    const [loadingId, setLoadingId] = useState<string | null>(null); // browseId 또는 playlistId
 
     const { data, error, isLoading } = useSWR(
         ["/music/home", country.code, country.lang],
@@ -79,10 +92,10 @@ export function MusicTab({ country }: MusicTabProps) {
         }
     };
 
-    // 케이스 2: 배너 1개 = 여러 videoId → 앨범/플레이리스트의 트랙들이 플레이리스트
+    // 케이스 2: browseId 있음 (앨범/싱글) → album API 호출
     const handleAlbumClick = async (browseId: string) => {
         console.log("[MusicTab] Album clicked, browseId:", browseId);
-        setLoadingBrowseId(browseId);
+        setLoadingId(browseId);
 
         try {
             const albumData = await api.music.album(browseId);
@@ -115,18 +128,61 @@ export function MusicTab({ country }: MusicTabProps) {
         } catch (e) {
             console.error("[MusicTab] Error loading album:", e);
         } finally {
-            setLoadingBrowseId(null);
+            setLoadingId(null);
         }
     };
 
-    // 클릭 핸들러 - videoId 있으면 섹션 플레이리스트, browseId만 있으면 앨범 플레이리스트
+    // 케이스 3: playlistId 있음 → watch API 호출
+    const handlePlaylistClick = async (playlistId: string) => {
+        console.log("[MusicTab] Playlist clicked, playlistId:", playlistId);
+        setLoadingId(playlistId);
+
+        try {
+            const playlistData = await api.music.watch(undefined, playlistId);
+            console.log("[MusicTab] Playlist data:", playlistData);
+
+            if (!playlistData?.tracks || playlistData.tracks.length === 0) {
+                console.log("[MusicTab] No tracks in playlist");
+                return;
+            }
+
+            // Convert playlist tracks to Track format
+            const tracks: Track[] = playlistData.tracks
+                .map((t: any) => playlistTrackToTrack(t))
+                .filter((t: Track | null): t is Track => t !== null);
+
+            console.log("[MusicTab] Playlist tracks:", tracks.length, "items");
+
+            if (tracks.length === 0) {
+                console.log("[MusicTab] No playable tracks in playlist");
+                return;
+            }
+
+            // Set playlist starting from first track
+            setPlaylist(tracks, 0);
+
+            // Open queue sidebar
+            if (!isQueueOpen) {
+                toggleQueue();
+            }
+        } catch (e) {
+            console.error("[MusicTab] Error loading playlist:", e);
+        } finally {
+            setLoadingId(null);
+        }
+    };
+
+    // 클릭 핸들러 - 자동 감지: videoId, browseId, playlistId
     const handleItemClick = (item: any, sectionContents: any[], index: number) => {
         if (item.videoId) {
-            // 케이스 1: 배너에 videoId가 있음 → 섹션 전체가 플레이리스트
+            // 케이스 1: videoId 있음 → 섹션 전체가 플레이리스트
             handleTrackClick(sectionContents, index);
         } else if (item.browseId) {
-            // 케이스 2: 배너에 browseId만 있음 (앨범) → 앨범의 트랙들이 플레이리스트
+            // 케이스 2: browseId 있음 (앨범/싱글) → album API
             handleAlbumClick(item.browseId);
+        } else if (item.playlistId) {
+            // 케이스 3: playlistId 있음 → watch API
+            handlePlaylistClick(item.playlistId);
         }
     };
 
@@ -183,15 +239,15 @@ export function MusicTab({ country }: MusicTabProps) {
                                     ? item.thumbnails[item.thumbnails.length - 1].url
                                     : "/images/default-album.svg";
 
-                                // videoId 또는 browseId가 있으면 재생 가능
-                                const isPlayable = !!(item.videoId || item.browseId);
-                                const isLoading = loadingBrowseId === item.browseId;
+                                // videoId, browseId, playlistId 중 하나라도 있으면 재생 가능
+                                const isPlayable = !!(item.videoId || item.browseId || item.playlistId);
+                                const isItemLoading = loadingId === item.browseId || loadingId === item.playlistId;
 
                                 return (
                                     <div
-                                        key={item.videoId || item.browseId || `item-${sIndex}-${i}`}
+                                        key={item.videoId || item.browseId || item.playlistId || `item-${sIndex}-${i}`}
                                         className="flex-none w-[140px] group cursor-pointer"
-                                        onClick={() => isPlayable && !isLoading && handleItemClick(item, shelf.contents, i)}
+                                        onClick={() => isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
@@ -204,7 +260,7 @@ export function MusicTab({ country }: MusicTabProps) {
                                             {isPlayable && (
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
-                                                        {isLoading ? (
+                                                        {isItemLoading ? (
                                                             <Loader2 className="w-5 h-5 text-white animate-spin" />
                                                         ) : (
                                                             <Play className="w-5 h-5 text-white fill-current ml-0.5" />
@@ -213,7 +269,7 @@ export function MusicTab({ country }: MusicTabProps) {
                                                 </div>
                                             )}
                                             {/* Loading state overlay */}
-                                            {isLoading && (
+                                            {isItemLoading && (
                                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                                                     <div className="w-10 h-10 rounded-full bg-[#667eea] flex items-center justify-center shadow-lg">
                                                         <Loader2 className="w-5 h-5 text-white animate-spin" />
