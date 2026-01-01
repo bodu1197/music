@@ -6,32 +6,26 @@ router = APIRouter()
 @router.get("")
 def get_charts(request: Request, country: str = "US"):
     try:
-        # PURE IMPLEMENTATION AS REQUESTED
-        # According to ytmusicapi specs, get_home() works for unauthenticated users
-        # and returns a full layout of shelves (~10+ sections).
-        
-        # 1. Location Strategy
-        # Use query param if provided (dropdown), else fallback to Vercel IP header, else US.
+        # PURE IMPLEMENTATION
         target_country = country if country else request.headers.get("x-vercel-ip-country", "US")
         
-        # 2. Initialization
-        # Language is English (UI), Location determines the content (KR, JP, etc.)
         yt = YTMusic(language="en", location=target_country)
-        
-        # 3. Execution
-        # No extra searches. No manual appends. No "smart" logic.
-        # Just pure ytmusicapi get_home().
         home_data = yt.get_home()
+        
+        # DEBUG INFO
+        # Create a list of titles to verify what the server actually sees
+        debug_titles = [shelf.get('title', 'No Title') for shelf in home_data]
         
         return {
             "charts": home_data,
             "meta": {
                 "country": target_country,
-                "note": "Pure get_home response"
+                "total_sections": len(home_data),
+                "section_titles": debug_titles,
+                "source": "api_debug_mode"
             }
         }
         
     except Exception as e:
         print(f"Error in pure get_home: {e}")
-        # Return internal server error if the library itself fails
         raise HTTPException(status_code=500, detail=str(e))

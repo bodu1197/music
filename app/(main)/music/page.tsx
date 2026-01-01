@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Play, Globe, ChevronRight } from "lucide-react";
-import Link from "next/link"; // For navigation to album/playlist
-import Image from "next/image";
 
 // Extensive list of YouTube Music supported locations (100+)
 const ALL_COUNTRIES = [
@@ -86,18 +84,21 @@ const ALL_COUNTRIES = [
 
 export default function MusicPage() {
     const [data, setData] = useState<any>(null);
+    const [meta, setMeta] = useState<any>(null); // New Meta State
     const [loading, setLoading] = useState(true);
     const [country, setCountry] = useState("US");
 
     const fetchMusic = async (countryCode: string) => {
         setLoading(true);
-        setData(null); // Clear previous to show loading state specifically for new country
+        setData(null);
+        setMeta(null);
         try {
             const res = await fetch(`/api/music/charts?country=${countryCode}`);
             if (res.ok) {
                 const json = await res.json();
-                console.log("Full data from API:", json.charts); // Debug log for user
+                console.log("Full data:", json);
                 setData(json.charts);
+                setMeta(json.meta); // Capture meta
             }
         } catch (e) {
             console.error(e);
@@ -149,6 +150,28 @@ export default function MusicPage() {
                     </div>
                 )}
 
+                {/* DEBUG PANEL */}
+                {meta && (
+                    <div className="mb-8 p-4 bg-zinc-900/80 border border-zinc-700 rounded-lg text-xs font-mono text-zinc-300">
+                        <div className="flex justify-between items-center mb-2 border-b border-zinc-700 pb-2">
+                            <p className="font-bold text-green-400">⚡ API RESPONSE STATUS</p>
+                            <span className="bg-zinc-800 px-2 py-1 rounded text-[10px]">VERCEL DEBUG</span>
+                        </div>
+                        <p className="mb-1">Detected Country: <span className="text-white">{meta.country}</span></p>
+                        <p className="mb-1">Total Sections Received: <span className="text-white font-bold text-lg">{meta.total_sections}</span></p>
+                        {meta.section_titles && (
+                            <div className="mt-2">
+                                <p className="text-zinc-500 mb-1">Received Metadata Titles:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {meta.section_titles.map((t: string, i: number) => (
+                                        <span key={i} className="bg-zinc-800 px-2 py-1 rounded text-[10px] border border-zinc-700">{t}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {(!data || data.length === 0) && !loading && (
                     <div className="text-center py-20 text-zinc-500">
                         <p className="text-lg mb-2">No content available for this region.</p>
@@ -178,20 +201,15 @@ export default function MusicPage() {
                                 {/* Horizontal Scroll Container (Carousel) */}
                                 <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory pr-4 md:pl-[max(0px,calc(50vw-468px))]">
                                     {contents.map((item: any, i: number) => {
-                                        // Robust extraction for various item types (Song, Video, Album, Playlist)
                                         const itemTitle = item.title || "Unknown";
                                         const itemArtist = item.artists ? item.artists.map((a: any) => a.name).join(", ") :
-                                            item.description ? item.description : ""; // Playlists sometimes use description
+                                            item.description ? item.description : "";
                                         const itemImg = item.thumbnails ? item.thumbnails[Math.max(0, item.thumbnails.length - 1)].url : null;
-
-                                        // ID resolution
-                                        const id = item.videoId || item.browseId || item.playlistId;
 
                                         if (!itemImg) return null;
 
                                         return (
                                             <div key={i} className="min-w-[160px] w-[160px] md:min-w-[180px] md:w-[180px] snap-start group cursor-pointer flex-shrink-0">
-                                                {/* Card Image */}
                                                 <div className="aspect-square bg-zinc-800 rounded-md mb-3 relative overflow-hidden shadow-lg group-hover:shadow-2xl transition-all border border-white/5">
                                                     <img
                                                         src={itemImg}
@@ -199,23 +217,12 @@ export default function MusicPage() {
                                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                         loading="lazy"
                                                     />
-
-                                                    {/* Play Overlay */}
                                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                                                         <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform shadow-xl hover:bg-zinc-200">
                                                             <Play className="w-5 h-5 fill-current ml-1" />
                                                         </button>
                                                     </div>
-
-                                                    {/* Type Badge (Optional) */}
-                                                    {item.videoType && (
-                                                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-300">
-                                                            {item.videoType.replace("MUSIC_VIDEO_TYPE_", "").replace("_", " ")}
-                                                        </div>
-                                                    )}
                                                 </div>
-
-                                                {/* Card Meta */}
                                                 <div className="space-y-1">
                                                     <h3 className="text-sm font-bold truncate text-zinc-100 group-hover:text-white transition-colors" title={itemTitle}>
                                                         {itemTitle}
