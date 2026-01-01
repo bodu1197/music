@@ -13,8 +13,8 @@ def get_home(request: Request):
         # 2. Init YTMusic with English UI but Local Content
         yt = YTMusic(language="en", location=user_country)
         
-        # 3. Call get_home() exactly as requested
-        home_data = yt.get_home()
+        # 3. Call get_home() with limit=100 to fetch ALL sections (default is only 3!)
+        home_data = yt.get_home(limit=100)
         
         return {"home": home_data}
 

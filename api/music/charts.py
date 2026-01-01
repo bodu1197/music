@@ -10,13 +10,9 @@ def get_charts(request: Request, country: str = "US"):
         target_country = country if country else request.headers.get("x-vercel-ip-country", "US")
         
         yt = YTMusic(language="en", location=target_country)
-        yt.headers.update({
-             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-             "Accept-Language": "en-US,en;q=0.9",
-        })
         
-        # 2. Get Home Data
-        home_data = yt.get_home()
+        # 2. Get Home Data (limit=100 to fetch ALL sections, default is only 3!)
+        home_data = yt.get_home(limit=100)
         original_count = len(home_data) if home_data else 0
         
         # 3. PURE API MODE (No Augmentation)
