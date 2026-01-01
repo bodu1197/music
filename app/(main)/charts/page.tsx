@@ -1,17 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { Play, Loader2, TrendingUp, Music, User, Disc } from "lucide-react";
+import { Play, Loader2, TrendingUp, Music, User, Disc, Globe } from "lucide-react";
 
-// 국가 목록
+// 전체 국가 목록 (61개국 + Global)
 const COUNTRIES = [
-    { code: "US", name: "United States", lang: "en" },
-    { code: "KR", name: "Korea", lang: "ko" },
-    { code: "JP", name: "Japan", lang: "ja" },
-    { code: "GB", name: "United Kingdom", lang: "en" },
+    { code: "ZZ", name: "🌍 Global", lang: "en" },
+    { code: "AR", name: "🇦🇷 Argentina", lang: "es" },
+    { code: "AU", name: "🇦🇺 Australia", lang: "en" },
+    { code: "AT", name: "🇦🇹 Austria", lang: "de" },
+    { code: "BE", name: "🇧🇪 Belgium", lang: "nl" },
+    { code: "BO", name: "🇧🇴 Bolivia", lang: "es" },
+    { code: "BR", name: "🇧🇷 Brazil", lang: "pt" },
+    { code: "CA", name: "🇨🇦 Canada", lang: "en" },
+    { code: "CL", name: "🇨🇱 Chile", lang: "es" },
+    { code: "CO", name: "🇨🇴 Colombia", lang: "es" },
+    { code: "CR", name: "🇨🇷 Costa Rica", lang: "es" },
+    { code: "CZ", name: "🇨🇿 Czech Republic", lang: "cs" },
+    { code: "DK", name: "🇩🇰 Denmark", lang: "en" },
+    { code: "DO", name: "🇩🇴 Dominican Republic", lang: "es" },
+    { code: "EC", name: "🇪🇨 Ecuador", lang: "es" },
+    { code: "EG", name: "🇪🇬 Egypt", lang: "ar" },
+    { code: "SV", name: "🇸🇻 El Salvador", lang: "es" },
+    { code: "FI", name: "🇫🇮 Finland", lang: "en" },
+    { code: "FR", name: "🇫🇷 France", lang: "fr" },
+    { code: "DE", name: "🇩🇪 Germany", lang: "de" },
+    { code: "GR", name: "🇬🇷 Greece", lang: "en" },
+    { code: "GT", name: "🇬🇹 Guatemala", lang: "es" },
+    { code: "HN", name: "🇭🇳 Honduras", lang: "es" },
+    { code: "HU", name: "🇭🇺 Hungary", lang: "en" },
+    { code: "IN", name: "🇮🇳 India", lang: "hi" },
+    { code: "ID", name: "🇮🇩 Indonesia", lang: "en" },
+    { code: "IE", name: "🇮🇪 Ireland", lang: "en" },
+    { code: "IL", name: "🇮🇱 Israel", lang: "en" },
+    { code: "IT", name: "🇮🇹 Italy", lang: "it" },
+    { code: "JP", name: "🇯🇵 Japan", lang: "ja" },
+    { code: "KE", name: "🇰🇪 Kenya", lang: "en" },
+    { code: "MY", name: "🇲🇾 Malaysia", lang: "en" },
+    { code: "MX", name: "🇲🇽 Mexico", lang: "es" },
+    { code: "NL", name: "🇳🇱 Netherlands", lang: "nl" },
+    { code: "NZ", name: "🇳🇿 New Zealand", lang: "en" },
+    { code: "NI", name: "🇳🇮 Nicaragua", lang: "es" },
+    { code: "NG", name: "🇳🇬 Nigeria", lang: "en" },
+    { code: "NO", name: "🇳🇴 Norway", lang: "en" },
+    { code: "PK", name: "🇵🇰 Pakistan", lang: "ur" },
+    { code: "PA", name: "🇵🇦 Panama", lang: "es" },
+    { code: "PY", name: "🇵🇾 Paraguay", lang: "es" },
+    { code: "PE", name: "🇵🇪 Peru", lang: "es" },
+    { code: "PH", name: "🇵🇭 Philippines", lang: "en" },
+    { code: "PL", name: "🇵🇱 Poland", lang: "en" },
+    { code: "PT", name: "🇵🇹 Portugal", lang: "pt" },
+    { code: "RO", name: "🇷🇴 Romania", lang: "en" },
+    { code: "RU", name: "🇷🇺 Russia", lang: "ru" },
+    { code: "SA", name: "🇸🇦 Saudi Arabia", lang: "ar" },
+    { code: "SG", name: "🇸🇬 Singapore", lang: "en" },
+    { code: "ZA", name: "🇿🇦 South Africa", lang: "en" },
+    { code: "KR", name: "🇰🇷 South Korea", lang: "ko" },
+    { code: "ES", name: "🇪🇸 Spain", lang: "es" },
+    { code: "SE", name: "🇸🇪 Sweden", lang: "en" },
+    { code: "CH", name: "🇨🇭 Switzerland", lang: "de" },
+    { code: "TW", name: "🇹🇼 Taiwan", lang: "zh_TW" },
+    { code: "TH", name: "🇹🇭 Thailand", lang: "en" },
+    { code: "TR", name: "🇹🇷 Turkey", lang: "tr" },
+    { code: "UG", name: "🇺🇬 Uganda", lang: "en" },
+    { code: "UA", name: "🇺🇦 Ukraine", lang: "en" },
+    { code: "AE", name: "🇦🇪 UAE", lang: "ar" },
+    { code: "GB", name: "🇬🇧 United Kingdom", lang: "en" },
+    { code: "US", name: "🇺🇸 United States", lang: "en" },
+    { code: "UY", name: "🇺🇾 Uruguay", lang: "es" },
+    { code: "VE", name: "🇻🇪 Venezuela", lang: "es" },
+    { code: "VN", name: "🇻🇳 Vietnam", lang: "en" },
+    { code: "ZW", name: "🇿🇼 Zimbabwe", lang: "en" },
 ];
 
 // playlist track to Track
@@ -27,10 +89,49 @@ function playlistTrackToTrack(track: any): Track | null {
     };
 }
 
+// artist song to Track
+function artistSongToTrack(song: any, artistName: string): Track | null {
+    if (!song.videoId) return null;
+    return {
+        videoId: song.videoId,
+        title: song.title || "Unknown",
+        artist: song.artists?.map((a: any) => a.name).join(", ") || artistName,
+        thumbnail: song.thumbnails?.[song.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        album: song.album?.name,
+    };
+}
+
 export default function ChartsPage() {
-    const [country, setCountry] = useState(COUNTRIES[0]);
+    const [country, setCountry] = useState(COUNTRIES[0]); // Default to Global
     const [loadingId, setLoadingId] = useState<string | null>(null);
+    const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+
+    // IP 기반 국가 감지
+    useEffect(() => {
+        async function detectCountry() {
+            try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                const countryCode = data.country_code;
+
+                // 지원하는 국가인지 확인
+                const found = COUNTRIES.find(c => c.code === countryCode);
+                if (found) {
+                    setCountry(found);
+                    setDetectedCountry(countryCode);
+                } else {
+                    // 지원하지 않는 국가 → Global
+                    setCountry(COUNTRIES[0]); // ZZ (Global)
+                    setDetectedCountry(countryCode);
+                }
+            } catch (e) {
+                console.log("[Charts] IP detection failed, using Global");
+                setCountry(COUNTRIES[0]);
+            }
+        }
+        detectCountry();
+    }, []);
 
     const { data, error, isLoading } = useSWR(
         ["/charts", country.code, country.lang],
@@ -72,6 +173,51 @@ export default function ChartsPage() {
         }
     };
 
+    // 아티스트 클릭 핸들러
+    const handleArtistClick = async (browseId: string, artistName: string) => {
+        console.log("[Charts] Artist clicked:", browseId);
+        setLoadingId(browseId);
+
+        try {
+            const artistData = await api.music.artist(browseId);
+            console.log("[Charts] Artist data:", artistData);
+
+            // songs.results 또는 videos.results에서 트랙 추출
+            let tracks: Track[] = [];
+
+            if (artistData?.songs?.results) {
+                tracks = artistData.songs.results
+                    .map((s: any) => artistSongToTrack(s, artistName))
+                    .filter((t: Track | null): t is Track => t !== null);
+            }
+
+            // songs가 없으면 videos에서 시도
+            if (tracks.length === 0 && artistData?.videos?.results) {
+                tracks = artistData.videos.results
+                    .map((v: any) => ({
+                        videoId: v.videoId,
+                        title: v.title || "Unknown",
+                        artist: artistName,
+                        thumbnail: v.thumbnails?.[v.thumbnails.length - 1]?.url || "/images/default-album.svg",
+                    }))
+                    .filter((t: any): t is Track => t.videoId);
+            }
+
+            console.log("[Charts] Artist tracks:", tracks.length);
+
+            if (tracks.length > 0) {
+                setPlaylist(tracks, 0);
+                if (!isQueueOpen) toggleQueue();
+            } else {
+                console.log("[Charts] No playable tracks for artist");
+            }
+        } catch (e) {
+            console.error("[Charts] Error loading artist:", e);
+        } finally {
+            setLoadingId(null);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="p-6 text-center text-zinc-500 animate-pulse">
@@ -91,27 +237,35 @@ export default function ChartsPage() {
     return (
         <div className="p-6 space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                     <TrendingUp className="w-6 h-6" />
                     Charts
                 </h1>
 
                 {/* Country Selector */}
-                <select
-                    value={country.code}
-                    onChange={(e) => {
-                        const c = COUNTRIES.find((c) => c.code === e.target.value);
-                        if (c) setCountry(c);
-                    }}
-                    className="bg-zinc-800 text-white px-4 py-2 rounded-lg border border-zinc-700"
-                >
-                    {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                            {c.name}
-                        </option>
-                    ))}
-                </select>
+                <div className="flex items-center gap-2">
+                    {detectedCountry && (
+                        <span className="text-xs text-zinc-500">
+                            <Globe className="w-3 h-3 inline mr-1" />
+                            Detected: {detectedCountry}
+                        </span>
+                    )}
+                    <select
+                        value={country.code}
+                        onChange={(e) => {
+                            const c = COUNTRIES.find((c) => c.code === e.target.value);
+                            if (c) setCountry(c);
+                        }}
+                        className="bg-zinc-800 text-white px-4 py-2 rounded-lg border border-zinc-700 text-sm"
+                    >
+                        {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Videos Section */}
@@ -123,7 +277,7 @@ export default function ChartsPage() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {data.videos.map((item: any, i: number) => {
-                            const isItemLoading = loadingId === item.playlistId;
+                            const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
                                 <div
                                     key={item.playlistId || i}
@@ -163,7 +317,7 @@ export default function ChartsPage() {
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {data.genres.map((item: any, i: number) => {
-                            const isItemLoading = loadingId === item.playlistId;
+                            const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
                                 <div
                                     key={item.playlistId || i}
@@ -202,24 +356,36 @@ export default function ChartsPage() {
                         Top Artists ({data.artists.length})
                     </h2>
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {data.artists.map((artist: any, i: number) => (
-                            <div
-                                key={artist.browseId || i}
-                                className="text-center group cursor-pointer"
-                            >
-                                <div className="relative aspect-square mb-2 rounded-full overflow-hidden bg-zinc-800">
-                                    {artist.thumbnails?.[0]?.url && (
-                                        <img
-                                            src={artist.thumbnails[0].url}
-                                            alt={artist.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    )}
+                        {data.artists.map((artist: any, i: number) => {
+                            const isItemLoading = !!(loadingId && loadingId === artist.browseId);
+                            return (
+                                <div
+                                    key={artist.browseId || i}
+                                    className="text-center group cursor-pointer"
+                                    onClick={() => artist.browseId && !isItemLoading && handleArtistClick(artist.browseId, artist.title)}
+                                >
+                                    <div className="relative aspect-square mb-2 rounded-full overflow-hidden bg-zinc-800">
+                                        {artist.thumbnails?.[0]?.url && (
+                                            <img
+                                                src={artist.thumbnails[0].url}
+                                                alt={artist.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )}
+                                        {/* Play overlay for artists */}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                                            {isItemLoading ? (
+                                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                            ) : (
+                                                <Play className="w-8 h-8 text-white fill-current" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <h3 className="text-xs font-medium text-white truncate">{artist.title}</h3>
+                                    <p className="text-xs text-zinc-500">{artist.subscribers}</p>
                                 </div>
-                                <h3 className="text-xs font-medium text-white truncate">{artist.title}</h3>
-                                <p className="text-xs text-zinc-500">{artist.subscribers}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </section>
             )}
