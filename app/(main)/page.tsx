@@ -2,34 +2,43 @@
 
 import Image from "next/image";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 
 export default function HomePage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const homeData = await api.music.home();
+        setData(homeData);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const posts = [
     {
       id: 1,
       user: {
-        username: "newjeans_official",
-        avatar: "/avatars/newjeans.jpg", // Placeholder
+        username: "VibeStation Bot",
+        avatar: "/avatars/bot.jpg",
       },
-      image: "/posts/post1.jpg", // Placeholder 
+      image: "https://music.youtube.com/img/onboarding/onboarding_welcome_v3.png",
       likes: 1234,
-      caption: "Super Shy 🙈 #NewJeans #SuperShy",
+      caption: "Welcome to VibeStation! We are fetching real data from YouTube Music...",
       comments: 56,
-      time: "2 HOURS AGO",
-    },
-    {
-      id: 2,
-      user: {
-        username: "bts.bighitofficial",
-        avatar: "/avatars/bts.jpg", // Placeholder
-      },
-      image: "/posts/post2.jpg", // Placeholder
-      likes: 89231,
-      caption: "Dynamite 🧨",
-      comments: 1200,
-      time: "5 HOURS AGO",
+      time: "JUST NOW",
     },
   ];
+
+  if (loading) return <div className="flex justify-center pt-20 text-zinc-500">Loading your vibe...</div>;
 
   return (
     <div className="max-w-[470px] mx-auto pt-8 pb-20 md:pb-8">
@@ -40,7 +49,7 @@ export default function HomePage() {
             <div className="w-[66px] h-[66px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-[2px]">
               <div className="w-full h-full rounded-full bg-black border-2 border-black" />
             </div>
-            <span className="text-xs truncate w-full text-center">username</span>
+            <span className="text-xs truncate w-full text-center">user_{i}</span>
           </div>
         ))}
       </div>
@@ -62,8 +71,17 @@ export default function HomePage() {
             </div>
 
             {/* Image */}
-            <div className="relative aspect-square w-full bg-zinc-900 rounded-sm mb-3 border border-zinc-800 flex items-center justify-center">
-              <span className="text-zinc-700">Image Placeholder</span>
+            <div className="relative aspect-square w-full bg-zinc-900 rounded-sm mb-3 border border-zinc-800 flex items-center justify-center overflow-hidden">
+              {/* Show API Data if available, otherwise static */}
+              {data && data.home ? (
+                <div className="text-xs text-white p-4 whitespace-pre-wrap overflow-auto h-full w-full">
+                  {/* Temporarily dump JSON to prove connection */}
+                  API Connected! Data received length: {JSON.stringify(data).length} chars.
+                  (Real feed implementation needed next)
+                </div>
+              ) : (
+                <img src={post.image} alt="Welcome" className="object-cover w-full h-full" />
+              )}
             </div>
 
             {/* Actions */}
