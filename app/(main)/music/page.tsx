@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, Globe } from "lucide-react";
+import { Play, Globe, ChevronRight } from "lucide-react";
+import Link from "next/link"; // For navigation to album/playlist
+import Image from "next/image";
 
 // Extensive list of YouTube Music supported locations (100+)
 const ALL_COUNTRIES = [
@@ -89,10 +91,12 @@ export default function MusicPage() {
 
     const fetchMusic = async (countryCode: string) => {
         setLoading(true);
+        setData(null); // Clear previous to show loading state specifically for new country
         try {
             const res = await fetch(`/api/music/charts?country=${countryCode}`);
             if (res.ok) {
                 const json = await res.json();
+                console.log("Full data from API:", json.charts); // Debug log for user
                 setData(json.charts);
             }
         } catch (e) {
@@ -113,70 +117,113 @@ export default function MusicPage() {
     };
 
     return (
-        <div className="max-w-[936px] mx-auto py-8 px-4 pb-20 md:pb-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <h1 className="text-2xl font-bold">Music Exploration</h1>
+        <div className="max-w-full pb-20 md:pb-8 overflow-hidden">
+            {/* Header Section */}
+            <div className="px-4 py-8 max-w-[936px] mx-auto">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+                        Music Exploration
+                    </h1>
 
-                {/* Country Selector */}
-                <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-md border border-zinc-800">
-                    <Globe className="w-4 h-4 text-zinc-400" />
-                    <select
-                        value={country}
-                        onChange={handleCountryChange}
-                        className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer max-w-[200px]"
-                    >
-                        {ALL_COUNTRIES.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                            <option key={c.code} value={c.code} className="bg-zinc-900">
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
+                    {/* Country Selector */}
+                    <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-full border border-zinc-800 hover:border-zinc-700 transition-colors">
+                        <Globe className="w-4 h-4 text-zinc-400" />
+                        <select
+                            value={country}
+                            onChange={handleCountryChange}
+                            className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer max-w-[200px] text-zinc-200"
+                        >
+                            {ALL_COUNTRIES.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                                <option key={c.code} value={c.code} className="bg-zinc-900">
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
+
+                {loading && (
+                    <div className="flex flex-col items-center justify-center pt-20 animate-pulse gap-3">
+                        <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
+                        <p className="text-zinc-500">Fetching live data from {ALL_COUNTRIES.find(c => c.code === country)?.name}...</p>
+                    </div>
+                )}
+
+                {(!data || data.length === 0) && !loading && (
+                    <div className="text-center py-20 text-zinc-500">
+                        <p className="text-lg mb-2">No content available for this region.</p>
+                        <p className="text-sm">Try switching to a major region like United States or South Korea.</p>
+                    </div>
+                )}
             </div>
 
-            {loading ? (
-                <div className="flex justify-center pt-20 text-zinc-500 animate-pulse">
-                    Fetcing data for {ALL_COUNTRIES.find(c => c.code === country)?.name}...
-                </div>
-            ) : (
-                <div className="space-y-12">
-                    {(!data || data.length === 0) && (
-                        <div className="text-center py-20 text-zinc-500">
-                            No content available for this region. Try another country.
-                        </div>
-                    )}
-
-                    {Array.isArray(data) && data.map((shelf: any, sIndex: number) => {
+            {/* Content Sections (Stacks) */}
+            {!loading && Array.isArray(data) && (
+                <div className="space-y-12 pl-4">
+                    {data.map((shelf: any, sIndex: number) => {
                         const title = shelf.title || "Recommended";
                         const contents = shelf.contents || [];
 
                         if (!Array.isArray(contents) || contents.length === 0) return null;
 
                         return (
-                            <div key={sIndex} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-bold">{title}</h2>
-                                    <button className="text-xs font-bold text-zinc-400 hover:text-white uppercase">See All</button>
+                            <div key={sIndex} className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[100ms] fill-mode-backwards" style={{ animationDelay: `${sIndex * 100}ms` }}>
+                                <div className="flex items-center justify-between mb-4 pr-4 max-w-[936px] mx-auto md:mx-0 md:max-w-none md:ml-[max(0px,calc(50vw-468px))]">
+                                    <h2 className="text-xl font-bold text-white/90">{title}</h2>
+                                    <button className="text-xs font-bold text-zinc-400 hover:text-white uppercase flex items-center gap-1">
+                                        More <ChevronRight className="w-3 h-3" />
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                    {contents.slice(0, 10).map((item: any, i: number) => {
+                                {/* Horizontal Scroll Container (Carousel) */}
+                                <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory pr-4 md:pl-[max(0px,calc(50vw-468px))]">
+                                    {contents.map((item: any, i: number) => {
+                                        // Robust extraction for various item types (Song, Video, Album, Playlist)
                                         const itemTitle = item.title || "Unknown";
-                                        const itemArtist = item.artists ? item.artists.map((a: any) => a.name).join(", ") : "";
+                                        const itemArtist = item.artists ? item.artists.map((a: any) => a.name).join(", ") :
+                                            item.description ? item.description : ""; // Playlists sometimes use description
                                         const itemImg = item.thumbnails ? item.thumbnails[Math.max(0, item.thumbnails.length - 1)].url : null;
+
+                                        // ID resolution
+                                        const id = item.videoId || item.browseId || item.playlistId;
 
                                         if (!itemImg) return null;
 
                                         return (
-                                            <div key={i} className="group cursor-pointer">
-                                                <div className="aspect-square bg-zinc-800 rounded-md mb-2 relative overflow-hidden">
-                                                    <img src={itemImg} alt={itemTitle} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <Play className="w-10 h-10 text-white fill-current" />
+                                            <div key={i} className="min-w-[160px] w-[160px] md:min-w-[180px] md:w-[180px] snap-start group cursor-pointer flex-shrink-0">
+                                                {/* Card Image */}
+                                                <div className="aspect-square bg-zinc-800 rounded-md mb-3 relative overflow-hidden shadow-lg group-hover:shadow-2xl transition-all border border-white/5">
+                                                    <img
+                                                        src={itemImg}
+                                                        alt={itemTitle}
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                        loading="lazy"
+                                                    />
+
+                                                    {/* Play Overlay */}
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                        <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform shadow-xl hover:bg-zinc-200">
+                                                            <Play className="w-5 h-5 fill-current ml-1" />
+                                                        </button>
                                                     </div>
+
+                                                    {/* Type Badge (Optional) */}
+                                                    {item.videoType && (
+                                                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                                                            {item.videoType.replace("MUSIC_VIDEO_TYPE_", "").replace("_", " ")}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <h3 className="text-sm font-bold truncate">{itemTitle}</h3>
-                                                <p className="text-xs text-zinc-400 truncate">{itemArtist}</p>
+
+                                                {/* Card Meta */}
+                                                <div className="space-y-1">
+                                                    <h3 className="text-sm font-bold truncate text-zinc-100 group-hover:text-white transition-colors" title={itemTitle}>
+                                                        {itemTitle}
+                                                    </h3>
+                                                    <p className="text-xs text-zinc-400 truncate hover:text-zinc-300 transition-colors">
+                                                        {itemArtist}
+                                                    </p>
+                                                </div>
                                             </div>
                                         );
                                     })}
