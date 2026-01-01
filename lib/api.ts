@@ -1,0 +1,14 @@
+export const api = {
+    music: {
+        search: async (query: string) => {
+            const res = await fetch(`/api/music/search?query=${encodeURIComponent(query)}`);
+            if (!res.ok) throw new Error('Search failed');
+            return res.json();
+        },
+        home: async () => {
+            const res = await fetch(`/api/music/home`);
+            if (!res.ok) throw new Error('Failed to fetch home');
+            return res.json();
+        }
+    }
+};
