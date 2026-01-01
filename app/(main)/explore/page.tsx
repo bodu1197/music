@@ -1,34 +1,83 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
+import MusicSection, { MusicSectionData } from "@/components/music/MusicSection";
+import { Loader2 } from "lucide-react";
 
 export default function ExplorePage() {
-    return (
-        <div className="max-w-[936px] mx-auto py-8 pb-20 md:pb-8 px-4">
-            {/* Search Bar (Mobile only usually, but let's put it for now) */}
-            <div className="md:hidden relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-4 h-4" />
-                <input
-                    type="text"
-                    placeholder="Search"
-                    className="w-full bg-zinc-800 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none"
-                />
-            </div>
+    const [sections, setSections] = useState<MusicSectionData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-            {/* Grid */}
-            <div className="grid grid-cols-3 gap-1">
-                {[...Array(20)].map((_, i) => (
-                    <div key={i} className={`relative bg-zinc-800 aspect-square group cursor-pointer ${i % 3 === 0 && i % 2 === 0 ? "row-span-2 col-span-2" : ""}`}>
-                        {/* Placeholder Image */}
-                        <div className="w-full h-full bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:bg-zinc-800 transition-colors">
-                            <span className="opacity-0 group-hover:opacity-100 font-bold text-white flex gap-4">
-                                <span>❤️ 1.2k</span>
-                                <span>💬 30</span>
-                            </span>
-                        </div>
-                    </div>
-                ))}
+    useEffect(() => {
+        async function fetchHome() {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch home data from API
+                const data = await api.music.home(100, "US", "en");
+
+                // The API returns an array of sections
+                if (Array.isArray(data)) {
+                    setSections(data);
+                } else {
+                    setError("Unexpected data format");
+                }
+            } catch (err) {
+                console.error("Failed to fetch home:", err);
+                setError("Failed to load music. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchHome();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 text-[#667eea] animate-spin" />
             </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-white transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="py-6">
+            {/* Page Title */}
+            <h1 className="text-2xl font-bold text-white mb-6 px-4">
+                Explore Music
+            </h1>
+
+            {/* Music Sections */}
+            {sections.map((section, index) => (
+                <MusicSection
+                    key={`${section.title}-${index}`}
+                    section={section}
+                />
+            ))}
+
+            {sections.length === 0 && !loading && (
+                <div className="text-center text-zinc-500 py-20">
+                    No music sections available
+                </div>
+            )}
         </div>
     );
 }
