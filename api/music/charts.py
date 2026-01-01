@@ -19,46 +19,8 @@ def get_charts(request: Request, country: str = "US"):
         home_data = yt.get_home()
         original_count = len(home_data) if home_data else 0
         
-        # 3. AUGMENTATION STRATEGY
-        # If headers spoofing isn't enough (e.g. 5 sections), we manually append more real data.
-        # This guarantees a "Rich" page every time.
-        if original_count < 10:
-            print(f"Augmenting data for {target_country}: had {original_count}, adding more.")
-            
-            # A. New Releases (Albums)
-            try:
-                releases = yt.get_new_releases()
-                if releases:
-                    home_data.append({
-                        "title": "New Releases",
-                        "contents": releases
-                    })
-            except: pass
-            
-            # B. Top Videos (Charts)
-            try:
-                charts = yt.get_charts(country=target_country)
-                if 'videos' in charts and 'items' in charts['videos']:
-                    home_data.append({
-                        "title": f"Top Music Videos ({target_country})",
-                        "contents": charts['videos']['items']
-                    })
-                if 'trending' in charts and 'items' in charts['trending']:
-                   home_data.append({
-                        "title": "Trending Now",
-                        "contents": charts['trending']['items']
-                   })
-            except: pass
-            
-            # C. Mood Search Augmentation (Safe fillers)
-            # Only add if we are extremely low
-            if len(home_data) < 8:
-                 extras = ["Global Hits", "Chill Vibes", "Workout Energy"]
-                 for tag in extras:
-                     try:
-                         res = yt.search(tag, filter="songs", limit=10)
-                         home_data.append({"title": tag, "contents": res})
-                     except: pass
+        # 3. PURE API MODE (No Augmentation)
+        # Verify Cloud Run capability without artificial fillers.
         
         
         # Debug titles again
@@ -70,7 +32,7 @@ def get_charts(request: Request, country: str = "US"):
                 "country": target_country, 
                 "total_sections": len(home_data),
                 "section_titles": debug_titles,
-                "source": f"Hybrid (API + Augmented)" if original_count < 10 else "Pure API"
+                "source": "Pure API (Cloud Run)"
             }
         }
         
