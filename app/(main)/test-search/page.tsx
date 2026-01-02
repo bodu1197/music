@@ -96,12 +96,14 @@ export default function TestSearchPage() {
 
     // Handle item click
     const handleItemClick = async (item: any) => {
-        console.log("[Search] Item clicked:", item.resultType, item.browseId, item);
+        // Get artist ID - browseId or artists[0].id (for Top result)
+        const artistId = item.browseId || item.artists?.[0]?.id;
+        console.log("[Search] Item clicked:", item.resultType, artistId, item);
 
         // Artist - go to artist page
-        if (item.browseId && item.resultType === "artist") {
-            console.log("[Search] Navigating to artist:", item.browseId);
-            router.push(`/test-search/artist/${item.browseId}`);
+        if (item.resultType === "artist" && artistId) {
+            console.log("[Search] Navigating to artist:", artistId);
+            router.push(`/test-search/artist/${artistId}`);
             return;
         }
 
