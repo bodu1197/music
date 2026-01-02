@@ -2,13 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-322455104824.us-central1.run.app';
 
-// Global (ZZ/WW) playlist IDs - hardcoded since YouTube Music API doesn't support ZZ
-const GLOBAL_PLAYLISTS = {
-    top_videos: 'PL4fGSI1pDJn6t3TXLGiiJdD-sZbrG3tG0',  // 100 tracks
-    top_songs: 'PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i',
-    // No trending for Global
-};
-
 // Cache for 1 hour
 export const revalidate = 3600;
 
@@ -40,44 +33,7 @@ export async function GET(request: NextRequest) {
     const country = searchParams.get('country') || 'US';
 
     try {
-        // Global (ZZ) - use hardcoded playlist IDs with /playlist endpoint (100 tracks)
-        if (country === 'ZZ') {
-            const [videosRes, songsRes] = await Promise.all([
-                fetchWithRetry(`${API_URL}/playlist/${GLOBAL_PLAYLISTS.top_videos}?limit=100`),
-                fetchWithRetry(`${API_URL}/playlist/${GLOBAL_PLAYLISTS.top_songs}?limit=100`),
-            ]);
-
-            const videosData = await videosRes.json();
-            const songsData = await songsRes.json();
-
-            // Format to match charts API response structure
-            const globalCharts = {
-                videos: videosData.tracks?.map((t: any) => ({
-                    title: t.title,
-                    videoId: t.videoId,
-                    playlistId: GLOBAL_PLAYLISTS.top_videos,
-                    thumbnails: t.thumbnails || [],
-                    artists: t.artists,
-                })) || [],
-                artists: [], // No artists chart for global
-                genres: [], // No genres for global
-                songs: songsData.tracks?.map((t: any) => ({
-                    title: t.title,
-                    videoId: t.videoId,
-                    playlistId: GLOBAL_PLAYLISTS.top_songs,
-                    thumbnails: t.thumbnails || [],
-                    artists: t.artists,
-                })) || [],
-            };
-
-            return NextResponse.json(globalCharts, {
-                headers: {
-                    'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-                },
-            });
-        }
-
-        // Regular country - use charts API
+        // All countries including Global (ZZ) - backend handles ZZ specially
         const res = await fetchWithRetry(`${API_URL}/charts?country=${country}`);
         const data = await res.json();
 

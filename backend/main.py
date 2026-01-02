@@ -51,6 +51,10 @@ app.add_middleware(
 PROXY_URL_TEMPLATE = os.getenv("PROXY_URL_TEMPLATE") # e.g. "http://user-country-{country}:pass@gate.smartproxy.com:7000"
 
 def get_ytmusic(country: str = "US", language: str = "en"):
+    # Global (ZZ/WW) - no proxy, no location restriction
+    if country in ("ZZ", "WW"):
+        return YTMusic(language="en")
+
     proxies = None
     if PROXY_URL_TEMPLATE:
         try:
@@ -60,14 +64,14 @@ def get_ytmusic(country: str = "US", language: str = "en"):
             # print(f"Using proxy for {country}") # Debug only
         except Exception as e:
             print(f"Error formatting proxy URL: {e}")
-    
+
     # Supported languages by ytmusicapi (based on recent error message)
     # ko, hi, it, de, tr, en, pt, cs, zh_CN, ja, es, ru, fr, nl, ar, ur, zh_TW
     SUPPORTED_LANGUAGES = [
-        "ko", "hi", "it", "de", "tr", "en", "pt", "cs", "zh_CN", "ja", 
+        "ko", "hi", "it", "de", "tr", "en", "pt", "cs", "zh_CN", "ja",
         "es", "ru", "fr", "nl", "ar", "ur", "zh_TW"
     ]
-    
+
     # Fallback to English if language is not supported (e.g. 'id', 'th', 'vi')
     if language not in SUPPORTED_LANGUAGES:
         # print(f"Language '{language}' not supported by ytmusicapi, falling back to 'en'")
