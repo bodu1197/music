@@ -156,6 +156,68 @@ def get_mood_categories(country: str = "US", language: str = "en"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def parse_genre_playlists(yt, params: str):
+    """
+    Custom parser for genre playlists that uses musicResponsiveListItemRenderer.
+    ytmusicapi's get_mood_playlists only handles musicTwoRowItemRenderer (moods).
+    """
+    body = {'browseId': 'FEmusic_moods_and_genres_category', 'params': params}
+    response = yt._send_request('browse', body)
+
+    playlists = []
+    try:
+        contents = response['contents']['singleColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content']['sectionListRenderer']['contents']
+
+        for section in contents:
+            if 'musicCarouselShelfRenderer' in section:
+                renderer = section['musicCarouselShelfRenderer']
+                items = renderer.get('contents', [])
+
+                for item in items:
+                    # Handle musicResponsiveListItemRenderer (genres)
+                    if 'musicResponsiveListItemRenderer' in item:
+                        data = item['musicResponsiveListItemRenderer']
+
+                        # Extract title
+                        title = 'Unknown'
+                        flex_cols = data.get('flexColumns', [])
+                        if flex_cols:
+                            title = flex_cols[0].get('musicResponsiveListItemFlexColumnRenderer', {}).get('text', {}).get('runs', [{}])[0].get('text', 'Unknown')
+
+                        # Get playlistId from overlay
+                        overlay = data.get('overlay', {}).get('musicItemThumbnailOverlayRenderer', {})
+                        play_btn = overlay.get('content', {}).get('musicPlayButtonRenderer', {})
+                        playlist_id = play_btn.get('playNavigationEndpoint', {}).get('watchEndpoint', {}).get('playlistId')
+
+                        # Get thumbnail
+                        thumbnails = data.get('thumbnail', {}).get('musicThumbnailRenderer', {}).get('thumbnail', {}).get('thumbnails', [])
+
+                        if playlist_id:
+                            playlists.append({
+                                'title': title,
+                                'playlistId': playlist_id,
+                                'thumbnails': thumbnails
+                            })
+
+                    # Handle musicTwoRowItemRenderer (moods) - fallback
+                    elif 'musicTwoRowItemRenderer' in item:
+                        data = item['musicTwoRowItemRenderer']
+                        title = data.get('title', {}).get('runs', [{}])[0].get('text', 'Unknown')
+                        playlist_id = data.get('navigationEndpoint', {}).get('watchEndpoint', {}).get('playlistId')
+                        thumbnails = data.get('thumbnailRenderer', {}).get('musicThumbnailRenderer', {}).get('thumbnail', {}).get('thumbnails', [])
+
+                        if playlist_id:
+                            playlists.append({
+                                'title': title,
+                                'playlistId': playlist_id,
+                                'thumbnails': thumbnails
+                            })
+    except Exception as e:
+        print(f"Error parsing genre playlists: {e}")
+
+    return playlists
+
+
 @app.get("/moods/playlists")
 def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     """
@@ -164,14 +226,18 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     """
     try:
         yt = get_ytmusic(country=country, language=language)
-        result = run_with_retry(yt.get_mood_playlists, params)
-        # Some categories return different structures, ensure we return a list
-        if result is None:
-            return []
-        return result
-    except KeyError as e:
-        # ytmusicapi parsing error - return empty list instead of 500
-        print(f"KeyError parsing mood playlists: {e}")
-        return []
+
+        # Try ytmusicapi's built-in parser first (works for Moods)
+        try:
+            result = run_with_retry(yt.get_mood_playlists, params)
+            if result:
+                return result
+        except KeyError:
+            pass  # Fall through to custom parser
+
+        # Use custom parser for Genres (handles musicResponsiveListItemRenderer)
+        result = parse_genre_playlists(yt, params)
+        return result if result else []
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

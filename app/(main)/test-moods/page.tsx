@@ -153,7 +153,7 @@ export default function TestMoodsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-6 h-6 text-purple-500" />
-                    <h1 className="text-2xl font-bold text-white">Moods & Moments</h1>
+                    <h1 className="text-2xl font-bold text-white">Moods & Genres</h1>
                 </div>
 
                 {/* Country Selector */}
@@ -184,10 +184,7 @@ export default function TestMoodsPage() {
             {/* Categories Section */}
             {!selectedCategory ? (
                 <div className="space-y-8">
-                    {moodsData && Object.entries(moodsData)
-                        // Filter out "Genres" section - ytmusicapi can't fetch genre playlists properly
-                        .filter(([sectionTitle]) => !sectionTitle.toLowerCase().includes('genre'))
-                        .map(([sectionTitle, categories]: [string, any]) => (
+                    {moodsData && Object.entries(moodsData).map(([sectionTitle, categories]: [string, any]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-lg font-bold text-white mb-4">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
