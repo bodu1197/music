@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { Play, Loader2, ChevronRight, Music, Sparkles, Globe } from "lucide-react";
+import { Play, Loader2, ChevronRight, Music, Sparkles, Globe, AlertCircle } from "lucide-react";
 
 // 국가 목록
 const COUNTRIES = [
@@ -65,6 +65,15 @@ export default function TestMoodsPage() {
         detectCountry();
     }, []);
 
+    // Handle browser back button
+    useEffect(() => {
+        const handlePopState = () => {
+            setSelectedCategory(null);
+        };
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
+
     // Fetch mood categories
     const { data: moodsData, error: moodsError, isLoading: moodsLoading } = useSWR(
         ["/moods", country.code, country.lang],
@@ -72,10 +81,10 @@ export default function TestMoodsPage() {
         { revalidateOnFocus: false }
     );
 
-    // Fetch playlists when category is selected
+    // Fetch playlists when category is selected (with country/language)
     const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
-        selectedCategory ? ["/moods/playlists", selectedCategory.params] : null,
-        () => selectedCategory ? api.music.moodPlaylists(selectedCategory.params) : null,
+        selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
+        () => selectedCategory ? api.music.moodPlaylists(selectedCategory.params, country.code, country.lang) : null,
         { revalidateOnFocus: false }
     );
 
@@ -84,25 +93,32 @@ export default function TestMoodsPage() {
         setSelectedCategory(null);
     }, [country.code]);
 
+    // Handle category selection with history
+    const handleCategoryClick = (cat: { title: string; params: string }) => {
+        window.history.pushState({ category: cat.title }, "", window.location.href);
+        setSelectedCategory(cat);
+    };
+
+    // Handle back to categories
+    const handleBackClick = () => {
+        setSelectedCategory(null);
+        // Don't push to history, just go back naturally
+    };
+
     // Handle playlist click - load tracks and play
     const handlePlaylistClick = async (playlistId: string) => {
-        console.log("[TestMoods] Playlist clicked:", playlistId);
         setLoadingPlaylistId(playlistId);
 
         try {
             const watchData = await api.music.watch(undefined, playlistId);
-            console.log("[TestMoods] Watch data:", watchData);
 
             if (!watchData?.tracks || watchData.tracks.length === 0) {
-                console.log("[TestMoods] No tracks");
                 return;
             }
 
             const tracks: Track[] = watchData.tracks
                 .map((t: any) => playlistTrackToTrack(t))
                 .filter((t: Track | null): t is Track => t !== null);
-
-            console.log("[TestMoods] Tracks:", tracks.length);
 
             if (tracks.length > 0) {
                 setPlaylist(tracks, 0);
@@ -175,7 +191,7 @@ export default function TestMoodsPage() {
                                 {categories.map((cat: any, i: number) => (
                                     <button
                                         key={cat.params || i}
-                                        onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
+                                        onClick={() => handleCategoryClick({ title: cat.title, params: cat.params })}
                                         className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-4 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">
@@ -193,7 +209,7 @@ export default function TestMoodsPage() {
                 <div className="space-y-6">
                     {/* Back button */}
                     <button
-                        onClick={() => setSelectedCategory(null)}
+                        onClick={handleBackClick}
                         className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors"
                     >
                         ← Back to Categories
@@ -212,9 +228,15 @@ export default function TestMoodsPage() {
                         <div className="text-center text-red-500 py-10">
                             Error: {playlistsError.message}
                         </div>
+                    ) : !playlistsData || playlistsData.length === 0 ? (
+                        <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
+                            <AlertCircle className="w-8 h-8" />
+                            <p>No playlists available for this category.</p>
+                            <p className="text-xs">Try a different category or country.</p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {playlistsData?.map((playlist: any, i: number) => {
+                            {playlistsData.map((playlist: any, i: number) => {
                                 const isLoading = loadingPlaylistId === playlist.playlistId;
                                 return (
                                     <div
@@ -251,14 +273,6 @@ export default function TestMoodsPage() {
                     )}
                 </div>
             )}
-
-            {/* Debug: Raw Data */}
-            <details className="text-xs text-zinc-600">
-                <summary className="cursor-pointer">Debug: Raw API Response</summary>
-                <pre className="mt-2 p-4 bg-zinc-900 rounded overflow-auto max-h-96">
-                    {JSON.stringify(selectedCategory ? playlistsData : moodsData, null, 2)}
-                </pre>
-            </details>
         </div>
     );
 }

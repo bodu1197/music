@@ -84,8 +84,13 @@ export const api = {
         },
 
         // Get playlists for a mood/genre
-        moodPlaylists: async (params: string) => {
-            const res = await fetch(`${API_URL}/moods/playlists?params=${encodeURIComponent(params)}`);
+        moodPlaylists: async (params: string, country: string = 'US', language: string = 'en') => {
+            const urlParams = new URLSearchParams({
+                params,
+                country,
+                language
+            });
+            const res = await fetch(`${API_URL}/moods/playlists?${urlParams}`);
             if (!res.ok) throw new Error('Failed to fetch mood playlists');
             return res.json();
         }

@@ -157,13 +157,21 @@ def get_mood_categories(country: str = "US", language: str = "en"):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/moods/playlists")
-def get_mood_playlists(params: str):
+def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     """
     Get playlists for a specific mood/genre category.
     params: obtained from get_mood_categories()
     """
     try:
-        yt = get_ytmusic()
-        return run_with_retry(yt.get_mood_playlists, params)
+        yt = get_ytmusic(country=country, language=language)
+        result = run_with_retry(yt.get_mood_playlists, params)
+        # Some categories return different structures, ensure we return a list
+        if result is None:
+            return []
+        return result
+    except KeyError as e:
+        # ytmusicapi parsing error - return empty list instead of 500
+        print(f"KeyError parsing mood playlists: {e}")
+        return []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
