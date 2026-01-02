@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
@@ -25,6 +26,7 @@ export default function TestSearchPage() {
     const [error, setError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
@@ -92,8 +94,15 @@ export default function TestSearchPage() {
         handleSearch(suggestion);
     };
 
-    // Play item
-    const handlePlay = async (item: any) => {
+    // Handle item click
+    const handleItemClick = async (item: any) => {
+        // Artist - go to artist page
+        if (item.browseId && item.resultType === "artist") {
+            router.push(`/test-search/artist/${item.browseId}`);
+            return;
+        }
+
+        // Other items - play
         let tracks: Track[] = [];
 
         if (item.videoId) {
@@ -104,21 +113,6 @@ export default function TestSearchPage() {
                 artist: item.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
                 thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
             }];
-        } else if (item.browseId && item.resultType === "artist") {
-            // Artist - fetch artist songs
-            try {
-                const artistData = await api.music.artist(item.browseId);
-                if (artistData?.songs?.results) {
-                    tracks = artistData.songs.results.map((s: any) => ({
-                        videoId: s.videoId,
-                        title: s.title || "Unknown",
-                        artist: s.artists?.map((a: any) => a.name).join(", ") || item.artist,
-                        thumbnail: s.thumbnails?.[s.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    })).filter((t: any) => t.videoId);
-                }
-            } catch (e) {
-                console.error("Artist fetch error:", e);
-            }
         } else if (item.browseId && item.resultType === "album") {
             // Album - fetch album tracks
             try {
@@ -281,7 +275,7 @@ export default function TestSearchPage() {
                 {results.map((item, i) => (
                     <div
                         key={`${item.videoId || item.browseId}-${i}`}
-                        onClick={() => handlePlay(item)}
+                        onClick={() => handleItemClick(item)}
                         className="flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group"
                     >
                         {/* Thumbnail */}
