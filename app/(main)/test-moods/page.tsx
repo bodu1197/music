@@ -1,10 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { Play, Loader2, ChevronRight, Music, Sparkles } from "lucide-react";
+import { Play, Loader2, ChevronRight, Music, Sparkles, Globe } from "lucide-react";
+
+// 국가 목록
+const COUNTRIES = [
+    { code: "ZZ", name: "🌍 Global", lang: "en" },
+    { code: "US", name: "🇺🇸 United States", lang: "en" },
+    { code: "KR", name: "🇰🇷 South Korea", lang: "ko" },
+    { code: "JP", name: "🇯🇵 Japan", lang: "ja" },
+    { code: "GB", name: "🇬🇧 United Kingdom", lang: "en" },
+    { code: "DE", name: "🇩🇪 Germany", lang: "de" },
+    { code: "FR", name: "🇫🇷 France", lang: "fr" },
+    { code: "ES", name: "🇪🇸 Spain", lang: "es" },
+    { code: "IT", name: "🇮🇹 Italy", lang: "it" },
+    { code: "BR", name: "🇧🇷 Brazil", lang: "pt" },
+    { code: "MX", name: "🇲🇽 Mexico", lang: "es" },
+    { code: "IN", name: "🇮🇳 India", lang: "hi" },
+    { code: "RU", name: "🇷🇺 Russia", lang: "ru" },
+    { code: "TW", name: "🇹🇼 Taiwan", lang: "zh_TW" },
+    { code: "TR", name: "🇹🇷 Turkey", lang: "tr" },
+];
 
 // playlist to Track
 function playlistTrackToTrack(track: any): Track | null {
@@ -20,14 +39,36 @@ function playlistTrackToTrack(track: any): Track | null {
 }
 
 export default function TestMoodsPage() {
+    const [country, setCountry] = useState(COUNTRIES[1]); // Default US
+    const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
+    // IP 기반 국가 감지
+    useEffect(() => {
+        async function detectCountry() {
+            try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                const countryCode = data.country_code;
+                setDetectedCountry(countryCode);
+
+                const found = COUNTRIES.find(c => c.code === countryCode);
+                if (found) {
+                    setCountry(found);
+                }
+            } catch (e) {
+                console.log("[TestMoods] IP detection failed");
+            }
+        }
+        detectCountry();
+    }, []);
+
     // Fetch mood categories
     const { data: moodsData, error: moodsError, isLoading: moodsLoading } = useSWR(
-        "/moods",
-        () => api.music.moods(),
+        ["/moods", country.code, country.lang],
+        () => api.music.moods(country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
@@ -37,6 +78,11 @@ export default function TestMoodsPage() {
         () => selectedCategory ? api.music.moodPlaylists(selectedCategory.params) : null,
         { revalidateOnFocus: false }
     );
+
+    // Reset selected category when country changes
+    useEffect(() => {
+        setSelectedCategory(null);
+    }, [country.code]);
 
     // Handle playlist click - load tracks and play
     const handlePlaylistClick = async (playlistId: string) => {
@@ -72,7 +118,7 @@ export default function TestMoodsPage() {
     if (moodsLoading) {
         return (
             <div className="p-6 text-center text-zinc-500 animate-pulse">
-                Loading Moods & Genres...
+                Loading Moods & Genres for {country.name}...
             </div>
         );
     }
@@ -88,9 +134,35 @@ export default function TestMoodsPage() {
     return (
         <div className="p-6 space-y-8">
             {/* Header */}
-            <div className="flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-purple-500" />
-                <h1 className="text-2xl font-bold text-white">Moods & Genres (Test)</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-purple-500" />
+                    <h1 className="text-2xl font-bold text-white">Moods & Genres</h1>
+                </div>
+
+                {/* Country Selector */}
+                <div className="flex items-center gap-2">
+                    {detectedCountry && (
+                        <span className="text-xs text-zinc-500">
+                            <Globe className="w-3 h-3 inline mr-1" />
+                            Detected: {detectedCountry}
+                        </span>
+                    )}
+                    <select
+                        value={country.code}
+                        onChange={(e) => {
+                            const c = COUNTRIES.find((c) => c.code === e.target.value);
+                            if (c) setCountry(c);
+                        }}
+                        className="bg-zinc-800 text-white px-4 py-2 rounded-lg border border-zinc-700 text-sm"
+                    >
+                        {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Categories Section */}

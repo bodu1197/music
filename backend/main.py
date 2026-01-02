@@ -145,13 +145,13 @@ def get_charts(country: str = "US", language: str = "en"):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/moods")
-def get_mood_categories():
+def get_mood_categories(country: str = "US", language: str = "en"):
     """
     Get Moods & Genres categories.
     Returns sections like "For you", "Genres", "Moods & moments"
     """
     try:
-        yt = get_ytmusic()
+        yt = get_ytmusic(country=country, language=language)
         return run_with_retry(yt.get_mood_categories)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

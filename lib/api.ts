@@ -76,8 +76,9 @@ export const api = {
         },
 
         // Get mood/genre categories
-        moods: async () => {
-            const res = await fetch(`${API_URL}/moods`);
+        moods: async (country: string = 'US', language: string = 'en') => {
+            const params = new URLSearchParams({ country, language });
+            const res = await fetch(`${API_URL}/moods?${params}`);
             if (!res.ok) throw new Error('Failed to fetch moods');
             return res.json();
         },
