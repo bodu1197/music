@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { Play, Loader2, ChevronRight, Music, Sparkles, Globe, AlertCircle } from "lucide-react";
@@ -80,6 +80,22 @@ export default function TestMoodsPage() {
         () => api.music.moods(country.code, country.lang),
         { revalidateOnFocus: false }
     );
+
+    // Preload all category playlists when moods data is loaded
+    useEffect(() => {
+        if (moodsData) {
+            Object.values(moodsData).forEach((categories: any) => {
+                categories.forEach((cat: any) => {
+                    if (cat.params) {
+                        preload(
+                            ["/moods/playlists", cat.params, country.code, country.lang],
+                            () => api.music.moodPlaylists(cat.params, country.code, country.lang)
+                        );
+                    }
+                });
+            });
+        }
+    }, [moodsData, country.code, country.lang]);
 
     // Fetch playlists when category is selected (with country/language)
     const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
@@ -245,9 +261,9 @@ export default function TestMoodsPage() {
                                         onClick={() => playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
                                     >
                                         <div className="relative aspect-square">
-                                            {playlist.thumbnails?.[0]?.url && (
+                                            {playlist.thumbnails?.length > 0 && (
                                                 <img
-                                                    src={playlist.thumbnails[0].url}
+                                                    src={playlist.thumbnails[playlist.thumbnails.length - 1].url}
                                                     alt={playlist.title}
                                                     className="w-full h-full object-cover"
                                                 />

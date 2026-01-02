@@ -156,6 +156,21 @@ def get_mood_categories(country: str = "US", language: str = "en"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+import re
+
+def upscale_thumbnail(url: str, size: int = 544) -> str:
+    """
+    Upscale Google/YouTube thumbnail URL to higher resolution.
+    Changes =w60-h60 or =w120-h120 to =w544-h544
+    """
+    if not url:
+        return url
+    # Match patterns like =w60-h60, =w120-h120, =s60, etc.
+    url = re.sub(r'=w\d+-h\d+', f'=w{size}-h{size}', url)
+    url = re.sub(r'=s\d+', f'=s{size}', url)
+    return url
+
+
 def parse_genre_playlists(yt, params: str):
     """
     Custom parser for genre playlists that uses musicResponsiveListItemRenderer.
@@ -189,8 +204,10 @@ def parse_genre_playlists(yt, params: str):
                         play_btn = overlay.get('content', {}).get('musicPlayButtonRenderer', {})
                         playlist_id = play_btn.get('playNavigationEndpoint', {}).get('watchEndpoint', {}).get('playlistId')
 
-                        # Get thumbnail
+                        # Get thumbnail and upscale
                         thumbnails = data.get('thumbnail', {}).get('musicThumbnailRenderer', {}).get('thumbnail', {}).get('thumbnails', [])
+                        # Upscale thumbnails to 544x544
+                        thumbnails = [{'url': upscale_thumbnail(t.get('url', '')), 'width': 544, 'height': 544} for t in thumbnails]
 
                         if playlist_id:
                             playlists.append({
