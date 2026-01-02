@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Settings, Grid, Bookmark, UserSquare2, Music2, TrendingUp } from "lucide-react";
+import { Settings, Grid, Bookmark, UserSquare2, Music2, TrendingUp, Sparkles } from "lucide-react";
 import { MusicTab } from "@/components/profile/MusicTab";
 import { ChartsTab } from "@/components/profile/ChartsTab";
+import { MoodsTab } from "@/components/profile/MoodsTab";
 import { CountrySelector } from "@/components/profile/CountrySelector";
 import { DEFAULT_COUNTRY, SUPPORTED_COUNTRIES, Country } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export default function ProfilePage() {
     }, []);
 
     // Prefetch logic - only runs when currentCountry is set
-    // Home + Charts 데이터 동시 프리로드
+    // Home + Charts + Moods 데이터 동시 프리로드
     useEffect(() => {
         if (currentCountry) {
             // Music Home 프리로드
@@ -64,6 +65,11 @@ export default function ProfilePage() {
             preload(
                 ["/charts", currentCountry.code, currentCountry.lang],
                 () => api.music.charts(currentCountry.code)
+            );
+            // Moods 프리로드
+            preload(
+                ["/moods", currentCountry.code, currentCountry.lang],
+                () => api.music.moods(currentCountry.code, currentCountry.lang)
             );
         }
     }, [currentCountry]);
@@ -77,6 +83,7 @@ export default function ProfilePage() {
         { id: "posts", icon: Grid, label: "POSTS" },
         { id: "music", icon: Music2, label: "MUSIC" },
         { id: "charts", icon: TrendingUp, label: "CHARTS" },
+        { id: "moods", icon: Sparkles, label: "MOODS" },
         { id: "saved", icon: Bookmark, label: "SAVED" },
         { id: "tagged", icon: UserSquare2, label: "TAGGED" },
     ];
@@ -210,6 +217,16 @@ export default function ProfilePage() {
                                 </div>
                                 <ChartsTab country={currentCountry} />
                             </>
+                        ) : (
+                            <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "moods" && (
+                    <div className="flex flex-col">
+                        {currentCountry ? (
+                            <MoodsTab country={currentCountry} />
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
                         )}
