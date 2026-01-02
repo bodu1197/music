@@ -24,15 +24,27 @@ export default function ProfilePage() {
             const savedCode = localStorage.getItem("user_country_code");
             const savedLang = localStorage.getItem("user_country_lang");
             const savedName = localStorage.getItem("user_country_name");
-            if (savedCode) {
+
+            // Validate saved language is supported by ytmusicapi
+            const VALID_LANGS = ["ko", "hi", "it", "de", "tr", "en", "pt", "cs", "zh_CN", "ja", "es", "ru", "fr", "nl", "ar", "ur", "zh_TW"];
+            const isValidLang = savedLang && VALID_LANGS.includes(savedLang);
+
+            if (savedCode && isValidLang) {
                 // Try to find in popular list first, otherwise use saved values
                 const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
                 setCurrentCountry(found || {
                     code: savedCode,
-                    lang: savedLang || "en",
+                    lang: savedLang,
                     name: savedName || savedCode
                 });
                 return;
+            }
+
+            // Clear invalid saved data
+            if (savedCode && !isValidLang) {
+                localStorage.removeItem("user_country_code");
+                localStorage.removeItem("user_country_lang");
+                localStorage.removeItem("user_country_name");
             }
 
             // 2. IP Detection - accept ANY country
@@ -40,15 +52,22 @@ export default function ProfilePage() {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
                 if (data.country_code) {
-                    // Check if in popular list, otherwise create dynamic entry
+                    // Check if in popular list first (has correct language mapping)
                     const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
-                    const country = found || {
+                    if (found) {
+                        setCurrentCountry(found);
+                        localStorage.setItem("user_country_code", found.code);
+                        localStorage.setItem("user_country_lang", found.lang);
+                        localStorage.setItem("user_country_name", found.name);
+                        return;
+                    }
+                    // For unlisted countries, default to English
+                    const country = {
                         code: data.country_code,
                         name: data.country_name || data.country_code,
-                        lang: data.languages?.split(",")[0]?.split("-")[0] || "en"
+                        lang: "en"
                     };
                     setCurrentCountry(country);
-                    // Save for next time
                     localStorage.setItem("user_country_code", country.code);
                     localStorage.setItem("user_country_lang", country.lang);
                     localStorage.setItem("user_country_name", country.name);
