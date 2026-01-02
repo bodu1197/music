@@ -14,13 +14,16 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     // A
     { code: "AE", name: "United Arab Emirates", lang: "ar" },
     { code: "AR", name: "Argentina", lang: "es" },
+    { code: "AS", name: "American Samoa", lang: "en" },
     { code: "AT", name: "Austria", lang: "de" },
     { code: "AU", name: "Australia", lang: "en" },
+    { code: "AW", name: "Aruba", lang: "nl" },
     { code: "AZ", name: "Azerbaijan", lang: "en" },
 
     // B
     { code: "BA", name: "Bosnia and Herzegovina", lang: "en" },
     { code: "BD", name: "Bangladesh", lang: "en" },
+    { code: "BM", name: "Bermuda", lang: "en" },
     { code: "BE", name: "Belgium", lang: "fr" },
     { code: "BG", name: "Bulgaria", lang: "en" },
     { code: "BH", name: "Bahrain", lang: "ar" },
@@ -56,9 +59,11 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     // G
     { code: "GB", name: "United Kingdom", lang: "en" },
     { code: "GE", name: "Georgia", lang: "en" },
+    { code: "GF", name: "French Guiana", lang: "fr" },
     { code: "GH", name: "Ghana", lang: "en" },
     { code: "GR", name: "Greece", lang: "en" },
     { code: "GT", name: "Guatemala", lang: "es" },
+    { code: "GU", name: "Guam", lang: "en" },
 
     // H
     { code: "HK", name: "Hong Kong", lang: "zh_TW" },
@@ -86,6 +91,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     { code: "KR", name: "South Korea", lang: "ko" },
     { code: "KW", name: "Kuwait", lang: "ar" },
     { code: "KZ", name: "Kazakhstan", lang: "ru" },
+    { code: "KY", name: "Cayman Islands", lang: "en" },
 
     // L
     { code: "LA", name: "Laos", lang: "en" },
@@ -104,6 +110,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     { code: "MT", name: "Malta", lang: "en" },
     { code: "MX", name: "Mexico", lang: "es" },
     { code: "MY", name: "Malaysia", lang: "en" },
+    { code: "MP", name: "Northern Mariana Islands", lang: "en" },
 
     // N
     { code: "NG", name: "Nigeria", lang: "en" },
@@ -119,6 +126,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     // P
     { code: "PA", name: "Panama", lang: "es" },
     { code: "PE", name: "Peru", lang: "es" },
+    { code: "PF", name: "French Polynesia", lang: "fr" },
     { code: "PG", name: "Papua New Guinea", lang: "en" },
     { code: "PH", name: "Philippines", lang: "en" },
     { code: "PK", name: "Pakistan", lang: "ur" },
@@ -131,6 +139,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     { code: "QA", name: "Qatar", lang: "ar" },
 
     // R
+    { code: "RE", name: "Réunion", lang: "fr" },
     { code: "RO", name: "Romania", lang: "en" },
     { code: "RS", name: "Serbia", lang: "en" },
     { code: "RU", name: "Russia", lang: "ru" },
@@ -145,6 +154,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
     { code: "SV", name: "El Salvador", lang: "es" },
 
     // T
+    { code: "TC", name: "Turks and Caicos Islands", lang: "en" },
     { code: "TH", name: "Thailand", lang: "en" },
     { code: "TN", name: "Tunisia", lang: "ar" },
     { code: "TR", name: "Turkey", lang: "tr" },
@@ -159,6 +169,7 @@ export const SUPPORTED_COUNTRIES: Country[] = [
 
     // V
     { code: "VE", name: "Venezuela", lang: "es" },
+    { code: "VI", name: "U.S. Virgin Islands", lang: "en" },
     { code: "VN", name: "Vietnam", lang: "en" },
 
     // Y
