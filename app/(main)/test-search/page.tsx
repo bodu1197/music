@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://sori-music-backend-322455104824.us-central1.run.app";
+import { api } from "@/lib/api";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -39,7 +38,7 @@ export default function TestSearchPage() {
         const timer = setTimeout(async () => {
             setIsSuggestionsLoading(true);
             try {
-                const res = await fetch(`${API_URL}/search/suggestions?q=${encodeURIComponent(query)}`);
+                const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 setSuggestions(data || []);
             } catch (e) {
@@ -75,7 +74,7 @@ export default function TestSearchPage() {
 
         try {
             const filterParam = filter ? `&filter=${filter}` : "";
-            const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}&limit=100${filterParam}`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=100${filterParam}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setResults(data || []);
@@ -108,8 +107,7 @@ export default function TestSearchPage() {
         } else if (item.browseId && item.resultType === "artist") {
             // Artist - fetch artist songs
             try {
-                const res = await fetch(`${API_URL}/artist/${item.browseId}`);
-                const artistData = await res.json();
+                const artistData = await api.music.artist(item.browseId);
                 if (artistData?.songs?.results) {
                     tracks = artistData.songs.results.map((s: any) => ({
                         videoId: s.videoId,
@@ -124,8 +122,7 @@ export default function TestSearchPage() {
         } else if (item.browseId && item.resultType === "album") {
             // Album - fetch album tracks
             try {
-                const res = await fetch(`${API_URL}/album/${item.browseId}`);
-                const albumData = await res.json();
+                const albumData = await api.music.album(item.browseId);
                 if (albumData?.tracks) {
                     tracks = albumData.tracks.map((t: any) => ({
                         videoId: t.videoId,
@@ -141,8 +138,7 @@ export default function TestSearchPage() {
             // Playlist - extract playlistId from browseId (VL prefix)
             const playlistId = item.browseId.startsWith("VL") ? item.browseId.slice(2) : item.browseId;
             try {
-                const res = await fetch(`${API_URL}/playlist/${playlistId}?limit=200`);
-                const playlistData = await res.json();
+                const playlistData = await api.music.playlist(playlistId);
                 if (playlistData?.tracks) {
                     tracks = playlistData.tracks.map((t: any) => ({
                         videoId: t.videoId,

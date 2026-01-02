@@ -120,6 +120,13 @@ export const api = {
             const res = await fetch(`/api/charts?country=${country}`);
             if (!res.ok) throw new Error('Failed to fetch charts');
             return res.json();
+        },
+
+        // Get full playlist
+        playlist: async (playlistId: string, limit: number = 200) => {
+            const res = await fetch(`${API_URL}/playlist/${playlistId}?limit=${limit}`);
+            if (!res.ok) throw new Error('Failed to fetch playlist');
+            return res.json();
         }
     }
 };
