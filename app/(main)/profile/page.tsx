@@ -16,6 +16,8 @@ export default function ProfilePage() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("posts");
     const [currentCountry, setCurrentCountry] = useState<Country | null>(null);
+    // Charts tab temporary country (resets when leaving tab)
+    const [chartsCountry, setChartsCountry] = useState<Country | null>(null);
 
     // Initial Country Detection - supports ALL countries
     useEffect(() => {
@@ -87,9 +89,16 @@ export default function ProfilePage() {
     // Preloading is now handled by MoodsPreloader in the layout
     // (runs on homepage access, server-cached, single request each)
 
-    const handleCountryChange = (c: Country) => {
-        setCurrentCountry(c);
-        localStorage.setItem("user_country_code", c.code);
+    // Reset chartsCountry to user's country when entering Charts tab
+    useEffect(() => {
+        if (activeTab === "charts" && currentCountry) {
+            setChartsCountry(currentCountry);
+        }
+    }, [activeTab, currentCountry]);
+
+    // Charts tab country change (temporary, not saved to localStorage)
+    const handleChartsCountryChange = (c: Country) => {
+        setChartsCountry(c);
     };
 
     const tabs = [
@@ -218,12 +227,12 @@ export default function ProfilePage() {
 
                 {activeTab === "charts" && (
                     <div className="flex flex-col">
-                        {currentCountry ? (
+                        {chartsCountry ? (
                             <>
                                 <div className="flex justify-end px-4 mb-2">
-                                    <CountrySelector value={currentCountry} onChange={handleCountryChange} />
+                                    <CountrySelector value={chartsCountry} onChange={handleChartsCountryChange} />
                                 </div>
-                                <ChartsTab country={currentCountry} />
+                                <ChartsTab country={chartsCountry} />
                             </>
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
