@@ -209,12 +209,7 @@ export default function ProfilePage() {
                 {activeTab === "music" && (
                     <div className="flex flex-col">
                         {currentCountry ? (
-                            <>
-                                <div className="flex justify-end px-4 mb-2">
-                                    <CountrySelector value={currentCountry} onChange={handleCountryChange} />
-                                </div>
-                                <MusicTab country={currentCountry} />
-                            </>
+                            <MusicTab country={currentCountry} />
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
                         )}
