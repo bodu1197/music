@@ -8,7 +8,7 @@ export interface Country {
 // Unsupported languages fallback to "en"
 
 export const SUPPORTED_COUNTRIES: Country[] = [
-    // Global (전세계)
+    // Global (전세계) - YouTube Music API doesn't support ZZ directly
     { code: "ZZ", name: "🌍 Global", lang: "en" },
 
     // A
