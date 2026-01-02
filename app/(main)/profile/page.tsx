@@ -17,26 +17,41 @@ export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState("posts");
     const [currentCountry, setCurrentCountry] = useState<Country | null>(null);
 
-    // Initial Country Detection
+    // Initial Country Detection - supports ALL countries
     useEffect(() => {
         async function detect() {
             // 1. Check localStorage
             const savedCode = localStorage.getItem("user_country_code");
+            const savedLang = localStorage.getItem("user_country_lang");
+            const savedName = localStorage.getItem("user_country_name");
             if (savedCode) {
+                // Try to find in popular list first, otherwise use saved values
                 const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-                if (found) {
-                    setCurrentCountry(found);
-                    return;
-                }
+                setCurrentCountry(found || {
+                    code: savedCode,
+                    lang: savedLang || "en",
+                    name: savedName || savedCode
+                });
+                return;
             }
 
-            // 2. IP Detection (if no saved preference)
+            // 2. IP Detection - accept ANY country
             try {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
-                const detected = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
-                if (detected) {
-                    setCurrentCountry(detected);
+                if (data.country_code) {
+                    // Check if in popular list, otherwise create dynamic entry
+                    const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
+                    const country = found || {
+                        code: data.country_code,
+                        name: data.country_name || data.country_code,
+                        lang: data.languages?.split(",")[0]?.split("-")[0] || "en"
+                    };
+                    setCurrentCountry(country);
+                    // Save for next time
+                    localStorage.setItem("user_country_code", country.code);
+                    localStorage.setItem("user_country_lang", country.lang);
+                    localStorage.setItem("user_country_name", country.name);
                     return;
                 }
             } catch (e) {
