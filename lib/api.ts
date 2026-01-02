@@ -93,6 +93,33 @@ export const api = {
             const res = await fetch(`${API_URL}/moods/playlists?${urlParams}`);
             if (!res.ok) throw new Error('Failed to fetch mood playlists');
             return res.json();
+        },
+
+        // Get ALL moods with playlists (server-cached, single request)
+        moodsAll: async (country: string = 'US', language: string = 'en') => {
+            const params = new URLSearchParams({ country, language });
+            const res = await fetch(`/api/moods/all?${params}`);
+            if (!res.ok) throw new Error('Failed to fetch all moods');
+            return res.json();
+        },
+
+        // Get home feed (server-cached)
+        homeCached: async (limit: number = 100, country: string = 'US', language: string = 'en') => {
+            const params = new URLSearchParams({
+                limit: String(limit),
+                country,
+                language
+            });
+            const res = await fetch(`/api/home?${params}`);
+            if (!res.ok) throw new Error('Failed to fetch home');
+            return res.json();
+        },
+
+        // Get charts (server-cached)
+        chartsCached: async (country: string = 'US') => {
+            const res = await fetch(`/api/charts?country=${country}`);
+            if (!res.ok) throw new Error('Failed to fetch charts');
+            return res.json();
         }
     }
 };

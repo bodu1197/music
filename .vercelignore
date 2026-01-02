@@ -2,7 +2,8 @@
 # Vercel should only handle the Next.js Frontend.
 # The backend is now on Google Cloud Run.
 
-api/
+# Python backend (root api folder, NOT app/api)
+/api/
 requirements.txt
 Dockerfile
 deploy_cloud_run.ps1

@@ -2,8 +2,38 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
 import os
+from cachetools import TTLCache
+import threading
+import hashlib
 
 app = FastAPI(title="Sori Music API")
+
+# ============================================
+# In-Memory Cache Configuration
+# ============================================
+# TTL = Time To Live (seconds)
+# maxsize = Maximum number of entries
+
+# Cache for home feed (1 hour, per country/language combo)
+home_cache = TTLCache(maxsize=50, ttl=3600)
+home_cache_lock = threading.Lock()
+
+# Cache for charts (1 hour, per country)
+charts_cache = TTLCache(maxsize=50, ttl=3600)
+charts_cache_lock = threading.Lock()
+
+# Cache for mood categories (1 hour, per country/language)
+moods_cache = TTLCache(maxsize=50, ttl=3600)
+moods_cache_lock = threading.Lock()
+
+# Cache for mood playlists (1 hour, per params/country/language)
+mood_playlists_cache = TTLCache(maxsize=200, ttl=3600)
+mood_playlists_cache_lock = threading.Lock()
+
+def make_cache_key(*args) -> str:
+    """Create a hash key from arguments"""
+    key_str = ":".join(str(arg) for arg in args)
+    return hashlib.md5(key_str.encode()).hexdigest()
 
 # CORS middleware to allow requests from any origin
 app.add_middleware(
@@ -67,6 +97,83 @@ def run_with_retry(func, *args, **kwargs):
 def health_check():
     return {"status": "ok", "service": "sori-music-api"}
 
+@app.get("/cache/status")
+def cache_status():
+    """Get current cache statistics"""
+    return {
+        "home_cache": {
+            "size": len(home_cache),
+            "maxsize": home_cache.maxsize,
+            "ttl": home_cache.ttl
+        },
+        "charts_cache": {
+            "size": len(charts_cache),
+            "maxsize": charts_cache.maxsize,
+            "ttl": charts_cache.ttl
+        },
+        "moods_cache": {
+            "size": len(moods_cache),
+            "maxsize": moods_cache.maxsize,
+            "ttl": moods_cache.ttl
+        },
+        "mood_playlists_cache": {
+            "size": len(mood_playlists_cache),
+            "maxsize": mood_playlists_cache.maxsize,
+            "ttl": mood_playlists_cache.ttl
+        }
+    }
+
+@app.post("/cache/warm")
+async def warm_cache(country: str = "KR", language: str = "ko"):
+    """
+    Warm up all caches for a specific country/language.
+    This pre-populates the cache so users get fast responses.
+    """
+    results = {
+        "country": country,
+        "language": language,
+        "home": "pending",
+        "charts": "pending",
+        "moods": "pending",
+        "mood_playlists": []
+    }
+
+    try:
+        # Warm home cache
+        get_home(limit=100, country=country, language=language)
+        results["home"] = "success"
+    except Exception as e:
+        results["home"] = f"error: {str(e)}"
+
+    try:
+        # Warm charts cache
+        get_charts(country=country, language=language)
+        results["charts"] = "success"
+    except Exception as e:
+        results["charts"] = f"error: {str(e)}"
+
+    try:
+        # Warm moods cache and get categories
+        moods = get_mood_categories(country=country, language=language)
+        results["moods"] = "success"
+
+        # Warm each mood playlist
+        for section in moods:
+            for category in section.get("contents", []):
+                params = category.get("params")
+                title = category.get("title", "Unknown")
+                if params:
+                    try:
+                        get_mood_playlists(params=params, country=country, language=language)
+                        results["mood_playlists"].append({"title": title, "status": "success"})
+                    except Exception as e:
+                        results["mood_playlists"].append({"title": title, "status": f"error: {str(e)}"})
+
+    except Exception as e:
+        results["moods"] = f"error: {str(e)}"
+
+    return results
+
 @app.get("/search")
 def search(q: str, filter: str = None):
     """
@@ -122,25 +229,47 @@ def get_watch_playlist(videoId: str = None, playlistId: str = None):
 
 @app.get("/home")
 def get_home(limit: int = 100, country: str = "US", language: str = "en"):
+    cache_key = make_cache_key("home", limit, country, language)
+
+    # Check cache first
+    with home_cache_lock:
+        if cache_key in home_cache:
+            print(f"[CACHE HIT] /home country={country} lang={language}")
+            return home_cache[cache_key]
+
     try:
-        # Pass country to get_ytmusic if you want the home content to match a specific country
-        # Ensure your custom get_ytmusic handles the 'language' param as well if you added it
-        # Pass country and language to get_ytmusic
-        yt = get_ytmusic(country=country, language=language) 
-        # Note: YTMusic(language=...) needs to be set in get_ytmusic or here.
-        # Let's update get_ytmusic to accept language too.
-        
-        # PURE MODE: Just return the raw get_home result
-        return run_with_retry(yt.get_home, limit=limit)
+        print(f"[CACHE MISS] /home country={country} lang={language}")
+        yt = get_ytmusic(country=country, language=language)
+        result = run_with_retry(yt.get_home, limit=limit)
+
+        # Store in cache
+        with home_cache_lock:
+            home_cache[cache_key] = result
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/charts")
 def get_charts(country: str = "US", language: str = "en"):
+    cache_key = make_cache_key("charts", country, language)
+
+    # Check cache first
+    with charts_cache_lock:
+        if cache_key in charts_cache:
+            print(f"[CACHE HIT] /charts country={country}")
+            return charts_cache[cache_key]
+
     try:
-        # Pass country and language to get_ytmusic
+        print(f"[CACHE MISS] /charts country={country}")
         yt = get_ytmusic(country=country, language=language)
-        return run_with_retry(yt.get_charts, country=country)
+        result = run_with_retry(yt.get_charts, country=country)
+
+        # Store in cache
+        with charts_cache_lock:
+            charts_cache[cache_key] = result
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -150,9 +279,24 @@ def get_mood_categories(country: str = "US", language: str = "en"):
     Get Moods & Genres categories.
     Returns sections like "For you", "Genres", "Moods & moments"
     """
+    cache_key = make_cache_key("moods", country, language)
+
+    # Check cache first
+    with moods_cache_lock:
+        if cache_key in moods_cache:
+            print(f"[CACHE HIT] /moods country={country} lang={language}")
+            return moods_cache[cache_key]
+
     try:
+        print(f"[CACHE MISS] /moods country={country} lang={language}")
         yt = get_ytmusic(country=country, language=language)
-        return run_with_retry(yt.get_mood_categories)
+        result = run_with_retry(yt.get_mood_categories)
+
+        # Store in cache
+        with moods_cache_lock:
+            moods_cache[cache_key] = result
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -241,20 +385,36 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     Get playlists for a specific mood/genre category.
     params: obtained from get_mood_categories()
     """
+    cache_key = make_cache_key("mood_playlists", params, country, language)
+
+    # Check cache first
+    with mood_playlists_cache_lock:
+        if cache_key in mood_playlists_cache:
+            print(f"[CACHE HIT] /moods/playlists params={params[:20]}... country={country}")
+            return mood_playlists_cache[cache_key]
+
     try:
+        print(f"[CACHE MISS] /moods/playlists params={params[:20]}... country={country}")
         yt = get_ytmusic(country=country, language=language)
 
         # Try ytmusicapi's built-in parser first (works for Moods)
+        result = None
         try:
             result = run_with_retry(yt.get_mood_playlists, params)
-            if result:
-                return result
         except KeyError:
             pass  # Fall through to custom parser
 
         # Use custom parser for Genres (handles musicResponsiveListItemRenderer)
-        result = parse_genre_playlists(yt, params)
-        return result if result else []
+        if not result:
+            result = parse_genre_playlists(yt, params)
+
+        final_result = result if result else []
+
+        # Store in cache
+        with mood_playlists_cache_lock:
+            mood_playlists_cache[cache_key] = final_result
+
+        return final_result
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

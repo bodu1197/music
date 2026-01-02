@@ -4,6 +4,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import GlobalPlayer from "@/components/player/GlobalPlayer";
 import PlayerSidebar from "@/components/player/PlayerSidebar";
 import { PlayerProvider } from "@/contexts/PlayerContext";
+import { MoodsPreloader } from "@/components/preload/MoodsPreloader";
 
 export default function MainLayout({
     children,
@@ -12,6 +13,7 @@ export default function MainLayout({
 }>) {
     return (
         <PlayerProvider>
+            <MoodsPreloader />
             <div className="flex min-h-screen">
                 <aside>
                     <Sidebar />

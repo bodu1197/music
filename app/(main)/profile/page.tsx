@@ -11,8 +11,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/auth-provider";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { preload } from "swr";
-import { api } from "@/lib/api";
 
 export default function ProfilePage() {
     const { user } = useAuth();
@@ -52,27 +50,8 @@ export default function ProfilePage() {
         detect();
     }, []);
 
-    // Prefetch logic - only runs when currentCountry is set
-    // Home + Charts + Moods 데이터 동시 프리로드
-    useEffect(() => {
-        if (currentCountry) {
-            // Music Home 프리로드
-            preload(
-                ["/music/home", currentCountry.code, currentCountry.lang],
-                () => api.music.home(100, currentCountry.code, currentCountry.lang)
-            );
-            // Charts 프리로드
-            preload(
-                ["/charts", currentCountry.code, currentCountry.lang],
-                () => api.music.charts(currentCountry.code)
-            );
-            // Moods 프리로드
-            preload(
-                ["/moods", currentCountry.code, currentCountry.lang],
-                () => api.music.moods(currentCountry.code, currentCountry.lang)
-            );
-        }
-    }, [currentCountry]);
+    // Preloading is now handled by MoodsPreloader in the layout
+    // (runs on homepage access, server-cached, single request each)
 
     const handleCountryChange = (c: Country) => {
         setCurrentCountry(c);

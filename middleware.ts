@@ -39,8 +39,12 @@ export async function middleware(request: NextRequest) {
     // This will refresh session if needed
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Protect routes
-    if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && !request.nextUrl.pathname.startsWith('/auth')) {
+    // Protect routes (exclude API routes for public caching)
+    if (!user &&
+        !request.nextUrl.pathname.startsWith('/login') &&
+        !request.nextUrl.pathname.startsWith('/signup') &&
+        !request.nextUrl.pathname.startsWith('/auth') &&
+        !request.nextUrl.pathname.startsWith('/api')) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 

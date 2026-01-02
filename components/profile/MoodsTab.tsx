@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import useSWR, { preload } from "swr";
+import { useState, useEffect, useMemo } from "react";
+import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { Play, Loader2, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
@@ -29,35 +29,26 @@ export function MoodsTab({ country }: MoodsTabProps) {
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
-    // Fetch mood categories
-    const { data: moodsData, error: moodsError, isLoading: moodsLoading } = useSWR(
-        ["/moods", country.code, country.lang],
-        () => api.music.moods(country.code, country.lang),
+    // Fetch ALL moods data with playlists (server-cached, single request)
+    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
+        ["/moods/all", country.code, country.lang],
+        () => api.music.moodsAll(country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
-    // Preload all category playlists when moods data is loaded
-    useEffect(() => {
-        if (moodsData) {
-            Object.values(moodsData).forEach((categories: any) => {
-                categories.forEach((cat: any) => {
-                    if (cat.params) {
-                        preload(
-                            ["/moods/playlists", cat.params, country.code, country.lang],
-                            () => api.music.moodPlaylists(cat.params, country.code, country.lang)
-                        );
-                    }
-                });
-            });
+    // Get playlists for selected category from cached data
+    const playlistsData = useMemo(() => {
+        if (!selectedCategory || !moodsAllData) return null;
+
+        // Find the category in the data
+        for (const categories of Object.values(moodsAllData) as any[]) {
+            const found = categories.find((cat: any) => cat.params === selectedCategory.params);
+            if (found) {
+                return found.playlists || [];
+            }
         }
-    }, [moodsData, country.code, country.lang]);
-
-    // Fetch playlists when category is selected
-    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
-        selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
-        () => selectedCategory ? api.music.moodPlaylists(selectedCategory.params, country.code, country.lang) : null,
-        { revalidateOnFocus: false }
-    );
+        return [];
+    }, [selectedCategory, moodsAllData]);
 
     // Reset selected category when country changes
     useEffect(() => {
@@ -111,7 +102,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
             {/* Categories Section */}
             {!selectedCategory ? (
                 <div className="space-y-6">
-                    {moodsData && Object.entries(moodsData).map(([sectionTitle, categories]: [string, any]) => (
+                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]: [string, any]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -148,15 +139,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
                         {selectedCategory.title}
                     </h2>
 
-                    {playlistsLoading ? (
-                        <div className="text-center text-zinc-500 animate-pulse py-10">
-                            Loading playlists...
-                        </div>
-                    ) : playlistsError ? (
-                        <div className="text-center text-red-500 py-10">
-                            Error: {playlistsError.message}
-                        </div>
-                    ) : !playlistsData || playlistsData.length === 0 ? (
+                    {!playlistsData || playlistsData.length === 0 ? (
                         <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
                             <AlertCircle className="w-8 h-8" />
                             <p>No playlists available for this category.</p>
@@ -177,6 +160,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
                                                     src={playlist.thumbnails[playlist.thumbnails.length - 1].url}
                                                     alt={playlist.title}
                                                     className="w-full h-full object-cover"
+                                                    loading="lazy"
                                                 />
                                             )}
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

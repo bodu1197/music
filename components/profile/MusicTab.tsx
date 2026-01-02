@@ -52,8 +52,8 @@ export function MusicTab({ country }: MusicTabProps) {
     const [loadingId, setLoadingId] = useState<string | null>(null); // browseId 또는 playlistId
 
     const { data, error, isLoading } = useSWR(
-        ["/music/home", country.code, country.lang],
-        () => api.music.home(100, country.code, country.lang),
+        ["/music/home/cached", country.code, country.lang],
+        () => api.music.homeCached(100, country.code, country.lang),
         {
             revalidateOnFocus: false,
             dedupingInterval: 60000,

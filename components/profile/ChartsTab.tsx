@@ -40,8 +40,8 @@ export function ChartsTab({ country }: ChartsTabProps) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
     const { data, error, isLoading } = useSWR(
-        ["/charts", country.code, country.lang],
-        () => api.music.charts(country.code),
+        ["/charts/cached", country.code, country.lang],
+        () => api.music.chartsCached(country.code),
         {
             revalidateOnFocus: false,
             dedupingInterval: 60000,
