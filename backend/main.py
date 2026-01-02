@@ -158,8 +158,9 @@ async def warm_cache(country: str = "KR", language: str = "ko"):
         results["moods"] = "success"
 
         # Warm each mood playlist
-        for section in moods:
-            for category in section.get("contents", []):
+        # moods is a dict like {"분위기 및 상황": [...], "장르": [...]}
+        for section_name, categories in moods.items():
+            for category in categories:
                 params = category.get("params")
                 title = category.get("title", "Unknown")
                 if params:
