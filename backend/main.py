@@ -228,6 +228,15 @@ def get_watch_playlist(videoId: str = None, playlistId: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/playlist/{playlist_id}")
+def get_playlist(playlist_id: str, limit: int = 100):
+    """Get full playlist with all tracks (up to limit)"""
+    try:
+        yt = get_ytmusic()
+        return run_with_retry(yt.get_playlist, playlist_id, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/home")
 def get_home(limit: int = 100, country: str = "US", language: str = "en"):
     cache_key = make_cache_key("home", limit, country, language)

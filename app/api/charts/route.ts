@@ -4,7 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-3
 
 // Global (ZZ/WW) playlist IDs - hardcoded since YouTube Music API doesn't support ZZ
 const GLOBAL_PLAYLISTS = {
-    top_videos: 'PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM',
+    top_videos: 'PL4fGSI1pDJn6t3TXLGiiJdD-sZbrG3tG0',  // 100 tracks
     top_songs: 'PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i',
     // No trending for Global
 };
@@ -40,11 +40,11 @@ export async function GET(request: NextRequest) {
     const country = searchParams.get('country') || 'US';
 
     try {
-        // Global (ZZ) - use hardcoded playlist IDs
+        // Global (ZZ) - use hardcoded playlist IDs with /playlist endpoint (100 tracks)
         if (country === 'ZZ') {
             const [videosRes, songsRes] = await Promise.all([
-                fetchWithRetry(`${API_URL}/watch?playlistId=${GLOBAL_PLAYLISTS.top_videos}`),
-                fetchWithRetry(`${API_URL}/watch?playlistId=${GLOBAL_PLAYLISTS.top_songs}`),
+                fetchWithRetry(`${API_URL}/playlist/${GLOBAL_PLAYLISTS.top_videos}?limit=100`),
+                fetchWithRetry(`${API_URL}/playlist/${GLOBAL_PLAYLISTS.top_songs}?limit=100`),
             ]);
 
             const videosData = await videosRes.json();
@@ -52,20 +52,20 @@ export async function GET(request: NextRequest) {
 
             // Format to match charts API response structure
             const globalCharts = {
-                videos: videosData.tracks?.slice(0, 20).map((t: any) => ({
+                videos: videosData.tracks?.map((t: any) => ({
                     title: t.title,
                     videoId: t.videoId,
                     playlistId: GLOBAL_PLAYLISTS.top_videos,
-                    thumbnails: t.thumbnail ? [{ url: t.thumbnail.url || t.thumbnail }] : [],
+                    thumbnails: t.thumbnails || [],
                     artists: t.artists,
                 })) || [],
                 artists: [], // No artists chart for global
                 genres: [], // No genres for global
-                songs: songsData.tracks?.slice(0, 20).map((t: any) => ({
+                songs: songsData.tracks?.map((t: any) => ({
                     title: t.title,
                     videoId: t.videoId,
                     playlistId: GLOBAL_PLAYLISTS.top_songs,
-                    thumbnails: t.thumbnail ? [{ url: t.thumbnail.url || t.thumbnail }] : [],
+                    thumbnails: t.thumbnails || [],
                     artists: t.artists,
                 })) || [],
             };
