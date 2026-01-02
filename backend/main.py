@@ -143,3 +143,27 @@ def get_charts(country: str = "US", language: str = "en"):
         return run_with_retry(yt.get_charts, country=country)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/moods")
+def get_mood_categories():
+    """
+    Get Moods & Genres categories.
+    Returns sections like "For you", "Genres", "Moods & moments"
+    """
+    try:
+        yt = get_ytmusic()
+        return run_with_retry(yt.get_mood_categories)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/moods/playlists")
+def get_mood_playlists(params: str):
+    """
+    Get playlists for a specific mood/genre category.
+    params: obtained from get_mood_categories()
+    """
+    try:
+        yt = get_ytmusic()
+        return run_with_retry(yt.get_mood_playlists, params)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

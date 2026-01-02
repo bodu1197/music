@@ -73,6 +73,20 @@ export const api = {
             const res = await fetch(`${API_URL}/watch?${params}`);
             if (!res.ok) throw new Error('Failed to fetch watch playlist');
             return res.json();
+        },
+
+        // Get mood/genre categories
+        moods: async () => {
+            const res = await fetch(`${API_URL}/moods`);
+            if (!res.ok) throw new Error('Failed to fetch moods');
+            return res.json();
+        },
+
+        // Get playlists for a mood/genre
+        moodPlaylists: async (params: string) => {
+            const res = await fetch(`${API_URL}/moods/playlists?params=${encodeURIComponent(params)}`);
+            if (!res.ok) throw new Error('Failed to fetch mood playlists');
+            return res.json();
         }
     }
 };
