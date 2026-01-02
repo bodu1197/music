@@ -180,14 +180,27 @@ async def warm_cache(country: str = "KR", language: str = "ko"):
     return results
 
 @app.get("/search")
-def search(q: str, filter: str = None):
+def search(q: str, filter: str = None, limit: int = 20):
     """
     Search YouTube Music.
     Filter options: songs, videos, albums, artists, playlists, community_playlists, featured_playlists, uploads
     """
     try:
-        yt = get_ytmusic() # Default to US or global (FIXME: Search should arguably take params too, but kept simple for now)
-        results = run_with_retry(yt.search, q, filter=filter)
+        yt = get_ytmusic()
+        results = run_with_retry(yt.search, q, filter=filter, limit=limit)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/search/suggestions")
+def get_search_suggestions(q: str):
+    """
+    Get search autocomplete suggestions.
+    Returns a list of suggested search queries.
+    """
+    try:
+        yt = get_ytmusic()
+        results = run_with_retry(yt.get_search_suggestions, q)
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
