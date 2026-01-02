@@ -33,8 +33,14 @@ async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<Resp
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const country = searchParams.get('country') || 'US';
-    const language = searchParams.get('language') || 'en';
+    let country = searchParams.get('country') || 'US';
+    let language = searchParams.get('language') || 'en';
+
+    // Global(ZZ) not supported by YouTube Music API - fallback to US
+    if (country === 'ZZ') {
+        country = 'US';
+        language = 'en';
+    }
 
     try {
         // Step 1: Fetch mood categories (with retry)

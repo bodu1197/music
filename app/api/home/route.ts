@@ -30,9 +30,15 @@ async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<Resp
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const country = searchParams.get('country') || 'US';
-    const language = searchParams.get('language') || 'en';
+    let country = searchParams.get('country') || 'US';
+    let language = searchParams.get('language') || 'en';
     const limit = searchParams.get('limit') || '100';
+
+    // Global(ZZ) not supported by YouTube Music API - fallback to US
+    if (country === 'ZZ') {
+        country = 'US';
+        language = 'en';
+    }
 
     try {
         const params = new URLSearchParams({ limit, country, language });
