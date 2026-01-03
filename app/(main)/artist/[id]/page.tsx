@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Shuffle, Radio, Loader2, Music, Disc, Video, Users } from "lucide-react";
+import { ArrowLeft, Play, Shuffle, Radio, Loader2, Music, Disc, Video, Users, ChevronDown } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
 
@@ -20,10 +20,12 @@ interface ArtistData {
     };
     albums?: {
         browseId?: string;
+        params?: string;
         results?: any[];
     };
     singles?: {
         browseId?: string;
+        params?: string;
         results?: any[];
     };
     videos?: {
@@ -45,12 +47,24 @@ export default function ArtistPage() {
     const [error, setError] = useState<string | null>(null);
     const [playingId, setPlayingId] = useState<string | null>(null);
 
+    // Expanded data states
+    const [allSongs, setAllSongs] = useState<any[] | null>(null);
+    const [allAlbums, setAllAlbums] = useState<any[] | null>(null);
+    const [allSingles, setAllSingles] = useState<any[] | null>(null);
+    const [loadingSongs, setLoadingSongs] = useState(false);
+    const [loadingAlbums, setLoadingAlbums] = useState(false);
+    const [loadingSingles, setLoadingSingles] = useState(false);
+
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
     useEffect(() => {
         async function fetchArtist() {
             try {
                 setIsLoading(true);
+                // Reset expanded data when artist changes
+                setAllSongs(null);
+                setAllAlbums(null);
+                setAllSingles(null);
                 const data = await api.music.artist(artistId);
                 setArtist(data);
             } catch (e: any) {
@@ -65,6 +79,48 @@ export default function ArtistPage() {
         }
     }, [artistId]);
 
+    // Load all songs
+    const handleLoadAllSongs = async () => {
+        if (loadingSongs || allSongs) return;
+        setLoadingSongs(true);
+        try {
+            const data = await api.music.artistSongs(artistId);
+            setAllSongs(data.tracks || []);
+        } catch (e) {
+            console.error("Failed to load all songs:", e);
+        } finally {
+            setLoadingSongs(false);
+        }
+    };
+
+    // Load all albums
+    const handleLoadAllAlbums = async () => {
+        if (loadingAlbums || allAlbums) return;
+        setLoadingAlbums(true);
+        try {
+            const data = await api.music.artistAlbums(artistId, 'albums');
+            setAllAlbums(data.items || []);
+        } catch (e) {
+            console.error("Failed to load all albums:", e);
+        } finally {
+            setLoadingAlbums(false);
+        }
+    };
+
+    // Load all singles
+    const handleLoadAllSingles = async () => {
+        if (loadingSingles || allSingles) return;
+        setLoadingSingles(true);
+        try {
+            const data = await api.music.artistAlbums(artistId, 'singles');
+            setAllSingles(data.items || []);
+        } catch (e) {
+            console.error("Failed to load all singles:", e);
+        } finally {
+            setLoadingSingles(false);
+        }
+    };
+
     // Play a single song/video
     const handlePlaySong = (item: any) => {
         if (!item.videoId) return;
@@ -78,9 +134,9 @@ export default function ArtistPage() {
         if (!isQueueOpen) toggleQueue();
     };
 
-    // Play all songs
+    // Play all songs (uses expanded data if available)
     const handlePlayAll = () => {
-        const songs = artist?.songs?.results || [];
+        const songs = allSongs || artist?.songs?.results || [];
         if (songs.length === 0) return;
 
         const tracks: Track[] = songs
@@ -146,13 +202,19 @@ export default function ArtistPage() {
     }
 
     const thumbnail = artist.thumbnails?.[artist.thumbnails.length - 1]?.url;
+    const displaySongs = allSongs || artist.songs?.results || [];
+    const displayAlbums = allAlbums || artist.albums?.results || [];
+    const displaySingles = allSingles || artist.singles?.results || [];
+    const hasSongsBrowseId = !!artist.songs?.browseId;
+    const hasAlbumsBrowseId = !!artist.albums?.browseId;
+    const hasSinglesBrowseId = !!artist.singles?.browseId;
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
             {/* Back Button */}
             <button onClick={() => router.back()} className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6">
                 <ArrowLeft className="w-5 h-5" />
-                Back to Search
+                Back
             </button>
 
             {/* Artist Header */}
@@ -212,14 +274,33 @@ export default function ArtistPage() {
             )}
 
             {/* Songs Section */}
-            {artist.songs?.results && artist.songs.results.length > 0 && (
+            {displaySongs.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Music className="w-5 h-5" />
-                        Songs
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Music className="w-5 h-5" />
+                            Songs
+                            <span className="text-sm font-normal text-zinc-400">
+                                ({displaySongs.length}{allSongs ? '' : hasSongsBrowseId ? '+' : ''})
+                            </span>
+                        </h2>
+                        {hasSongsBrowseId && !allSongs && (
+                            <button
+                                onClick={handleLoadAllSongs}
+                                disabled={loadingSongs}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
+                            >
+                                {loadingSongs ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                )}
+                                Show All
+                            </button>
+                        )}
+                    </div>
                     <div className="space-y-1">
-                        {artist.songs.results.map((song: any, i: number) => (
+                        {displaySongs.map((song: any, i: number) => (
                             <div
                                 key={song.videoId || i}
                                 onClick={() => handlePlaySong(song)}
@@ -246,14 +327,33 @@ export default function ArtistPage() {
             )}
 
             {/* Albums Section */}
-            {artist.albums?.results && artist.albums.results.length > 0 && (
+            {displayAlbums.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Disc className="w-5 h-5" />
-                        Albums
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Disc className="w-5 h-5" />
+                            Albums
+                            <span className="text-sm font-normal text-zinc-400">
+                                ({displayAlbums.length}{allAlbums ? '' : hasAlbumsBrowseId ? '+' : ''})
+                            </span>
+                        </h2>
+                        {hasAlbumsBrowseId && !allAlbums && (
+                            <button
+                                onClick={handleLoadAllAlbums}
+                                disabled={loadingAlbums}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
+                            >
+                                {loadingAlbums ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                )}
+                                Show All
+                            </button>
+                        )}
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {artist.albums.results.map((album: any, i: number) => (
+                        {displayAlbums.map((album: any, i: number) => (
                             <div
                                 key={album.browseId || i}
                                 onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
@@ -280,14 +380,33 @@ export default function ArtistPage() {
             )}
 
             {/* Singles Section */}
-            {artist.singles?.results && artist.singles.results.length > 0 && (
+            {displaySingles.length > 0 && (
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Disc className="w-5 h-5" />
-                        Singles
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Disc className="w-5 h-5" />
+                            Singles
+                            <span className="text-sm font-normal text-zinc-400">
+                                ({displaySingles.length}{allSingles ? '' : hasSinglesBrowseId ? '+' : ''})
+                            </span>
+                        </h2>
+                        {hasSinglesBrowseId && !allSingles && (
+                            <button
+                                onClick={handleLoadAllSingles}
+                                disabled={loadingSingles}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
+                            >
+                                {loadingSingles ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                )}
+                                Show All
+                            </button>
+                        )}
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {artist.singles.results.map((single: any, i: number) => (
+                        {displaySingles.map((single: any, i: number) => (
                             <div
                                 key={single.browseId || i}
                                 onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
@@ -356,7 +475,7 @@ export default function ArtistPage() {
                         {artist.related.results.map((related: any, i: number) => (
                             <div
                                 key={related.browseId || i}
-                                onClick={() => related.browseId && router.push(`/test-search/artist/${related.browseId}`)}
+                                onClick={() => related.browseId && router.push(`/artist/${related.browseId}`)}
                                 className="flex-shrink-0 w-32 text-center cursor-pointer group"
                             >
                                 <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">

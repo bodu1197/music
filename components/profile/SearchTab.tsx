@@ -15,7 +15,7 @@ const FILTERS = [
     { id: "playlists", label: "Playlists", icon: ListMusic },
 ];
 
-export default function TestSearchPage() {
+export function SearchTab() {
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [results, setResults] = useState<any[]>([]);
@@ -103,7 +103,7 @@ export default function TestSearchPage() {
         // Artist - go to artist page
         if (item.resultType === "artist" && artistId) {
             console.log("[Search] Navigating to artist:", artistId);
-            router.push(`/test-search/artist/${artistId}`);
+            router.push(`/artist/${artistId}`);
             return;
         }
 
@@ -170,9 +170,7 @@ export default function TestSearchPage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4">
-            <h1 className="text-2xl font-bold text-white mb-6">Test Search</h1>
-
+        <div className="py-4">
             {/* Search Input */}
             <div className="relative mb-6" ref={suggestionsRef}>
                 <div className="relative">

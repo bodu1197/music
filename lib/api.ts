@@ -43,6 +43,20 @@ export const api = {
             return res.json();
         },
 
+        // Get all songs for an artist (via Next.js API route to avoid CORS)
+        artistSongs: async (artistId: string) => {
+            const res = await fetch(`/api/artist-data?id=${artistId}&dataType=songs`);
+            if (!res.ok) throw new Error('Failed to fetch artist songs');
+            return res.json();
+        },
+
+        // Get all albums/singles for an artist (via Next.js API route to avoid CORS)
+        artistAlbums: async (artistId: string, type: 'albums' | 'singles' = 'albums') => {
+            const res = await fetch(`/api/artist-data?id=${artistId}&dataType=albums&type=${type}`);
+            if (!res.ok) throw new Error('Failed to fetch artist albums');
+            return res.json();
+        },
+
         // Get album details
         album: async (albumId: string) => {
             const res = await fetch(`${API_URL}/album/${albumId}`);

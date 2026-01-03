@@ -213,6 +213,219 @@ def get_artist(artist_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def parse_song_item(item):
+    """Parse a song item from musicPlaylistShelfRenderer"""
+    renderer = item.get('musicResponsiveListItemRenderer', {})
+    if not renderer:
+        return None
+
+    # Get videoId
+    overlay = renderer.get('overlay', {}).get('musicItemThumbnailOverlayRenderer', {})
+    play_nav = overlay.get('content', {}).get('musicPlayButtonRenderer', {}).get('playNavigationEndpoint', {})
+    video_id = play_nav.get('watchEndpoint', {}).get('videoId')
+
+    if not video_id:
+        return None
+
+    # Get title and artists from flexColumns
+    flex_columns = renderer.get('flexColumns', [])
+    title = ""
+    artists = []
+    album = None
+
+    if len(flex_columns) > 0:
+        title_runs = flex_columns[0].get('musicResponsiveListItemFlexColumnRenderer', {}).get('text', {}).get('runs', [])
+        if title_runs:
+            title = title_runs[0].get('text', '')
+
+    if len(flex_columns) > 1:
+        artist_runs = flex_columns[1].get('musicResponsiveListItemFlexColumnRenderer', {}).get('text', {}).get('runs', [])
+        for run in artist_runs:
+            nav = run.get('navigationEndpoint', {})
+            if nav.get('browseEndpoint', {}).get('browseEndpointContextSupportedConfigs', {}).get('browseEndpointContextMusicConfig', {}).get('pageType') == 'MUSIC_PAGE_TYPE_ARTIST':
+                artists.append({'name': run.get('text', ''), 'id': nav.get('browseEndpoint', {}).get('browseId')})
+            elif nav.get('browseEndpoint', {}).get('browseEndpointContextSupportedConfigs', {}).get('browseEndpointContextMusicConfig', {}).get('pageType') == 'MUSIC_PAGE_TYPE_ALBUM':
+                album = {'name': run.get('text', ''), 'id': nav.get('browseEndpoint', {}).get('browseId')}
+
+    # Get thumbnail
+    thumbnails = renderer.get('thumbnail', {}).get('musicThumbnailRenderer', {}).get('thumbnail', {}).get('thumbnails', [])
+
+    # Get duration
+    duration = None
+    fixed_columns = renderer.get('fixedColumns', [])
+    if fixed_columns:
+        duration_text = fixed_columns[0].get('musicResponsiveListItemFixedColumnRenderer', {}).get('text', {}).get('runs', [{}])[0].get('text')
+        duration = duration_text
+
+    return {
+        'videoId': video_id,
+        'title': title,
+        'artists': artists,
+        'album': album,
+        'thumbnails': thumbnails,
+        'duration': duration
+    }
+
+@app.get("/artist/{artist_id}/songs")
+def get_artist_all_songs(artist_id: str):
+    """Get all songs for an artist using direct browse (fast)"""
+    try:
+        yt = get_ytmusic()
+        artist = run_with_retry(yt.get_artist, artist_id)
+
+        songs_info = artist.get('songs', {})
+        browse_id = songs_info.get('browseId')
+
+        if not browse_id:
+            return {"tracks": songs_info.get('results', []), "total": len(songs_info.get('results', []))}
+
+        # Direct browse request (much faster than get_playlist)
+        response = yt._send_request('browse', {'browseId': browse_id})
+
+        tracks = []
+        continuation = None
+
+        try:
+            two_col = response.get('contents', {}).get('twoColumnBrowseResultsRenderer', {})
+            secondary = two_col.get('secondaryContents', {})
+            section = secondary.get('sectionListRenderer', {}).get('contents', [{}])[0]
+            shelf = section.get('musicPlaylistShelfRenderer', {})
+
+            items = shelf.get('contents', [])
+            for item in items:
+                parsed = parse_song_item(item)
+                if parsed:
+                    tracks.append(parsed)
+
+            # Check for continuation
+            conts = shelf.get('continuations', [])
+            if conts:
+                continuation = conts[0].get('nextContinuationData', {}).get('continuation')
+
+            # Follow all continuations
+            while continuation:
+                cont_resp = yt._send_request('browse', {'continuation': continuation})
+                cont_contents = cont_resp.get('continuationContents', {})
+                shelf_cont = cont_contents.get('musicPlaylistShelfContinuation', {})
+                new_items = shelf_cont.get('contents', [])
+
+                if not new_items:
+                    break
+
+                for item in new_items:
+                    parsed = parse_song_item(item)
+                    if parsed:
+                        tracks.append(parsed)
+
+                conts = shelf_cont.get('continuations', [])
+                continuation = conts[0].get('nextContinuationData', {}).get('continuation') if conts else None
+
+        except Exception as e:
+            print(f"Error parsing songs: {e}")
+            # Fallback to get_playlist if browse parsing fails
+            playlist_id = browse_id[2:] if browse_id.startswith('VL') else browse_id
+            playlist = run_with_retry(yt.get_playlist, playlist_id, limit=None)
+            tracks = playlist.get('tracks', [])
+
+        return {"tracks": tracks, "total": len(tracks)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def parse_album_items(grid_items):
+    """Parse album items from grid"""
+    items = []
+    for item in grid_items:
+        renderer = item.get('musicTwoRowItemRenderer', {})
+        if renderer:
+            title = renderer.get('title', {}).get('runs', [{}])[0].get('text', '')
+            browse_id = renderer.get('navigationEndpoint', {}).get('browseEndpoint', {}).get('browseId', '')
+            thumbnails = renderer.get('thumbnailRenderer', {}).get('musicThumbnailRenderer', {}).get('thumbnail', {}).get('thumbnails', [])
+            subtitle = renderer.get('subtitle', {}).get('runs', [{}])[0].get('text', '')
+            items.append({
+                'title': title,
+                'browseId': browse_id,
+                'thumbnails': thumbnails,
+                'year': subtitle if subtitle.isdigit() else None
+            })
+    return items
+
+@app.get("/artist/{artist_id}/albums")
+def get_artist_all_albums(artist_id: str, type: str = "albums"):
+    """
+    Get all albums/singles for an artist with pagination support.
+    type: 'albums' or 'singles'
+    """
+    try:
+        yt = get_ytmusic()
+        artist = run_with_retry(yt.get_artist, artist_id)
+
+        # Get the appropriate section
+        section = artist.get(type, {})
+        browse_id = section.get('browseId')
+        params = section.get('params')
+
+        if not browse_id:
+            return {"items": section.get('results', []), "total": len(section.get('results', []))}
+
+        # Use browse request to get all items
+        body = {'browseId': browse_id}
+        if params:
+            body['params'] = params
+
+        response = yt._send_request('browse', body)
+
+        # Parse initial response
+        items = []
+        continuation = None
+
+        try:
+            contents = response.get('contents', {})
+            tabs = contents.get('singleColumnBrowseResultsRenderer', {}).get('tabs', [])
+            if tabs:
+                tab_content = tabs[0].get('tabRenderer', {}).get('content', {})
+                section_list = tab_content.get('sectionListRenderer', {}).get('contents', [])
+
+                for sec in section_list:
+                    grid = sec.get('gridRenderer', {})
+                    grid_items = grid.get('items', [])
+                    items.extend(parse_album_items(grid_items))
+
+                    # Check for continuation
+                    continuations = grid.get('continuations', [])
+                    if continuations:
+                        cont_data = continuations[0].get('nextContinuationData', {})
+                        continuation = cont_data.get('continuation')
+
+            # Follow continuations to get ALL items
+            while continuation:
+                cont_body = {'continuation': continuation}
+                cont_response = yt._send_request('browse', cont_body)
+
+                cont_contents = cont_response.get('continuationContents', {})
+                grid_cont = cont_contents.get('gridContinuation', {})
+                grid_items = grid_cont.get('items', [])
+
+                if not grid_items:
+                    break
+
+                items.extend(parse_album_items(grid_items))
+
+                # Check for next continuation
+                continuations = grid_cont.get('continuations', [])
+                if continuations:
+                    cont_data = continuations[0].get('nextContinuationData', {})
+                    continuation = cont_data.get('continuation')
+                else:
+                    continuation = None
+
+        except Exception as e:
+            print(f"Error parsing albums: {e}")
+            return {"items": section.get('results', []), "total": len(section.get('results', []))}
+
+        return {"items": items, "total": len(items)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/album/{browse_id}")
 def get_album(browse_id: str):
     try:

@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Settings, Grid, Bookmark, UserSquare2, Music2, TrendingUp, Sparkles } from "lucide-react";
+import { Settings, Grid, Bookmark, UserSquare2, Music2, TrendingUp, Sparkles, Search } from "lucide-react";
+import { SearchTab } from "@/components/profile/SearchTab";
 import { MusicTab } from "@/components/profile/MusicTab";
 import { ChartsTab } from "@/components/profile/ChartsTab";
 import { MoodsTab } from "@/components/profile/MoodsTab";
@@ -103,6 +104,7 @@ export default function ProfilePage() {
 
     const tabs = [
         { id: "posts", icon: Grid, label: "POSTS" },
+        { id: "search", icon: Search, label: "SEARCH" },
         { id: "music", icon: Music2, label: "MUSIC" },
         { id: "charts", icon: TrendingUp, label: "CHARTS" },
         { id: "moods", icon: Sparkles, label: "MOODS" },
@@ -213,6 +215,10 @@ export default function ProfilePage() {
                             <Button variant="ghost" className="text-blue-400 font-bold p-0 hover:bg-transparent hover:text-blue-300">Share your first photo</Button>
                         </div>
                     </div>
+                )}
+
+                {activeTab === "search" && (
+                    <SearchTab />
                 )}
 
                 {activeTab === "music" && (
