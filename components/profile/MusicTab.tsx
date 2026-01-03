@@ -5,45 +5,45 @@ import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { Play, Loader2 } from "lucide-react";
+import type { HomeSectionContent, HomeSection, Artist, AlbumData, AlbumTrack, WatchTrack } from "@/types/music";
 
 interface MusicTabProps {
     country: { code: string; name: string; lang: string };
 }
 
 // Convert API item to Track
-function itemToTrack(item: any): Track | null {
+function itemToTrack(item: HomeSectionContent): Track | null {
     if (!item.videoId) return null;
     return {
         videoId: item.videoId,
         title: item.title || "Unknown",
-        artist: item.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        artist: item.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
-        album: item.album?.name,
     };
 }
 
 // Convert album track to Track
-function albumTrackToTrack(track: any, albumInfo: any): Track | null {
+function albumTrackToTrack(track: AlbumTrack, albumInfo: AlbumData): Track | null {
     if (!track.videoId) return null;
     return {
         videoId: track.videoId,
         title: track.title || "Unknown",
-        artist: track.artists?.map((a: any) => a.name).join(", ") || albumInfo?.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        artist: track.artists?.map((a: Artist) => a.name).join(", ") || albumInfo?.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: albumInfo?.thumbnails?.[albumInfo.thumbnails.length - 1]?.url || "/images/default-album.svg",
         album: albumInfo?.title,
     };
 }
 
 // Convert playlist track to Track (watch API 응답용)
-function playlistTrackToTrack(track: any): Track | null {
+function playlistTrackToTrack(track: WatchTrack): Track | null {
     if (!track.videoId) return null;
     return {
         videoId: track.videoId,
         title: track.title || "Unknown",
-        artist: track.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
             ? track.thumbnail[track.thumbnail.length - 1]?.url
-            : track.thumbnail?.url || "/images/default-album.svg",
+            : "/images/default-album.svg",
     };
 }
 
@@ -62,7 +62,7 @@ export function MusicTab({ country }: MusicTabProps) {
     );
 
     // 케이스 1: 배너 1개 = videoId 1개 → 섹션 전체가 플레이리스트
-    const handleTrackClick = (sectionContents: any[], clickedIndex: number) => {
+    const handleTrackClick = (sectionContents: HomeSectionContent[], clickedIndex: number) => {
         console.log("[MusicTab] Track clicked, index:", clickedIndex);
 
         // Convert all items with videoId to tracks
@@ -108,7 +108,7 @@ export function MusicTab({ country }: MusicTabProps) {
 
             // Convert album tracks to Track format
             const tracks: Track[] = albumData.tracks
-                .map((t: any) => albumTrackToTrack(t, albumData))
+                .map((t: AlbumTrack) => albumTrackToTrack(t, albumData))
                 .filter((t: Track | null): t is Track => t !== null);
 
             console.log("[MusicTab] Album tracks:", tracks.length, "items");
@@ -148,7 +148,7 @@ export function MusicTab({ country }: MusicTabProps) {
 
             // Convert playlist tracks to Track format
             const tracks: Track[] = playlistData.tracks
-                .map((t: any) => playlistTrackToTrack(t))
+                .map((t: WatchTrack) => playlistTrackToTrack(t))
                 .filter((t: Track | null): t is Track => t !== null);
 
             console.log("[MusicTab] Playlist tracks:", tracks.length, "items");
@@ -173,7 +173,7 @@ export function MusicTab({ country }: MusicTabProps) {
     };
 
     // 클릭 핸들러 - 자동 감지: videoId, browseId, playlistId
-    const handleItemClick = (item: any, sectionContents: any[], index: number) => {
+    const handleItemClick = (item: HomeSectionContent, sectionContents: HomeSectionContent[], index: number) => {
         if (item.videoId) {
             // 케이스 1: videoId 있음 → 섹션 전체가 플레이리스트
             handleTrackClick(sectionContents, index);
@@ -215,7 +215,7 @@ export function MusicTab({ country }: MusicTabProps) {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {sections.map((shelf: any, sIndex: number) => {
+            {sections.map((shelf: HomeSection, sIndex: number) => {
                 // 데이터 절대 자르지 않음 - 빈 shelf만 건너뜀
                 if (!shelf || !shelf.contents || !Array.isArray(shelf.contents) || shelf.contents.length === 0) return null;
 
@@ -228,13 +228,13 @@ export function MusicTab({ country }: MusicTabProps) {
 
                         {/* Horizontal Scroll Container */}
                         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4">
-                            {shelf.contents.map((item: any, i: number) => {
+                            {shelf.contents.map((item: HomeSectionContent, i: number) => {
                                 if (!item) return null;
 
                                 const title = item.title || "No Title";
                                 const subtitle = item.artists
-                                    ? item.artists.map((a: any) => a.name).join(", ")
-                                    : item.year || item.subscribers || "";
+                                    ? item.artists.map((a: Artist) => a.name).join(", ")
+                                    : item.subscribers || "";
                                 const image = item.thumbnails
                                     ? item.thumbnails[item.thumbnails.length - 1].url
                                     : "/images/default-album.svg";

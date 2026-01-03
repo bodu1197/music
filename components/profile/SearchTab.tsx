@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
+import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, PlaylistTrack, SearchResultType } from "@/types/music";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -18,7 +19,7 @@ const FILTERS = [
 export function SearchTab() {
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [filter, setFilter] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
@@ -80,8 +81,8 @@ export function SearchTab() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setResults(data || []);
-        } catch (e: any) {
-            setError(e.message || "Search failed");
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Search failed");
         } finally {
             setIsLoading(false);
         }
@@ -95,7 +96,7 @@ export function SearchTab() {
     };
 
     // Handle item click
-    const handleItemClick = async (item: any) => {
+    const handleItemClick = async (item: SearchResult) => {
         // Get artist ID - browseId or artists[0].id (for Top result)
         const artistId = item.browseId || item.artists?.[0]?.id;
         console.log("[Search] Item clicked:", item.resultType, artistId, item);
@@ -115,7 +116,7 @@ export function SearchTab() {
             tracks = [{
                 videoId: item.videoId,
                 title: item.title || "Unknown",
-                artist: item.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+                artist: item.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
                 thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
             }];
         } else if (item.browseId && item.resultType === "album") {
@@ -123,12 +124,12 @@ export function SearchTab() {
             try {
                 const albumData = await api.music.album(item.browseId);
                 if (albumData?.tracks) {
-                    tracks = albumData.tracks.map((t: any) => ({
+                    tracks = albumData.tracks.map((t: AlbumTrack) => ({
                         videoId: t.videoId,
                         title: t.title || "Unknown",
-                        artist: t.artists?.map((a: any) => a.name).join(", ") || item.artist,
+                        artist: t.artists?.map((a: Artist) => a.name).join(", ") || item.artist || "Unknown Artist",
                         thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    })).filter((t: any) => t.videoId);
+                    })).filter((t: Track) => t.videoId);
                 }
             } catch (e) {
                 console.error("Album fetch error:", e);
@@ -139,12 +140,12 @@ export function SearchTab() {
             try {
                 const playlistData = await api.music.playlist(playlistId);
                 if (playlistData?.tracks) {
-                    tracks = playlistData.tracks.map((t: any) => ({
+                    tracks = playlistData.tracks.map((t: PlaylistTrack) => ({
                         videoId: t.videoId,
                         title: t.title || "Unknown",
-                        artist: t.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+                        artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
                         thumbnail: t.thumbnails?.[t.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    })).filter((t: any) => t.videoId);
+                    })).filter((t: Track) => t.videoId);
                 }
             } catch (e) {
                 console.error("Playlist fetch error:", e);
@@ -158,7 +159,7 @@ export function SearchTab() {
     };
 
     // Get icon for result type
-    const getResultIcon = (resultType: string) => {
+    const getResultIcon = (resultType: SearchResultType | string) => {
         switch (resultType) {
             case "song": return <Music className="w-4 h-4" />;
             case "video": return <Video className="w-4 h-4" />;
@@ -227,11 +228,10 @@ export function SearchTab() {
                         <button
                             key={f.id || "all"}
                             onClick={() => { setFilter(f.id); if (query) handleSearch(); }}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                                isActive
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${isActive
                                     ? "bg-white text-black"
                                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                            }`}
+                                }`}
                         >
                             <Icon className="w-4 h-4" />
                             {f.label}

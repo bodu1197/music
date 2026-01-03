@@ -5,31 +5,32 @@ import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { Play, Loader2, Music, User, Disc } from "lucide-react";
+import type { WatchTrack, Artist, ArtistSong, ChartArtist, ChartVideo } from "@/types/music";
 
 interface ChartsTabProps {
     country: { code: string; name: string; lang: string };
 }
 
 // playlist track to Track
-function playlistTrackToTrack(track: any): Track | null {
+function playlistTrackToTrack(track: WatchTrack): Track | null {
     if (!track.videoId) return null;
     return {
         videoId: track.videoId,
         title: track.title || "Unknown",
-        artist: track.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
             ? track.thumbnail[track.thumbnail.length - 1]?.url
-            : track.thumbnail?.url || "/images/default-album.svg",
+            : "/images/default-album.svg",
     };
 }
 
 // artist song to Track
-function artistSongToTrack(song: any, artistName: string): Track | null {
+function artistSongToTrack(song: ArtistSong, artistName: string): Track | null {
     if (!song.videoId) return null;
     return {
         videoId: song.videoId,
         title: song.title || "Unknown",
-        artist: song.artists?.map((a: any) => a.name).join(", ") || artistName,
+        artist: song.artists?.map((a: Artist) => a.name).join(", ") || artistName,
         thumbnail: song.thumbnails?.[song.thumbnails.length - 1]?.url || "/images/default-album.svg",
         album: song.album?.name,
     };
@@ -64,7 +65,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
             }
 
             const tracks: Track[] = playlistData.tracks
-                .map((t: any) => playlistTrackToTrack(t))
+                .map((t: WatchTrack) => playlistTrackToTrack(t))
                 .filter((t: Track | null): t is Track => t !== null);
 
             console.log("[ChartsTab] Tracks:", tracks.length);
@@ -93,19 +94,19 @@ export function ChartsTab({ country }: ChartsTabProps) {
 
             if (artistData?.songs?.results) {
                 tracks = artistData.songs.results
-                    .map((s: any) => artistSongToTrack(s, artistName))
+                    .map((s: ArtistSong) => artistSongToTrack(s, artistName))
                     .filter((t: Track | null): t is Track => t !== null);
             }
 
             if (tracks.length === 0 && artistData?.videos?.results) {
                 tracks = artistData.videos.results
-                    .map((v: any) => ({
+                    .map((v: ChartVideo) => ({
                         videoId: v.videoId,
                         title: v.title || "Unknown",
                         artist: artistName,
                         thumbnail: v.thumbnails?.[v.thumbnails.length - 1]?.url || "/images/default-album.svg",
                     }))
-                    .filter((t: any): t is Track => t.videoId);
+                    .filter((t: Track): t is Track => !!t.videoId);
             }
 
             console.log("[ChartsTab] Artist tracks:", tracks.length);
@@ -147,7 +148,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         Trending Videos
                     </h2>
                     <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
-                        {data.videos.map((item: any, i: number) => {
+                        {data.videos.map((item: ChartVideo, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
                                 <div
@@ -187,7 +188,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         Top by Genre
                     </h2>
                     <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
-                        {data.genres.map((item: any, i: number) => {
+                        {data.genres.map((item: ChartVideo, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
                                 <div
@@ -227,7 +228,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         Top Artists
                     </h2>
                     <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
-                        {data.artists.map((artist: any, i: number) => {
+                        {data.artists.map((artist: ChartArtist, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === artist.browseId);
                             return (
                                 <div

@@ -6,21 +6,22 @@ import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { Play, Loader2, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
 import { Country } from "@/lib/constants";
+import type { WatchTrack, Artist, MoodCategory, MoodPlaylist } from "@/types/music";
 
 interface MoodsTabProps {
     country: Country;
 }
 
 // playlist to Track
-function playlistTrackToTrack(track: any): Track | null {
+function playlistTrackToTrack(track: WatchTrack): Track | null {
     if (!track.videoId) return null;
     return {
         videoId: track.videoId,
         title: track.title || "Unknown",
-        artist: track.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+        artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
             ? track.thumbnail[track.thumbnail.length - 1]?.url
-            : track.thumbnail?.url || "/images/default-album.svg",
+            : "/images/default-album.svg",
     };
 }
 
@@ -37,14 +38,16 @@ export function MoodsTab({ country }: MoodsTabProps) {
     );
 
     // Get playlists for selected category from cached data
-    const playlistsData = useMemo(() => {
+    const playlistsData = useMemo((): MoodPlaylist[] | null => {
         if (!selectedCategory || !moodsAllData) return null;
 
         // Find the category in the data
-        for (const categories of Object.values(moodsAllData) as any[]) {
-            const found = categories.find((cat: any) => cat.params === selectedCategory.params);
-            if (found) {
-                return found.playlists || [];
+        for (const categories of Object.values(moodsAllData) as (MoodCategory & { playlists?: MoodPlaylist[] })[]) {
+            if (Array.isArray(categories)) {
+                const found = categories.find((cat) => cat.params === selectedCategory.params);
+                if (found && 'playlists' in found) {
+                    return (found as { playlists?: MoodPlaylist[] }).playlists || [];
+                }
             }
         }
         return [];
@@ -67,7 +70,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
             }
 
             const tracks: Track[] = watchData.tracks
-                .map((t: any) => playlistTrackToTrack(t))
+                .map((t: WatchTrack) => playlistTrackToTrack(t))
                 .filter((t: Track | null): t is Track => t !== null);
 
             if (tracks.length > 0) {
@@ -102,11 +105,11 @@ export function MoodsTab({ country }: MoodsTabProps) {
             {/* Categories Section */}
             {!selectedCategory ? (
                 <div className="space-y-6">
-                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]: [string, any]) => (
+                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {categories.map((cat: any, i: number) => (
+                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
                                     <button
                                         key={cat.params || i}
                                         onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
@@ -146,7 +149,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {playlistsData.map((playlist: any, i: number) => {
+                            {playlistsData.map((playlist: MoodPlaylist, i: number) => {
                                 const isLoading = loadingPlaylistId === playlist.playlistId;
                                 return (
                                     <div
@@ -155,9 +158,9 @@ export function MoodsTab({ country }: MoodsTabProps) {
                                         onClick={() => playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
                                     >
                                         <div className="relative aspect-square">
-                                            {playlist.thumbnails?.length > 0 && (
+                                            {playlist.thumbnails && playlist.thumbnails.length > 0 && (
                                                 <img
-                                                    src={playlist.thumbnails[playlist.thumbnails.length - 1].url}
+                                                    src={playlist.thumbnails?.[playlist.thumbnails.length - 1]?.url || "/images/default-album.svg"}
                                                     alt={playlist.title}
                                                     className="w-full h-full object-cover"
                                                     loading="lazy"
@@ -180,7 +183,8 @@ export function MoodsTab({ country }: MoodsTabProps) {
                         </div>
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
         if (filter) params.append('filter', filter);
 
         const res = await fetch(`${API_URL}/search?${params}`);
+
+        if (!res.ok) {
+            console.error('[API /search] Backend error:', res.status, res.statusText);
+            return NextResponse.json({ error: `Backend error: ${res.status}` }, { status: res.status });
+        }
+
         const data = await res.json();
 
         return NextResponse.json(data, {
