@@ -1,9 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Play, Heart, Share2, MoreHorizontal, Clock } from "lucide-react";
+import { Play, Heart, MoreHorizontal, Clock } from "lucide-react";
 
-export default function AlbumPage({ params }: { params: { id: string } }) {
+export default function AlbumPage({ params }: Readonly<{ params: { id: string } }>) {
     return (
         <div className="max-w-[936px] mx-auto py-8 px-4 pb-20 md:pb-8">
             {/* Header */}
@@ -38,7 +37,7 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
                     <span>Title</span>
                     <Clock className="w-4 h-4" />
                 </div>
-                {[...Array(10)].map((_, i) => (
+                {Array.from({ length: 10 }, (_, i) => (
                     <div key={i} className="grid grid-cols-[16px_1fr_auto] gap-4 px-4 py-3 hover:bg-zinc-900/50 rounded-sm cursor-pointer group items-center">
                         <span className="text-zinc-500 group-hover:text-white">{i + 1}</span>
                         <div>

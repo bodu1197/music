@@ -9,9 +9,13 @@ export async function middleware(request: NextRequest) {
     })
 
     // Create an environment variable fallback to prevent crash if not set at build time (though runtime needs them)
-    // Hardcoded credentials for immediate fix
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://bsoqfgwexmgxribhzzkf.supabase.co"
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzb3FmZ3dleG1neHJpYmh6emtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNTE2NjUsImV4cCI6MjA4MjgyNzY2NX0.19rA3UyOuoXu0nK0nQfiKrbpP_3qTZAQyYxunIJ9_PI"
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+        console.error('Missing Supabase environment variables');
+        return response;
+    }
 
     const supabase = createServerClient(
         supabaseUrl,

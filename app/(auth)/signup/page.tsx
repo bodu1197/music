@@ -21,7 +21,7 @@ export default function SignupPage() {
         setError(null);
 
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -35,8 +35,8 @@ export default function SignupPage() {
             if (error) throw error;
             // Ideally show a message to check email, but for now redirect or auto-login
             router.push("/");
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Signup failed");
         } finally {
             setLoading(false);
         }

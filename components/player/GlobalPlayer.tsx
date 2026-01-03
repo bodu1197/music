@@ -18,7 +18,7 @@ import { useRef, useCallback } from "react";
 
 // Format time (seconds) to mm:ss
 function formatTime(seconds: number): string {
-    if (!seconds || isNaN(seconds)) return "0:00";
+    if (!seconds || Number.isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -53,7 +53,7 @@ export default function GlobalPlayer() {
     // Handle progress bar change
     const handleProgressChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            const newTime = (parseFloat(e.target.value) / 100) * duration;
+            const newTime = (Number.parseFloat(e.target.value) / 100) * duration;
             seekTo(newTime);
         },
         [duration, seekTo]
@@ -62,7 +62,7 @@ export default function GlobalPlayer() {
     // Handle volume change
     const handleVolumeChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            setVolume(parseInt(e.target.value, 10));
+            setVolume(Number.parseInt(e.target.value, 10));
         },
         [setVolume]
     );
@@ -159,8 +159,8 @@ export default function GlobalPlayer() {
                             repeatMode === "none"
                                 ? "Repeat Off"
                                 : repeatMode === "all"
-                                  ? "Repeat All"
-                                  : "Repeat One"
+                                    ? "Repeat All"
+                                    : "Repeat One"
                         }
                     >
                         <Repeat className="w-4 h-4" />
