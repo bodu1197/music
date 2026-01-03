@@ -289,7 +289,7 @@ export function SearchTab() {
                             {item.thumbnails?.[0]?.url ? (
                                 <Image
                                     src={item.thumbnails[0].url || ""}
-                                    alt={item.title}
+                                    alt={item.title || "Thumbnail"}
                                     fill
                                     className="object-cover"
                                     unoptimized

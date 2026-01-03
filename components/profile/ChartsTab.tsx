@@ -162,7 +162,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                         {item.thumbnails?.[0]?.url && (
                                             <Image
                                                 src={item.thumbnails[0].url}
-                                                alt={item.title}
+                                                alt={item.title || "Video thumbnail"}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                 unoptimized
@@ -205,7 +205,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                         {item.thumbnails?.[0]?.url && (
                                             <Image
                                                 src={item.thumbnails[0].url}
-                                                alt={item.title}
+                                                alt={item.title || "Genre thumbnail"}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                 unoptimized
@@ -248,7 +248,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                         {artist.thumbnails?.[0]?.url && (
                                             <Image
                                                 src={artist.thumbnails[0].url}
-                                                alt={artist.title}
+                                                alt={artist.title || "Artist thumbnail"}
                                                 fill
                                                 className="object-cover"
                                                 unoptimized
