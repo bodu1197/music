@@ -18,10 +18,11 @@ export default function PlayerSidebar() {
         <>
             {/* Overlay for mobile - only when open */}
             {isQueueOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                <button
+                    type="button"
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden w-full h-full border-none cursor-default"
                     onClick={toggleQueue}
-                    role="presentation"
+                    aria-label="Close queue"
                 />
             )}
 

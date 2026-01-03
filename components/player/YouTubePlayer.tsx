@@ -33,7 +33,6 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         repeatMode,
         volume,
         isMuted,
-        playerReady,
     } = usePlayer();
 
     // Store callbacks in refs to avoid stale closures

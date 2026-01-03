@@ -131,4 +131,4 @@ async function main() {
     console.log('='.repeat(50));
 }
 
-main().catch(console.error);
+await main();

@@ -211,7 +211,12 @@ function VolumeControl({ player }: { player: ReturnType<typeof usePlayer> }) {
         [setVolume]
     );
 
-    const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
+    let VolumeIcon = Volume2;
+    if (isMuted || volume === 0) {
+        VolumeIcon = VolumeX;
+    } else if (volume < 50) {
+        VolumeIcon = Volume1;
+    }
 
     return (
         <div className="flex items-center justify-end gap-3 w-[30%]">

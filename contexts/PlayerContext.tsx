@@ -6,6 +6,7 @@ import React, {
     useState,
     useCallback,
     useRef,
+    useMemo,
     ReactNode,
     MutableRefObject,
 } from "react";
@@ -327,7 +328,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     // Note: Video loading is handled by YouTubePlayer component
     // which watches currentTrack changes and uses lastVideoIdRef to prevent duplicate loads
 
-    const value: PlayerContextType = {
+    const value = useMemo<PlayerContextType>(() => ({
         // State
         currentPlaylist,
         currentTrackIndex,
@@ -364,7 +365,36 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
         setIsPlaying,
         setCurrentTime,
         setDuration,
-    };
+    }), [
+        currentPlaylist,
+        currentTrackIndex,
+        currentTrack,
+        isPlaying,
+        isShuffling,
+        repeatMode,
+        playerReady,
+        volume,
+        isMuted,
+        currentTime,
+        duration,
+        isQueueOpen,
+        setPlaylist,
+        addToQueue,
+        playTrackByIndex,
+        playTrack,
+        togglePlayPause,
+        playNext,
+        playPrevious,
+        toggleShuffle,
+        toggleRepeat,
+        setVolume,
+        toggleMute,
+        seekTo,
+        toggleQueue,
+        clearQueue,
+        // Refs (stable)
+        // Setters (stable from useState)
+    ]);
 
     return (
         <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>

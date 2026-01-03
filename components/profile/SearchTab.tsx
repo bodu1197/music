@@ -208,7 +208,7 @@ export function SearchTab() {
                         )}
                         {suggestions.map((suggestion, i) => (
                             <button
-                                key={i}
+                                key={`${suggestion}-${i}`}
                                 onClick={() => handleSuggestionClick(suggestion)}
                                 className="w-full px-4 py-3 text-left text-white hover:bg-zinc-800 flex items-center gap-3"
                             >
@@ -278,7 +278,7 @@ export function SearchTab() {
             <div className="space-y-2">
                 {results.map((item, i) => (
                     <button
-                        key={`${item.videoId || item.browseId}-${i}`}
+                        key={item.videoId || item.browseId || `result-${i}`}
                         type="button"
                         onClick={() => handleItemClick(item)}
                         className="w-full flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"

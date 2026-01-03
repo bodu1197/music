@@ -220,7 +220,7 @@ export function MusicTab({ country }: MusicTabProps) {
                 if (!shelf || !shelf.contents || !Array.isArray(shelf.contents) || shelf.contents.length === 0) return null;
 
                 return (
-                    <div key={sIndex} className="mb-8 pl-1">
+                    <div key={`${shelf.title || 'shelf'}-${sIndex}`} className="mb-8 pl-1">
                         {/* Section Title */}
                         {shelf.title && (
                             <h2 className="mb-3 text-lg font-bold text-zinc-100">{shelf.title}</h2>

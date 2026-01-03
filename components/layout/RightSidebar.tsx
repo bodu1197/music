@@ -34,8 +34,8 @@ export default function RightSidebar() {
 
             {/* List */}
             <div className="space-y-4">
-                {suggestions.map((user, i) => (
-                    <div key={i} className="flex items-center justify-between">
+                {suggestions.map((user) => (
+                    <div key={user.username} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-zinc-800" />
                             <div className="text-xs">
