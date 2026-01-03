@@ -311,7 +311,7 @@ export default function ArtistPage() {
                             >
                                 <span className="w-6 text-center text-zinc-500 group-hover:hidden">{i + 1}</span>
                                 <Play className="w-4 h-4 text-white hidden group-hover:block" />
-                                <div className="w-12 h-12 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+                                <div className="w-12 h-12 bg-zinc-800 rounded overflow-hidden flex-shrink-0 relative">
                                     {song.thumbnails?.[0]?.url && (
                                         <Image src={song.thumbnails[0].url} alt={song.title} fill className="object-cover" unoptimized />
                                     )}
@@ -493,7 +493,7 @@ export default function ArtistPage() {
                                     onClick={() => related.browseId && router.push(`/artist/${related.browseId}`)}
                                     className="flex-shrink-0 w-32 text-center cursor-pointer group bg-transparent border-none p-0"
                                 >
-                                    <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">
+                                    <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto relative">
                                         {related.thumbnails?.[0]?.url && (
                                             <Image src={related.thumbnails[0].url} alt={related.title} fill className="object-cover group-hover:scale-105 transition-transform" unoptimized />
                                         )}
