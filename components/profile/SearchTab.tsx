@@ -327,7 +327,7 @@ export function SearchTab() {
             {/* Empty State */}
             {!isLoading && results.length === 0 && query && !error && (
                 <div className="py-20 text-center text-zinc-500">
-                    No results found for "{query}"
+                    No results found for &quot;{query}&quot;
                 </div>
             )}
         </div>

@@ -429,7 +429,7 @@ export default function ArtistPage() {
                                 </div>
                                 <h3 className="text-white font-medium text-sm truncate">{single.title}</h3>
                                 <p className="text-zinc-500 text-xs">{single.year}</p>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </section>
