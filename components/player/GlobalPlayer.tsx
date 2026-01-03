@@ -208,15 +208,8 @@ function ProgressBar({ player }: { readonly player: ReturnType<typeof usePlayer>
 }
 
 function VolumeControl({ player }: { readonly player: ReturnType<typeof usePlayer> }) {
-    const { volume, isMuted, toggleMute, setVolume, toggleQueue, isQueueOpen } = player;
-    const volumeRef = useRef<HTMLInputElement>(null);
+    const { volume, isMuted, toggleMute, handleVolumeChange, toggleQueue, isQueueOpen } = player;
 
-    const handleVolumeChange = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            setVolume(Number.parseInt(e.target.value, 10));
-        },
-        [setVolume]
-    );
 
     let VolumeIcon = Volume2;
     if (isMuted || volume === 0) {
@@ -236,12 +229,11 @@ function VolumeControl({ player }: { readonly player: ReturnType<typeof usePlaye
                     <VolumeIcon className="w-4 h-4" />
                 </button>
                 <input
-                    ref={volumeRef}
                     type="range"
                     min="0"
                     max="100"
                     value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
+                    onChange={(e) => handleVolumeChange(Number.parseInt(e.target.value, 10))}
                     className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
                         [&::-webkit-slider-thumb]:appearance-none
                         [&::-webkit-slider-thumb]:w-3

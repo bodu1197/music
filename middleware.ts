@@ -62,6 +62,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
+        // Note: String.raw is not used here due to Next.js 16.1.1 build compatibility
         "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 }

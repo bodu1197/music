@@ -60,7 +60,7 @@ interface PlayerContextType {
     playPrevious: () => void;
     toggleShuffle: () => void;
     toggleRepeat: () => void;
-    setVolume: (volume: number) => void;
+    handleVolumeChange: (volume: number) => void;
     toggleMute: () => void;
     seekTo: (time: number) => void;
     toggleQueue: () => void;
@@ -88,7 +88,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     const [isShuffling, setIsShuffling] = useState(false);
     const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
     const [playerReady, setPlayerReady] = useState(false);
-    const [volume, setVolumeInternal] = useState(100);
+    const [volume, setVolume] = useState(100);
     const [isMuted, setIsMuted] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -250,9 +250,9 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     }, [repeatMode]);
 
     // Set volume
-    const setVolume = useCallback((newVolume: number) => {
+    const handleVolumeChange = useCallback((newVolume: number) => {
         const clampedVolume = Math.max(0, Math.min(100, newVolume));
-        setVolumeInternal(clampedVolume);
+        setVolume(clampedVolume);
         setIsMuted(clampedVolume === 0);
 
         if (playerRef.current) {
@@ -338,7 +338,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         playPrevious,
         toggleShuffle,
         toggleRepeat,
-        setVolume,
+        handleVolumeChange,
         toggleMute,
         seekTo,
         toggleQueue,
@@ -372,7 +372,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         playPrevious,
         toggleShuffle,
         toggleRepeat,
-        setVolume,
+        handleVolumeChange,
         toggleMute,
         seekTo,
         toggleQueue,
