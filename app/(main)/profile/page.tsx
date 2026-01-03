@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+
 import { Settings, Grid, Bookmark, UserSquare2, Music2, TrendingUp, Sparkles, Search } from "lucide-react";
 import { SearchTab } from "@/components/profile/SearchTab";
 import { MusicTab } from "@/components/profile/MusicTab";

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
-import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, SearchResultType, WatchTrack } from "@/types/music";
+import type { SearchResult, Artist, AlbumTrack, SearchResultType, WatchTrack } from "@/types/music";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -160,7 +160,7 @@ export function SearchTab() {
         }
     };
     // Get icon for result type
-    const getResultIcon = (resultType: SearchResultType | string) => {
+    const getResultIcon = (resultType: string) => {
         switch (resultType) {
             case "song": return <Music className="w-4 h-4" />;
             case "video": return <Video className="w-4 h-4" />;

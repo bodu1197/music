@@ -20,12 +20,12 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
         title: track.title || "Unknown",
         artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
-            ? track.thumbnail[track.thumbnail.length - 1]?.url
+            ? track.thumbnail.at(-1)?.url
             : "/images/default-album.svg",
     };
 }
 
-export function MoodsTab({ country }: MoodsTabProps) {
+export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
@@ -42,7 +42,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
         if (!selectedCategory || !moodsAllData) return null;
 
         // Find the category in the data
-        for (const categories of Object.values(moodsAllData) as (MoodCategory & { playlists?: MoodPlaylist[] })[]) {
+        for (const categories of Object.values(moodsAllData)) {
             if (Array.isArray(categories)) {
                 const found = categories.find((cat) => cat.params === selectedCategory.params);
                 if (found && 'playlists' in found) {
@@ -102,30 +102,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
 
     return (
         <div className="space-y-6 px-4">
-            {/* Categories Section */}
-            {!selectedCategory ? (
-                <div className="space-y-6">
-                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
-                        <section key={sectionTitle}>
-                            <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
-                                    <button
-                                        key={cat.params || i}
-                                        onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
-                                        className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-medium text-white text-sm">{cat.title}</span>
-                                            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-                    ))}
-                </div>
-            ) : (
+            {selectedCategory ? (
                 /* Playlists Section */
                 <div className="space-y-4">
                     {/* Back button */}
@@ -161,7 +138,7 @@ export function MoodsTab({ country }: MoodsTabProps) {
                                         <div className="relative aspect-square">
                                             {playlist.thumbnails && playlist.thumbnails.length > 0 && (
                                                 <img
-                                                    src={playlist.thumbnails?.[playlist.thumbnails.length - 1]?.url || "/images/default-album.svg"}
+                                                    src={playlist.thumbnails.at(-1)?.url || "/images/default-album.svg"}
                                                     alt={playlist.title}
                                                     className="w-full h-full object-cover"
                                                     loading="lazy"
@@ -183,6 +160,28 @@ export function MoodsTab({ country }: MoodsTabProps) {
                             })}
                         </div>
                     )}
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
+                        <section key={sectionTitle}>
+                            <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
+                                    <button
+                                        key={cat.params || i}
+                                        onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
+                                        className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-medium text-white text-sm">{cat.title}</span>
+                                            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
                 </div>
             )}
         </div>

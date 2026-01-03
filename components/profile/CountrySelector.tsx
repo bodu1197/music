@@ -23,7 +23,7 @@ interface CountrySelectorProps {
     onChange: (country: Country) => void;
 }
 
-export function CountrySelector({ value, onChange }: CountrySelectorProps) {
+export function CountrySelector({ value, onChange }: Readonly<CountrySelectorProps>) {
     const [open, setOpen] = useState(false);
 
     const handleSelect = (countryCode: string) => {

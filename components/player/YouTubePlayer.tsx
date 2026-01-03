@@ -18,7 +18,7 @@ interface YouTubePlayerProps {
     className?: string;
 }
 
-export default function YouTubePlayer({ className }: YouTubePlayerProps) {
+export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mountedRef = useRef(false);
 
@@ -104,7 +104,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                         iv_load_policy: 3,
                         modestbranding: 1,
                         rel: 0,
-                        origin: window.location.origin,
+                        origin: globalThis.location.origin,
                     },
                     events: {
                         onReady: (event: YT.PlayerEvent) => {
@@ -150,14 +150,14 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         };
 
         // Initialize logic
-        if (window.YT?.Player) {
+        if (globalThis.YT?.Player) {
             apiScriptLoaded = true;
             createPlayer();
         } else {
             console.log("[YouTubePlayer] Loading YouTube API...");
             apiScriptLoading = true;
-            const existingCallback = window.onYouTubeIframeAPIReady;
-            window.onYouTubeIframeAPIReady = () => {
+            const existingCallback = (globalThis as any).onYouTubeIframeAPIReady;
+            (globalThis as any).onYouTubeIframeAPIReady = () => {
                 apiScriptLoaded = true;
                 apiScriptLoading = false;
                 if (existingCallback) existingCallback();
@@ -212,7 +212,8 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                         }
                     }
                 } catch (e) {
-                    // Ignore errors
+                    // Ignore errors during progress update
+                    console.debug("Progress update error:", e);
                 }
             }
         }, 1000);

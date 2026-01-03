@@ -80,7 +80,7 @@ interface PlayerProviderProps {
     children: ReactNode;
 }
 
-export function PlayerProvider({ children }: PlayerProviderProps) {
+export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     // State
     const [currentPlaylist, setCurrentPlaylist] = useState<Track[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(-1);
@@ -88,7 +88,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     const [isShuffling, setIsShuffling] = useState(false);
     const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
     const [playerReady, setPlayerReady] = useState(false);
-    const [volume, setVolumeState] = useState(100);
+    const [volume, setVolumeInternal] = useState(100);
     const [isMuted, setIsMuted] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -149,7 +149,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
                 (t) => t.videoId === track.videoId
             );
 
-            if (existingIndex !== -1) {
+            if (existingIndex >= 0) {
                 playTrackByIndex(existingIndex);
             } else {
                 // Add to playlist and play
@@ -252,7 +252,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     // Set volume
     const setVolume = useCallback((newVolume: number) => {
         const clampedVolume = Math.max(0, Math.min(100, newVolume));
-        setVolumeState(clampedVolume);
+        setVolumeInternal(clampedVolume);
         setIsMuted(clampedVolume === 0);
 
         if (playerRef.current) {

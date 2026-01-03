@@ -18,7 +18,7 @@ function itemToTrack(item: HomeSectionContent): Track | null {
         videoId: item.videoId,
         title: item.title || "Unknown",
         artist: item.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
-        thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        thumbnail: item.thumbnails?.at(-1)?.url || "/images/default-album.svg",
     };
 }
 
@@ -29,7 +29,7 @@ function albumTrackToTrack(track: AlbumTrack, albumInfo: AlbumData): Track | nul
         videoId: track.videoId,
         title: track.title || "Unknown",
         artist: track.artists?.map((a: Artist) => a.name).join(", ") || albumInfo?.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
-        thumbnail: albumInfo?.thumbnails?.[albumInfo.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        thumbnail: albumInfo?.thumbnails?.at(-1)?.url || "/images/default-album.svg",
         album: albumInfo?.title,
     };
 }
@@ -42,12 +42,12 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
         title: track.title || "Unknown",
         artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
-            ? track.thumbnail[track.thumbnail.length - 1]?.url
+            ? track.thumbnail.at(-1)?.url
             : "/images/default-album.svg",
     };
 }
 
-export function MusicTab({ country }: MusicTabProps) {
+export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
     const [loadingId, setLoadingId] = useState<string | null>(null); // browseId 또는 playlistId
 
@@ -84,7 +84,7 @@ export function MusicTab({ country }: MusicTabProps) {
         console.log("[MusicTab] Setting playlist, starting at index:", trackIndex);
 
         // Set playlist starting from clicked track
-        setPlaylist(tracks, trackIndex >= 0 ? trackIndex : 0);
+        setPlaylist(tracks, Math.max(0, trackIndex));
 
         // Open queue sidebar
         if (!isQueueOpen) {
@@ -235,7 +235,7 @@ export function MusicTab({ country }: MusicTabProps) {
                                 const subtitle = item.artists
                                     ? item.artists.map((a: Artist) => a.name).join(", ")
                                     : item.subscribers || "";
-                                const image = item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg";
+                                const image = item.thumbnails?.at(-1)?.url || "/images/default-album.svg";
 
                                 // videoId, browseId, playlistId 중 하나라도 있으면 재생 가능
                                 const isPlayable = !!(item.videoId || item.browseId || item.playlistId);

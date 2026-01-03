@@ -19,7 +19,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
         title: track.title || "Unknown",
         artist: track.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
         thumbnail: Array.isArray(track.thumbnail)
-            ? track.thumbnail[track.thumbnail.length - 1]?.url
+            ? track.thumbnail.at(-1)?.url
             : "/images/default-album.svg",
     };
 }
@@ -36,7 +36,7 @@ function artistSongToTrack(song: ArtistSong, artistName: string): Track | null {
     };
 }
 
-export function ChartsTab({ country }: ChartsTabProps) {
+export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 

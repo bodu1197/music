@@ -52,18 +52,20 @@ async function warmVercelEdgeCache() {
     const endpoints = [];
 
     for (const country of COUNTRIES) {
-        endpoints.push({
-            url: `/api/home?country=${country.code}&language=${country.lang}&limit=100`,
-            name: `Home (${country.code})`
-        });
-        endpoints.push({
-            url: `/api/charts?country=${country.code}`,
-            name: `Charts (${country.code})`
-        });
-        endpoints.push({
-            url: `/api/moods/all?country=${country.code}&language=${country.lang}`,
-            name: `Moods All (${country.code})`
-        });
+        endpoints.push(
+            {
+                url: `/api/home?country=${country.code}&language=${country.lang}&limit=100`,
+                name: `Home (${country.code})`
+            },
+            {
+                url: `/api/charts?country=${country.code}`,
+                name: `Charts (${country.code})`
+            },
+            {
+                url: `/api/moods/all?country=${country.code}&language=${country.lang}`,
+                name: `Moods All (${country.code})`
+            }
+        );
     }
 
     for (const endpoint of endpoints) {

@@ -93,7 +93,7 @@ interface QueueItemProps {
     onClick: () => void;
 }
 
-function QueueItem({ track, index, isPlaying, onClick }: QueueItemProps) {
+function QueueItem({ track, index, isPlaying, onClick }: Readonly<QueueItemProps>) {
     const thumbnail = track.thumbnail || "/images/default-album.svg";
 
     return (

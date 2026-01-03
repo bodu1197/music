@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
-import { Card } from "@/components/ui/card";
+
 
 interface PostProps {
     username: string;
@@ -13,7 +13,7 @@ interface PostProps {
     likes: number;
 }
 
-export default function Post({ username, avatarUrl, imageUrl, caption, timestamp, likes }: PostProps) {
+export default function Post({ username, avatarUrl, imageUrl, caption, timestamp, likes }: Readonly<PostProps>) {
     return (
         <article className="border-b border-zinc-800 pb-6 mb-6">
             {/* Header */}
