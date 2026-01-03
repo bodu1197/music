@@ -155,6 +155,9 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                     key={item.playlistId || i}
                                     className="flex-none w-[200px] group cursor-pointer"
                                     onClick={() => item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
+                                    role="button"
+                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-video mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
@@ -195,6 +198,9 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                     key={item.playlistId || i}
                                     className="flex-none w-[140px] group cursor-pointer"
                                     onClick={() => item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
+                                    role="button"
+                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-square mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
@@ -235,6 +241,9 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                     key={artist.browseId || i}
                                     className="flex-none w-[100px] text-center group cursor-pointer"
                                     onClick={() => artist.browseId && !isItemLoading && handleArtistClick(artist.browseId, artist.title)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && artist.browseId && !isItemLoading && handleArtistClick(artist.browseId, artist.title)}
+                                    role="button"
+                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-square mb-2 rounded-full overflow-hidden bg-zinc-800">
                                         {artist.thumbnails?.[0]?.url && (

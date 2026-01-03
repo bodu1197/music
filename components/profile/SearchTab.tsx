@@ -229,8 +229,8 @@ export function SearchTab() {
                             key={f.id || "all"}
                             onClick={() => { setFilter(f.id); if (query) handleSearch(); }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${isActive
-                                    ? "bg-white text-black"
-                                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                                ? "bg-white text-black"
+                                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                                 }`}
                         >
                             <Icon className="w-4 h-4" />
@@ -279,6 +279,9 @@ export function SearchTab() {
                     <div
                         key={`${item.videoId || item.browseId}-${i}`}
                         onClick={() => handleItemClick(item)}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleItemClick(item)}
+                        role="button"
+                        tabIndex={0}
                         className="flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group"
                     >
                         {/* Thumbnail */}

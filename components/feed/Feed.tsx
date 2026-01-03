@@ -38,7 +38,7 @@ export default function Feed() {
         <div className="max-w-[470px] mx-auto pt-8">
             {/* Stories Placeholder */}
             <div className="flex gap-4 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-                {[...Array(8)].map((_, i) => (
+                {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-1 flex-shrink-0">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-purple-600 p-[2px]">
                             <div className="w-full h-full rounded-full bg-black p-[2px]">

@@ -21,6 +21,10 @@ export default function PlayerSidebar() {
                 <div
                     className="fixed inset-0 bg-black/50 z-40 md:hidden"
                     onClick={toggleQueue}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleQueue()}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Close queue"
                 />
             )}
 
@@ -97,6 +101,9 @@ function QueueItem({ track, index, isPlaying, onClick }: QueueItemProps) {
     return (
         <li
             onClick={onClick}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
+            role="button"
+            tabIndex={0}
             className={cn(
                 "flex items-center gap-3 p-2 rounded cursor-pointer transition-colors",
                 "hover:bg-white/5",

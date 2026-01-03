@@ -304,6 +304,9 @@ export default function ArtistPage() {
                             <div
                                 key={song.videoId || i}
                                 onClick={() => handlePlaySong(song)}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handlePlaySong(song)}
+                                role="button"
+                                tabIndex={0}
                                 className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group"
                             >
                                 <span className="w-6 text-center text-zinc-500 group-hover:hidden">{i + 1}</span>
@@ -357,6 +360,9 @@ export default function ArtistPage() {
                             <div
                                 key={album.browseId || i}
                                 onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && album.browseId && handlePlayAlbum(album.browseId)}
+                                role="button"
+                                tabIndex={0}
                                 className="group cursor-pointer"
                             >
                                 <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
@@ -410,6 +416,9 @@ export default function ArtistPage() {
                             <div
                                 key={single.browseId || i}
                                 onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && single.browseId && handlePlayAlbum(single.browseId)}
+                                role="button"
+                                tabIndex={0}
                                 className="group cursor-pointer"
                             >
                                 <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
@@ -444,6 +453,9 @@ export default function ArtistPage() {
                             <div
                                 key={video.videoId || i}
                                 onClick={() => handlePlaySong(video)}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handlePlaySong(video)}
+                                role="button"
+                                tabIndex={0}
                                 className="flex gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group"
                             >
                                 <div className="relative w-40 aspect-video bg-zinc-800 rounded overflow-hidden flex-shrink-0">
@@ -476,6 +488,9 @@ export default function ArtistPage() {
                             <div
                                 key={related.browseId || i}
                                 onClick={() => related.browseId && router.push(`/artist/${related.browseId}`)}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && related.browseId && router.push(`/artist/${related.browseId}`)}
+                                role="button"
+                                tabIndex={0}
                                 className="flex-shrink-0 w-32 text-center cursor-pointer group"
                             >
                                 <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">

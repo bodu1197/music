@@ -249,6 +249,9 @@ export function MusicTab({ country }: MusicTabProps) {
                                         key={item.videoId || item.browseId || item.playlistId || `item-${sIndex}-${i}`}
                                         className="flex-none w-[140px] group cursor-pointer"
                                         onClick={() => isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
+                                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
+                                        role="button"
+                                        tabIndex={0}
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
