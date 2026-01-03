@@ -83,8 +83,15 @@ function PlayerControls({ player }: { player: ReturnType<typeof usePlayer> }) {
         toggleRepeat,
     } = player;
 
+    const getRepeatTitle = () => {
+        if (repeatMode === "one") return "Repeat One";
+        if (repeatMode === "all") return "Repeat All";
+        return "Repeat Off";
+    };
+
     return (
         <div className="flex items-center gap-4">
+            {/* ... other buttons ... */}
             <button
                 onClick={toggleShuffle}
                 className={cn(
@@ -133,7 +140,7 @@ function PlayerControls({ player }: { player: ReturnType<typeof usePlayer> }) {
                     "text-white/80 hover:text-white hover:bg-white/10",
                     repeatMode !== "none" && "text-[#667eea]"
                 )}
-                title={repeatMode === "none" ? "Repeat Off" : repeatMode === "all" ? "Repeat All" : "Repeat One"}
+                title={getRepeatTitle()}
             >
                 <Repeat className="w-4 h-4" />
                 {repeatMode === "one" && (

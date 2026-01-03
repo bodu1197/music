@@ -8,7 +8,7 @@ export default function HomePage() {
       {/* Stories */}
       <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar px-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 min-w-[66px]">
+          <div key={`story-${i}`} className="flex flex-col items-center gap-1 min-w-[66px]">
             <div className="w-[66px] h-[66px] rounded-full bg-zinc-800 p-[2px] border-2 border-zinc-700">
               {/* Placeholder Story Circle */}
             </div>

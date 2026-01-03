@@ -150,7 +150,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
         };
 
         // Initialize logic
-        if (window.YT && window.YT.Player) {
+        if (window.YT?.Player) {
             apiScriptLoaded = true;
             createPlayer();
         } else {

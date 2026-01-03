@@ -235,9 +235,7 @@ export function MusicTab({ country }: MusicTabProps) {
                                 const subtitle = item.artists
                                     ? item.artists.map((a: Artist) => a.name).join(", ")
                                     : item.subscribers || "";
-                                const image = item.thumbnails
-                                    ? item.thumbnails[item.thumbnails.length - 1].url
-                                    : "/images/default-album.svg";
+                                const image = item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg";
 
                                 // videoId, browseId, playlistId 중 하나라도 있으면 재생 가능
                                 const isPlayable = !!(item.videoId || item.browseId || item.playlistId);
