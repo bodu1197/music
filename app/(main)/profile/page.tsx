@@ -90,12 +90,7 @@ export default function ProfilePage() {
     // Preloading is now handled by MoodsPreloader in the layout
     // (runs on homepage access, server-cached, single request each)
 
-    // Reset chartsCountry to user's country when entering Charts tab
-    useEffect(() => {
-        if (activeTab === "charts" && currentCountry) {
-            setChartsCountry(currentCountry);
-        }
-    }, [activeTab, currentCountry]);
+
 
     // Charts tab country change (temporary, not saved to localStorage)
     const handleChartsCountryChange = (c: Country) => {
@@ -188,7 +183,12 @@ export default function ProfilePage() {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    if (tab.id === "charts" && currentCountry) {
+                                        setChartsCountry(currentCountry);
+                                    }
+                                }}
                                 className={cn(
                                     "flex items-center gap-2 h-12 text-xs font-semibold tracking-widest border-t transition-colors",
                                     isActive ? "border-white text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"

@@ -13,7 +13,7 @@ interface PostProps {
     likes: number;
 }
 
-export default function Post({ username, avatarUrl, imageUrl, caption, timestamp, likes }: Readonly<PostProps>) {
+export default function Post({ username, imageUrl, caption, timestamp, likes }: Readonly<PostProps>) {
     return (
         <article className="border-b border-zinc-800 pb-6 mb-6">
             {/* Header */}

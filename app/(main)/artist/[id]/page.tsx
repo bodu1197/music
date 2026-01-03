@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { ArrowLeft, Play, Shuffle, Radio, Loader2, Music, Disc, Video, Users, ChevronDown } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
@@ -222,7 +224,7 @@ export default function ArtistPage() {
                 {/* Thumbnail */}
                 <div className="w-48 h-48 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0">
                     {thumbnail ? (
-                        <img src={thumbnail} alt={artist.name} className="w-full h-full object-cover" />
+                        <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-zinc-600">
                             <Users className="w-16 h-16" />
@@ -311,7 +313,7 @@ export default function ArtistPage() {
                                 <Play className="w-4 h-4 text-white hidden group-hover:block" />
                                 <div className="w-12 h-12 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
                                     {song.thumbnails?.[0]?.url && (
-                                        <img src={song.thumbnails[0].url} alt={song.title} className="w-full h-full object-cover" />
+                                        <Image src={song.thumbnails[0].url} alt={song.title} fill className="object-cover" unoptimized />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -365,7 +367,7 @@ export default function ArtistPage() {
                                 >
                                     <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
                                         {album.thumbnails?.[0]?.url && (
-                                            <img src={album.thumbnails[0].url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                            <Image src={album.thumbnails[0].url} alt={album.title} fill className="object-cover group-hover:scale-105 transition-transform" unoptimized />
                                         )}
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             {playingId === album.browseId ? (
@@ -421,7 +423,7 @@ export default function ArtistPage() {
                                 >
                                     <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
                                         {single.thumbnails?.[0]?.url && (
-                                            <img src={single.thumbnails[0].url} alt={single.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                            <Image src={single.thumbnails[0].url} alt={single.title} fill className="object-cover group-hover:scale-105 transition-transform" unoptimized />
                                         )}
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             {playingId === single.browseId ? (
@@ -458,7 +460,7 @@ export default function ArtistPage() {
                                 >
                                     <div className="relative w-40 aspect-video bg-zinc-800 rounded overflow-hidden flex-shrink-0">
                                         {video.thumbnails?.[0]?.url && (
-                                            <img src={video.thumbnails[0].url} alt={video.title} className="w-full h-full object-cover" />
+                                            <Image src={video.thumbnails[0].url} alt={video.title} fill className="object-cover" unoptimized />
                                         )}
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <Play className="w-8 h-8 text-white fill-current" />
@@ -493,7 +495,7 @@ export default function ArtistPage() {
                                 >
                                     <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">
                                         {related.thumbnails?.[0]?.url && (
-                                            <img src={related.thumbnails[0].url} alt={related.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                            <Image src={related.thumbnails[0].url} alt={related.title} fill className="object-cover group-hover:scale-105 transition-transform" unoptimized />
                                         )}
                                     </div>
                                     <h3 className="text-white font-medium text-sm truncate">{related.title}</h3>

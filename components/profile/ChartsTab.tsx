@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
@@ -159,10 +160,12 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                 >
                                     <div className="relative aspect-video mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
-                                            <img
+                                            <Image
                                                 src={item.thumbnails[0].url}
                                                 alt={item.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                unoptimized
                                             />
                                         )}
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -200,10 +203,12 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                 >
                                     <div className="relative aspect-square mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
-                                            <img
+                                            <Image
                                                 src={item.thumbnails[0].url}
                                                 alt={item.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                unoptimized
                                             />
                                         )}
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -241,10 +246,12 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                                 >
                                     <div className="relative aspect-square mb-2 rounded-full overflow-hidden bg-zinc-800">
                                         {artist.thumbnails?.[0]?.url && (
-                                            <img
+                                            <Image
                                                 src={artist.thumbnails[0].url}
                                                 alt={artist.title}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
+                                                unoptimized
                                             />
                                         )}
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">

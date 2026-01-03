@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
@@ -251,10 +252,12 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
-                                            <img
+                                            <Image
                                                 src={image}
                                                 alt={title}
-                                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                unoptimized
                                             />
                                             {/* Play overlay on hover */}
                                             {isPlayable && (

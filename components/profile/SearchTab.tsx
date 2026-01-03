@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
-import type { SearchResult, Artist, AlbumTrack, SearchResultType, WatchTrack } from "@/types/music";
+import type { SearchResult, Artist, AlbumTrack, WatchTrack } from "@/types/music";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -286,10 +287,12 @@ export function SearchTab() {
                         {/* Thumbnail */}
                         <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded overflow-hidden">
                             {item.thumbnails?.[0]?.url ? (
-                                <img
-                                    src={item.thumbnails[0].url}
+                                <Image
+                                    src={item.thumbnails[0].url || ""}
                                     alt={item.title}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-600">
@@ -306,7 +309,7 @@ export function SearchTab() {
                             </div>
                             <h3 className="text-white font-medium truncate">{item.title || item.artist}</h3>
                             <p className="text-sm text-zinc-400 truncate">
-                                {item.artists?.map((a: any) => a.name).join(", ") || item.author || item.artist || ""}
+                                {item.artists?.map((a: Artist) => a.name).join(", ") || item.author || item.artist || ""}
                                 {item.album?.name && ` • ${item.album.name}`}
                                 {item.year && ` • ${item.year}`}
                                 {item.duration && ` • ${item.duration}`}

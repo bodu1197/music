@@ -9,10 +9,13 @@ import { usePlayer, PlayerState } from "@/contexts/PlayerContext";
 let globalPlayerInstance: YT.Player | null = null;
 let globalPlayerReady = false;
 let globalPendingVideoId: string | null = null;
-let apiScriptLoaded = false;
-let apiScriptLoading = false;
+
 
 const PLAYER_ELEMENT_ID = "youtube-player-global";
+
+declare global {
+    var onYouTubeIframeAPIReady: (() => void) | undefined;
+}
 
 interface YouTubePlayerProps {
     className?: string;
@@ -45,15 +48,17 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         isMuted,
     });
 
-    // Update callbacks ref on each render
-    callbacksRef.current = {
-        setIsPlaying,
-        setPlayerReady,
-        playNext,
-        repeatMode,
-        volume,
-        isMuted,
-    };
+    // Update callbacks ref on each render using useEffect
+    useEffect(() => {
+        callbacksRef.current = {
+            setIsPlaying,
+            setPlayerReady,
+            playNext,
+            repeatMode,
+            volume,
+            isMuted,
+        };
+    });
 
     // Initialize YouTube API and player (only once globally)
     useEffect(() => {
@@ -151,15 +156,15 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
 
         // Initialize logic
         if (globalThis.YT?.Player) {
-            apiScriptLoaded = true;
+
             createPlayer();
         } else {
             console.log("[YouTubePlayer] Loading YouTube API...");
-            apiScriptLoading = true;
-            const existingCallback = (globalThis as any).onYouTubeIframeAPIReady;
-            (globalThis as any).onYouTubeIframeAPIReady = () => {
-                apiScriptLoaded = true;
-                apiScriptLoading = false;
+
+            const existingCallback = globalThis.onYouTubeIframeAPIReady;
+            globalThis.onYouTubeIframeAPIReady = () => {
+                // apiScriptLoaded = true; // variable removed
+                // apiScriptLoading = false; // variable removed
                 if (existingCallback) existingCallback();
                 createPlayer();
             };
@@ -195,7 +200,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
             console.log("[YouTubePlayer] Player not ready, storing pending video");
             globalPendingVideoId = currentTrack.videoId;
         }
-    }, [currentTrack?.videoId]);
+    }, [currentTrack?.videoId, currentTrack?.title]);
 
     // Progress updater
     useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { Play, Heart, MoreHorizontal, Clock } from "lucide-react";
 
-export default function AlbumPage({ params }: Readonly<{ params: { id: string } }>) {
+export default function AlbumPage() {
     return (
         <div className="max-w-[936px] mx-auto py-8 px-4 pb-20 md:pb-8">
             {/* Header */}

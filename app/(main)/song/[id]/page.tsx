@@ -2,7 +2,7 @@
 
 import { Play, Heart, Share2 } from "lucide-react";
 
-export default function SongPage({ params }: Readonly<{ params: { id: string } }>) {
+export default function SongPage() {
     return (
         <div className="max-w-[936px] mx-auto py-8 px-4 pb-20 md:pb-8 flex flex-col md:flex-row gap-12">
             {/* Left: Cover & Info */}

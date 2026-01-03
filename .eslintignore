@@ -1,0 +1,5 @@
+search/
+db_setup.js
+scripts/
+backend/
+*.config.js

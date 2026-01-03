@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
@@ -137,11 +138,12 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                                     >
                                         <div className="relative aspect-square">
                                             {playlist.thumbnails && playlist.thumbnails.length > 0 && (
-                                                <img
+                                                <Image
                                                     src={playlist.thumbnails.at(-1)?.url || "/images/default-album.svg"}
                                                     alt={playlist.title}
-                                                    className="w-full h-full object-cover"
-                                                    loading="lazy"
+                                                    fill
+                                                    className="object-cover"
+                                                    unoptimized
                                                 />
                                             )}
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
