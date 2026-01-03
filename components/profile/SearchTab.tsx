@@ -97,67 +97,68 @@ export function SearchTab() {
 
     // Handle item click
     const handleItemClick = async (item: SearchResult) => {
-        // Get artist ID - browseId or artists[0].id (for Top result)
         const artistId = item.browseId || item.artists?.[0]?.id;
         console.log("[Search] Item clicked:", item.resultType, artistId, item);
 
-        // Artist - go to artist page
+        // Case 1: Artist -> Navigation
         if (item.resultType === "artist" && artistId) {
             console.log("[Search] Navigating to artist:", artistId);
             router.push(`/artist/${artistId}`);
             return;
         }
 
-        // Other items - play
+        // Case 2: Playable Items -> Build Track List
         let tracks: Track[] = [];
 
-        if (item.videoId) {
-            // Song or Video
-            tracks = [{
-                videoId: item.videoId,
-                title: item.title || "Unknown",
-                artist: item.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
-                thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
-            }];
-        } else if (item.browseId && item.resultType === "album") {
-            // Album - fetch album tracks
-            try {
+        try {
+            if (item.videoId) {
+                // Single Video
+                tracks = [{
+                    videoId: item.videoId,
+                    title: item.title || "Unknown",
+                    artist: item.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
+                    thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
+                }];
+            } else if (item.resultType === "album" && item.browseId) {
+                // Album
                 const albumData = await api.music.album(item.browseId);
                 if (albumData?.tracks) {
-                    tracks = albumData.tracks.map((t: AlbumTrack) => ({
-                        videoId: t.videoId,
-                        title: t.title || "Unknown",
-                        artist: t.artists?.map((a: Artist) => a.name).join(", ") || item.artist || "Unknown Artist",
-                        thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    })).filter((t: Track) => t.videoId);
+                    tracks = albumData.tracks
+                        .map((t: AlbumTrack) => t.videoId ? {
+                            videoId: t.videoId,
+                            title: t.title || "Unknown",
+                            artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
+                            thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
+                            album: albumData.title
+                        } : null)
+                        .filter((t): t is Track => t !== null);
                 }
-            } catch (e) {
-                console.error("Album fetch error:", e);
-            }
-        } else if (item.browseId && item.resultType === "playlist") {
-            // Playlist - extract playlistId from browseId (VL prefix)
-            const playlistId = item.browseId.startsWith("VL") ? item.browseId.slice(2) : item.browseId;
-            try {
-                const playlistData = await api.music.playlist(playlistId);
+            } else if (item.resultType === "playlist" && item.browseId) {
+                // Playlist
+                const playlistData = await api.music.watch(undefined, item.browseId);
                 if (playlistData?.tracks) {
-                    tracks = playlistData.tracks.map((t: PlaylistTrack) => ({
-                        videoId: t.videoId,
-                        title: t.title || "Unknown",
-                        artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
-                        thumbnail: t.thumbnails?.[t.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    })).filter((t: Track) => t.videoId);
+                    tracks = playlistData.tracks
+                        .map((t: WatchTrack) => t.videoId ? {
+                            videoId: t.videoId,
+                            title: t.title || "Unknown",
+                            artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
+                            thumbnail: Array.isArray(t.thumbnail) ? t.thumbnail[t.thumbnail.length - 1]?.url : "/images/default-album.svg"
+                        } : null)
+                        .filter((t): t is Track => t !== null);
                 }
-            } catch (e) {
-                console.error("Playlist fetch error:", e);
             }
+        } catch (e) {
+            console.error("[Search] Error loading tracks:", e);
+            return;
         }
 
+        // Case 3: Play
         if (tracks.length > 0) {
+            console.log("[Search] Playing tracks:", tracks.length);
             setPlaylist(tracks, 0);
             if (!isQueueOpen) toggleQueue();
         }
     };
-
     // Get icon for result type
     const getResultIcon = (resultType: SearchResultType | string) => {
         switch (resultType) {

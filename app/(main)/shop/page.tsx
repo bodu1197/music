@@ -1,7 +1,6 @@
 "use client";
 
-import { ShoppingBag, Star } from "lucide-react";
-import Image from "next/image";
+import { ShoppingBag } from "lucide-react";
 
 export default function ShopPage() {
     const products = [

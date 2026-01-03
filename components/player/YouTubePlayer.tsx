@@ -63,15 +63,12 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
 
         console.log("[YouTubePlayer] Component mounted, checking global state...");
 
-        // If player already exists globally, just sync refs
+        // Strategy 1: Use existing global player
         if (globalPlayerInstance && globalPlayerReady) {
             console.log("[YouTubePlayer] Using existing global player");
             playerRef.current = globalPlayerInstance;
             setPlayerReady(true);
-
-            // If there's a pending video, load it
             if (globalPendingVideoId) {
-                console.log("[YouTubePlayer] Loading pending video:", globalPendingVideoId);
                 try {
                     globalPlayerInstance.loadVideoById(globalPendingVideoId, 0);
                     globalPendingVideoId = null;
@@ -82,37 +79,19 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             return;
         }
 
-        // Create player element if needed
-        const ensurePlayerElement = () => {
+        // Strategy 2: Create new player
+        const createPlayer = () => {
+            if (globalPlayerInstance) return;
+
+            // Ensure container
             let playerDiv = document.getElementById(PLAYER_ELEMENT_ID);
             if (!playerDiv && containerRef.current) {
                 playerDiv = document.createElement("div");
                 playerDiv.id = PLAYER_ELEMENT_ID;
                 containerRef.current.appendChild(playerDiv);
-                console.log("[YouTubePlayer] Created player element");
-            }
-            return playerDiv;
-        };
-
-        // Initialize the player
-        const initPlayer = () => {
-            if (globalPlayerInstance) {
-                console.log("[YouTubePlayer] Player already initialized globally");
-                return;
             }
 
-            const playerDiv = ensurePlayerElement();
-            if (!playerDiv) {
-                console.error("[YouTubePlayer] No player element found");
-                return;
-            }
-
-            if (!window.YT || !window.YT.Player) {
-                console.error("[YouTubePlayer] YT.Player not available");
-                return;
-            }
-
-            console.log("[YouTubePlayer] Creating YT.Player...");
+            if (!playerDiv || !window.YT?.Player) return;
 
             try {
                 globalPlayerInstance = new window.YT.Player(PLAYER_ELEMENT_ID, {
@@ -130,57 +109,34 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                     },
                     events: {
                         onReady: (event: YT.PlayerEvent) => {
-                            console.log("[YouTubePlayer] Player ready!");
                             globalPlayerReady = true;
                             globalPlayerInstance = event.target;
                             playerRef.current = event.target;
-                            callbacksRef.current.setPlayerReady(true);
-
-                            // Set initial volume
+                            // Safe access to refs
+                            const cb = callbacksRef.current;
+                            cb.setPlayerReady(true);
                             try {
-                                event.target.setVolume(callbacksRef.current.volume);
-                                if (callbacksRef.current.isMuted) {
-                                    event.target.mute();
-                                }
-                            } catch (e) {
-                                console.error("[YouTubePlayer] Error setting volume:", e);
-                            }
-
-                            // Play pending video if any
-                            if (globalPendingVideoId) {
-                                console.log("[YouTubePlayer] Playing pending video:", globalPendingVideoId);
-                                try {
+                                event.target.setVolume(cb.volume);
+                                if (cb.isMuted) event.target.mute();
+                                if (globalPendingVideoId) {
                                     event.target.loadVideoById(globalPendingVideoId, 0);
                                     globalPendingVideoId = null;
-                                } catch (e) {
-                                    console.error("[YouTubePlayer] Error loading pending video:", e);
                                 }
-                            }
+                            } catch (e) { /* ignore */ }
                         },
                         onStateChange: (event: YT.OnStateChangeEvent) => {
                             const state = event.data;
-                            console.log("[YouTubePlayer] State change:", state);
-
-                            switch (state) {
-                                case PlayerState.PLAYING:
-                                    callbacksRef.current.setIsPlaying(true);
-                                    break;
-                                case PlayerState.PAUSED:
-                                    callbacksRef.current.setIsPlaying(false);
-                                    break;
-                                case PlayerState.ENDED:
-                                    callbacksRef.current.setIsPlaying(false);
-                                    if (callbacksRef.current.repeatMode === "one") {
-                                        try {
-                                            event.target.seekTo(0, true);
-                                            event.target.playVideo();
-                                        } catch (e) {
-                                            console.error("[YouTubePlayer] Error repeating:", e);
-                                        }
-                                    } else {
-                                        callbacksRef.current.playNext();
-                                    }
-                                    break;
+                            const cb = callbacksRef.current;
+                            if (state === PlayerState.PLAYING) cb.setIsPlaying(true);
+                            else if (state === PlayerState.PAUSED) cb.setIsPlaying(false);
+                            else if (state === PlayerState.ENDED) {
+                                cb.setIsPlaying(false);
+                                if (cb.repeatMode === "one") {
+                                    event.target.seekTo(0, true);
+                                    event.target.playVideo();
+                                } else {
+                                    cb.playNext();
+                                }
                             }
                         },
                         onError: (event: YT.OnErrorEvent) => {
@@ -194,39 +150,28 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
             }
         };
 
-        // Load YouTube API if needed
+        // Initialize logic
         if (window.YT && window.YT.Player) {
-            console.log("[YouTubePlayer] YT API already loaded");
             apiScriptLoaded = true;
-            initPlayer();
-        } else if (apiScriptLoading) {
-            console.log("[YouTubePlayer] API loading, waiting...");
-            const checkInterval = setInterval(() => {
-                if (apiScriptLoaded && window.YT && window.YT.Player) {
-                    clearInterval(checkInterval);
-                    initPlayer();
-                }
-            }, 100);
+            createPlayer();
         } else {
             console.log("[YouTubePlayer] Loading YouTube API...");
             apiScriptLoading = true;
-
             const existingCallback = window.onYouTubeIframeAPIReady;
             window.onYouTubeIframeAPIReady = () => {
-                console.log("[YouTubePlayer] onYouTubeIframeAPIReady called");
                 apiScriptLoaded = true;
                 apiScriptLoading = false;
                 if (existingCallback) existingCallback();
-                initPlayer();
+                createPlayer();
             };
-
-            const script = document.createElement("script");
-            script.src = "https://www.youtube.com/iframe_api";
-            script.async = true;
-            document.head.appendChild(script);
+            if (!document.getElementById("youtube-api-script")) {
+                const script = document.createElement("script");
+                script.id = "youtube-api-script";
+                script.src = "https://www.youtube.com/iframe_api";
+                script.async = true;
+                document.head.appendChild(script);
+            }
         }
-
-        // NO CLEANUP - player should persist!
     }, [playerRef, setPlayerReady]);
 
     // Watch currentTrack changes and load video
