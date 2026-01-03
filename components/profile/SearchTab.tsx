@@ -285,7 +285,7 @@ export function SearchTab() {
                         className="w-full flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
                     >
                         {/* Thumbnail */}
-                        <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded overflow-hidden">
+                        <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded overflow-hidden relative">
                             {item.thumbnails?.[0]?.url ? (
                                 <Image
                                     src={item.thumbnails[0].url || ""}
