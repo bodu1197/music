@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
+
 
 export default function HomePage() {
   return (

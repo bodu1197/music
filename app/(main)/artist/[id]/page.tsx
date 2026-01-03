@@ -281,7 +281,7 @@ export default function ArtistPage() {
                             <Music className="w-5 h-5" />
                             Songs
                             <span className="text-sm font-normal text-zinc-400">
-                                ({displaySongs.length}{allSongs ? '' : hasSongsBrowseId ? '+' : ''})
+                                ({displaySongs.length}{!allSongs && hasSongsBrowseId ? '+' : ''})
                             </span>
                         </h2>
                         {hasSongsBrowseId && !allSongs && (
@@ -325,148 +325,154 @@ export default function ArtistPage() {
                         ))}
                     </div>
                 </section>
-            )}
+            )
+            }
 
             {/* Albums Section */}
-            {displayAlbums.length > 0 && (
-                <section className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Disc className="w-5 h-5" />
-                            Albums
-                            <span className="text-sm font-normal text-zinc-400">
-                                ({displayAlbums.length}{allAlbums ? '' : hasAlbumsBrowseId ? '+' : ''})
-                            </span>
-                        </h2>
-                        {hasAlbumsBrowseId && !allAlbums && (
-                            <button
-                                onClick={handleLoadAllAlbums}
-                                disabled={loadingAlbums}
-                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
-                            >
-                                {loadingAlbums ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4" />
-                                )}
-                                Show All
-                            </button>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {displayAlbums.map((album: any, i: number) => (
-                            <button
-                                key={album.browseId || i}
-                                type="button"
-                                onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
-                                className="group cursor-pointer text-left w-full"
-                            >
-                                <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
-                                    {album.thumbnails?.[0]?.url && (
-                                        <img src={album.thumbnails[0].url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+            {
+                displayAlbums.length > 0 && (
+                    <section className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Disc className="w-5 h-5" />
+                                Albums
+                                <span className="text-sm font-normal text-zinc-400">
+                                    ({displayAlbums.length}{!allAlbums && hasAlbumsBrowseId ? '+' : ''})
+                                </span>
+                            </h2>
+                            {hasAlbumsBrowseId && !allAlbums && (
+                                <button
+                                    onClick={handleLoadAllAlbums}
+                                    disabled={loadingAlbums}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
+                                >
+                                    {loadingAlbums ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <ChevronDown className="w-4 h-4" />
                                     )}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        {playingId === album.browseId ? (
-                                            <Loader2 className="w-10 h-10 text-white animate-spin" />
-                                        ) : (
-                                            <Play className="w-10 h-10 text-white fill-current" />
+                                    Show All
+                                </button>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {displayAlbums.map((album: any, i: number) => (
+                                <button
+                                    key={album.browseId || i}
+                                    type="button"
+                                    onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
+                                    className="group cursor-pointer text-left w-full"
+                                >
+                                    <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
+                                        {album.thumbnails?.[0]?.url && (
+                                            <img src={album.thumbnails[0].url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                         )}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            {playingId === album.browseId ? (
+                                                <Loader2 className="w-10 h-10 text-white animate-spin" />
+                                            ) : (
+                                                <Play className="w-10 h-10 text-white fill-current" />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                <h3 className="text-white font-medium text-sm truncate">{album.title}</h3>
-                                <p className="text-zinc-500 text-xs">{album.year}</p>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
+                                    <h3 className="text-white font-medium text-sm truncate">{album.title}</h3>
+                                    <p className="text-zinc-500 text-xs">{album.year}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )
+            }
 
             {/* Singles Section */}
-            {displaySingles.length > 0 && (
-                <section className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Disc className="w-5 h-5" />
-                            Singles
-                            <span className="text-sm font-normal text-zinc-400">
-                                ({displaySingles.length}{allSingles ? '' : hasSinglesBrowseId ? '+' : ''})
-                            </span>
-                        </h2>
-                        {hasSinglesBrowseId && !allSingles && (
-                            <button
-                                onClick={handleLoadAllSingles}
-                                disabled={loadingSingles}
-                                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
-                            >
-                                {loadingSingles ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4" />
-                                )}
-                                Show All
-                            </button>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {displaySingles.map((single: any, i: number) => (
-                            <button
-                                key={single.browseId || i}
-                                type="button"
-                                onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
-                                className="group cursor-pointer text-left w-full"
-                            >
-                                <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
-                                    {single.thumbnails?.[0]?.url && (
-                                        <img src={single.thumbnails[0].url} alt={single.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+            {
+                displaySingles.length > 0 && (
+                    <section className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Disc className="w-5 h-5" />
+                                Singles
+                                <span className="text-sm font-normal text-zinc-400">
+                                    ({displaySingles.length}{!allSingles && hasSinglesBrowseId ? '+' : ''})
+                                </span>
+                            </h2>
+                            {hasSinglesBrowseId && !allSingles && (
+                                <button
+                                    onClick={handleLoadAllSingles}
+                                    disabled={loadingSingles}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full"
+                                >
+                                    {loadingSingles ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <ChevronDown className="w-4 h-4" />
                                     )}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        {playingId === single.browseId ? (
-                                            <Loader2 className="w-10 h-10 text-white animate-spin" />
-                                        ) : (
-                                            <Play className="w-10 h-10 text-white fill-current" />
+                                    Show All
+                                </button>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {displaySingles.map((single: any, i: number) => (
+                                <button
+                                    key={single.browseId || i}
+                                    type="button"
+                                    onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
+                                    className="group cursor-pointer text-left w-full"
+                                >
+                                    <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
+                                        {single.thumbnails?.[0]?.url && (
+                                            <img src={single.thumbnails[0].url} alt={single.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                         )}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            {playingId === single.browseId ? (
+                                                <Loader2 className="w-10 h-10 text-white animate-spin" />
+                                            ) : (
+                                                <Play className="w-10 h-10 text-white fill-current" />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                <h3 className="text-white font-medium text-sm truncate">{single.title}</h3>
-                                <p className="text-zinc-500 text-xs">{single.year}</p>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
+                                    <h3 className="text-white font-medium text-sm truncate">{single.title}</h3>
+                                    <p className="text-zinc-500 text-xs">{single.year}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )
+            }
 
             {/* Videos Section */}
-            {artist.videos?.results && artist.videos.results.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Video className="w-5 h-5" />
-                        Music Videos
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {artist.videos.results.map((video: any, i: number) => (
-                            <button
-                                key={video.videoId || i}
-                                type="button"
-                                onClick={() => handlePlaySong(video)}
-                                className="w-full flex gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
-                            >
-                                <div className="relative w-40 aspect-video bg-zinc-800 rounded overflow-hidden flex-shrink-0">
-                                    {video.thumbnails?.[0]?.url && (
-                                        <img src={video.thumbnails[0].url} alt={video.title} className="w-full h-full object-cover" />
-                                    )}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Play className="w-8 h-8 text-white fill-current" />
+            {
+                artist.videos?.results && artist.videos.results.length > 0 && (
+                    <section className="mb-8">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Video className="w-5 h-5" />
+                            Music Videos
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {artist.videos.results.map((video: any, i: number) => (
+                                <button
+                                    key={video.videoId || i}
+                                    type="button"
+                                    onClick={() => handlePlaySong(video)}
+                                    className="w-full flex gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
+                                >
+                                    <div className="relative w-40 aspect-video bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+                                        {video.thumbnails?.[0]?.url && (
+                                            <img src={video.thumbnails[0].url} alt={video.title} className="w-full h-full object-cover" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Play className="w-8 h-8 text-white fill-current" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-white font-medium line-clamp-2">{video.title}</h3>
-                                    <p className="text-sm text-zinc-400 mt-1">{video.views}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-white font-medium line-clamp-2">{video.title}</h3>
+                                        <p className="text-sm text-zinc-400 mt-1">{video.views}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )
             }
 
             {/* Related Artists */}
