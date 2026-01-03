@@ -25,53 +25,8 @@ function formatTime(seconds: number): string {
 }
 
 export default function GlobalPlayer() {
-    const {
-        currentTrack,
-        isPlaying,
-        isShuffling,
-        repeatMode,
-        volume,
-        isMuted,
-        currentTime,
-        duration,
-        togglePlayPause,
-        playNext,
-        playPrevious,
-        toggleShuffle,
-        toggleRepeat,
-        setVolume,
-        toggleMute,
-        seekTo,
-        toggleQueue,
-        isQueueOpen,
-        playerReady,
-    } = usePlayer();
-
-    const progressRef = useRef<HTMLInputElement>(null);
-    const volumeRef = useRef<HTMLInputElement>(null);
-
-    // Handle progress bar change
-    const handleProgressChange = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const newTime = (Number.parseFloat(e.target.value) / 100) * duration;
-            seekTo(newTime);
-        },
-        [duration, seekTo]
-    );
-
-    // Handle volume change
-    const handleVolumeChange = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            setVolume(Number.parseInt(e.target.value, 10));
-        },
-        [setVolume]
-    );
-
-    // Calculate progress percentage
-    const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-    // Get volume icon based on state
-    const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
+    const player = usePlayer();
+    const { currentTrack } = player;
 
     // Default thumbnail if none provided
     const thumbnail = currentTrack?.thumbnail || "/images/default-album.svg";
@@ -100,173 +55,212 @@ export default function GlobalPlayer() {
 
             {/* Center Section - Controls & Progress */}
             <div className="flex flex-col items-center justify-center flex-1 max-w-[600px] px-4 gap-2">
-                {/* Control Buttons */}
-                <div className="flex items-center gap-4">
-                    {/* Shuffle Button */}
-                    <button
-                        onClick={toggleShuffle}
-                        className={cn(
-                            "w-8 h-8 flex items-center justify-center rounded-full transition-all",
-                            "text-white/80 hover:text-white hover:bg-white/10",
-                            isShuffling && "text-[#667eea]"
-                        )}
-                        title={isShuffling ? "Shuffle On" : "Shuffle Off"}
-                    >
-                        <Shuffle className="w-4 h-4" />
-                    </button>
-
-                    {/* Previous Button */}
-                    <button
-                        onClick={playPrevious}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
-                        title="Previous"
-                    >
-                        <SkipBack className="w-4 h-4 fill-current" />
-                    </button>
-
-                    {/* Play/Pause Button */}
-                    <button
-                        onClick={togglePlayPause}
-                        disabled={!playerReady && !currentTrack}
-                        className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 hover:scale-105 transition-all disabled:opacity-50"
-                        title={isPlaying ? "Pause" : "Play"}
-                    >
-                        {isPlaying ? (
-                            <Pause className="w-5 h-5 text-black fill-current" />
-                        ) : (
-                            <Play className="w-5 h-5 text-black fill-current ml-0.5" />
-                        )}
-                    </button>
-
-                    {/* Next Button */}
-                    <button
-                        onClick={playNext}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
-                        title="Next"
-                    >
-                        <SkipForward className="w-4 h-4 fill-current" />
-                    </button>
-
-                    {/* Repeat Button with mode indicator */}
-                    <button
-                        onClick={toggleRepeat}
-                        className={cn(
-                            "w-8 h-8 flex items-center justify-center rounded-full transition-all relative",
-                            "text-white/80 hover:text-white hover:bg-white/10",
-                            repeatMode !== "none" && "text-[#667eea]"
-                        )}
-                        title={
-                            repeatMode === "none"
-                                ? "Repeat Off"
-                                : repeatMode === "all"
-                                    ? "Repeat All"
-                                    : "Repeat One"
-                        }
-                    >
-                        <Repeat className="w-4 h-4" />
-                        {/* Repeat mode indicator */}
-                        {repeatMode === "one" && (
-                            <span className="absolute -top-0.5 right-0.5 text-[0.5rem] font-bold text-white drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]">
-                                1
-                            </span>
-                        )}
-                        {repeatMode === "all" && (
-                            <span className="absolute top-0 right-0 text-[0.35rem] font-bold text-white drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]">
-                                ALL
-                            </span>
-                        )}
-                    </button>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full flex items-center gap-3">
-                    <span className="text-[11px] text-white/60 min-w-[32px] text-center font-mono">
-                        {formatTime(currentTime)}
-                    </span>
-                    <input
-                        ref={progressRef}
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={progressPercent}
-                        onChange={handleProgressChange}
-                        className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
-                            [&::-webkit-slider-thumb]:appearance-none
-                            [&::-webkit-slider-thumb]:w-3
-                            [&::-webkit-slider-thumb]:h-3
-                            [&::-webkit-slider-thumb]:rounded-full
-                            [&::-webkit-slider-thumb]:bg-white
-                            [&::-webkit-slider-thumb]:cursor-pointer
-                            [&::-webkit-slider-thumb]:transition-all
-                            hover:[&::-webkit-slider-thumb]:bg-[#667eea]
-                            [&::-moz-range-thumb]:w-3
-                            [&::-moz-range-thumb]:h-3
-                            [&::-moz-range-thumb]:rounded-full
-                            [&::-moz-range-thumb]:bg-white
-                            [&::-moz-range-thumb]:border-none
-                            [&::-moz-range-thumb]:cursor-pointer
-                            hover:[&::-moz-range-thumb]:bg-[#667eea]"
-                        style={{
-                            background: `linear-gradient(to right, #667eea ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`,
-                        }}
-                    />
-                    <span className="text-[11px] text-white/60 min-w-[32px] text-center font-mono">
-                        {formatTime(duration)}
-                    </span>
-                </div>
+                <PlayerControls player={player} />
+                <ProgressBar player={player} />
             </div>
 
             {/* Right Section - Volume & Queue */}
-            <div className="flex items-center justify-end gap-3 w-[30%]">
-                {/* Volume Controls */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleMute}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
-                        title={isMuted ? "Unmute" : "Mute"}
-                    >
-                        <VolumeIcon className="w-4 h-4" />
-                    </button>
-                    <input
-                        ref={volumeRef}
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={isMuted ? 0 : volume}
-                        onChange={handleVolumeChange}
-                        className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
-                            [&::-webkit-slider-thumb]:appearance-none
-                            [&::-webkit-slider-thumb]:w-3
-                            [&::-webkit-slider-thumb]:h-3
-                            [&::-webkit-slider-thumb]:rounded-full
-                            [&::-webkit-slider-thumb]:bg-white
-                            [&::-webkit-slider-thumb]:cursor-pointer
-                            hover:[&::-webkit-slider-thumb]:bg-[#667eea]
-                            [&::-moz-range-thumb]:w-3
-                            [&::-moz-range-thumb]:h-3
-                            [&::-moz-range-thumb]:rounded-full
-                            [&::-moz-range-thumb]:bg-white
-                            [&::-moz-range-thumb]:border-none
-                            hover:[&::-moz-range-thumb]:bg-[#667eea]"
-                        style={{
-                            background: `linear-gradient(to right, #fff ${isMuted ? 0 : volume}%, rgba(255,255,255,0.2) ${isMuted ? 0 : volume}%)`,
-                        }}
-                    />
-                </div>
+            <VolumeControl player={player} />
+        </div>
+    );
+}
 
-                {/* Queue Toggle */}
+// ==========================================
+// Sub-Components
+// ==========================================
+
+function PlayerControls({ player }: { player: ReturnType<typeof usePlayer> }) {
+    const {
+        isPlaying,
+        isShuffling,
+        repeatMode,
+        playerReady,
+        currentTrack,
+        togglePlayPause,
+        playNext,
+        playPrevious,
+        toggleShuffle,
+        toggleRepeat,
+    } = player;
+
+    return (
+        <div className="flex items-center gap-4">
+            <button
+                onClick={toggleShuffle}
+                className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-full transition-all",
+                    "text-white/80 hover:text-white hover:bg-white/10",
+                    isShuffling && "text-[#667eea]"
+                )}
+                title={isShuffling ? "Shuffle On" : "Shuffle Off"}
+            >
+                <Shuffle className="w-4 h-4" />
+            </button>
+
+            <button
+                onClick={playPrevious}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                title="Previous"
+            >
+                <SkipBack className="w-4 h-4 fill-current" />
+            </button>
+
+            <button
+                onClick={togglePlayPause}
+                disabled={!playerReady && !currentTrack}
+                className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 hover:scale-105 transition-all disabled:opacity-50"
+                title={isPlaying ? "Pause" : "Play"}
+            >
+                {isPlaying ? (
+                    <Pause className="w-5 h-5 text-black fill-current" />
+                ) : (
+                    <Play className="w-5 h-5 text-black fill-current ml-0.5" />
+                )}
+            </button>
+
+            <button
+                onClick={playNext}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                title="Next"
+            >
+                <SkipForward className="w-4 h-4 fill-current" />
+            </button>
+
+            <button
+                onClick={toggleRepeat}
+                className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-full transition-all relative",
+                    "text-white/80 hover:text-white hover:bg-white/10",
+                    repeatMode !== "none" && "text-[#667eea]"
+                )}
+                title={repeatMode === "none" ? "Repeat Off" : repeatMode === "all" ? "Repeat All" : "Repeat One"}
+            >
+                <Repeat className="w-4 h-4" />
+                {repeatMode === "one" && (
+                    <span className="absolute -top-0.5 right-0.5 text-[0.5rem] font-bold text-white drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]">1</span>
+                )}
+                {repeatMode === "all" && (
+                    <span className="absolute top-0 right-0 text-[0.35rem] font-bold text-white drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]">ALL</span>
+                )}
+            </button>
+        </div>
+    );
+}
+
+function ProgressBar({ player }: { player: ReturnType<typeof usePlayer> }) {
+    const { currentTime, duration, seekTo } = player;
+    const progressRef = useRef<HTMLInputElement>(null);
+
+    const handleProgressChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newTime = (Number.parseFloat(e.target.value) / 100) * duration;
+            seekTo(newTime);
+        },
+        [duration, seekTo]
+    );
+
+    const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+    return (
+        <div className="w-full flex items-center gap-3">
+            <span className="text-[11px] text-white/60 min-w-[32px] text-center font-mono">
+                {formatTime(currentTime)}
+            </span>
+            <input
+                ref={progressRef}
+                type="range"
+                min="0"
+                max="100"
+                value={progressPercent}
+                onChange={handleProgressChange}
+                className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
+                    [&::-webkit-slider-thumb]:appearance-none
+                    [&::-webkit-slider-thumb]:w-3
+                    [&::-webkit-slider-thumb]:h-3
+                    [&::-webkit-slider-thumb]:rounded-full
+                    [&::-webkit-slider-thumb]:bg-white
+                    [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:transition-all
+                    hover:[&::-webkit-slider-thumb]:bg-[#667eea]
+                    [&::-moz-range-thumb]:w-3
+                    [&::-moz-range-thumb]:h-3
+                    [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:bg-white
+                    [&::-moz-range-thumb]:border-none
+                    [&::-moz-range-thumb]:cursor-pointer
+                    hover:[&::-moz-range-thumb]:bg-[#667eea]"
+                style={{
+                    background: `linear-gradient(to right, #667eea ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`,
+                }}
+            />
+            <span className="text-[11px] text-white/60 min-w-[32px] text-center font-mono">
+                {formatTime(duration)}
+            </span>
+        </div>
+    );
+}
+
+function VolumeControl({ player }: { player: ReturnType<typeof usePlayer> }) {
+    const { volume, isMuted, toggleMute, setVolume, toggleQueue, isQueueOpen } = player;
+    const volumeRef = useRef<HTMLInputElement>(null);
+
+    const handleVolumeChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            setVolume(Number.parseInt(e.target.value, 10));
+        },
+        [setVolume]
+    );
+
+    const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
+
+    return (
+        <div className="flex items-center justify-end gap-3 w-[30%]">
+            <div className="flex items-center gap-2">
                 <button
-                    onClick={toggleQueue}
-                    className={cn(
-                        "w-8 h-8 flex items-center justify-center rounded-full transition-all",
-                        "text-white/80 hover:text-white hover:bg-white/10",
-                        isQueueOpen && "text-[#667eea]"
-                    )}
-                    title="Queue"
+                    onClick={toggleMute}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                    title={isMuted ? "Unmute" : "Mute"}
                 >
-                    <ListMusic className="w-4 h-4" />
+                    <VolumeIcon className="w-4 h-4" />
                 </button>
+                <input
+                    ref={volumeRef}
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-3
+                        [&::-webkit-slider-thumb]:h-3
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-white
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        hover:[&::-webkit-slider-thumb]:bg-[#667eea]
+                        [&::-moz-range-thumb]:w-3
+                        [&::-moz-range-thumb]:h-3
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-white
+                        [&::-moz-range-thumb]:border-none
+                        hover:[&::-moz-range-thumb]:bg-[#667eea]"
+                    style={{
+                        background: `linear-gradient(to right, #fff ${isMuted ? 0 : volume}%, rgba(255,255,255,0.2) ${isMuted ? 0 : volume}%)`,
+                    }}
+                />
             </div>
+
+            <button
+                onClick={toggleQueue}
+                className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-full transition-all",
+                    "text-white/80 hover:text-white hover:bg-white/10",
+                    isQueueOpen && "text-[#667eea]"
+                )}
+                title="Queue"
+            >
+                <ListMusic className="w-4 h-4" />
+            </button>
         </div>
     );
 }

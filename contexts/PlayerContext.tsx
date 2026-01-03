@@ -189,92 +189,34 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
 
     // Play next track
     const playNext = useCallback(() => {
-        if (currentPlaylist.length === 0) {
-            return;
-        }
+        if (currentPlaylist.length === 0) return;
 
-        let nextIndex: number;
+        const nextIndex = calculateNextIndex(currentTrackIndex, currentPlaylist.length, isShuffling, repeatMode);
 
-        if (isShuffling) {
-            // Random next (avoid same track if possible)
-            if (currentPlaylist.length > 1) {
-                do {
-                    nextIndex = Math.floor(Math.random() * currentPlaylist.length);
-                } while (nextIndex === currentTrackIndex);
-            } else {
-                nextIndex = currentTrackIndex;
-            }
-        } else {
-            nextIndex = currentTrackIndex + 1;
-        }
-
-        if (nextIndex >= currentPlaylist.length) {
-            if (repeatMode === "all") {
-                playTrackByIndex(0);
-            } else {
-                // End of playlist, stop
-                setIsPlaying(false);
-                setCurrentTrackIndex(-1);
-            }
-        } else {
+        if (nextIndex !== -1) {
             playTrackByIndex(nextIndex);
+        } else {
+            setIsPlaying(false);
+            setCurrentTrackIndex(-1);
         }
-    }, [
-        currentPlaylist.length,
-        currentTrackIndex,
-        isShuffling,
-        repeatMode,
-        playTrackByIndex,
-    ]);
+    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex]);
 
     // Play previous track
     const playPrevious = useCallback(() => {
-        if (currentPlaylist.length === 0 || !playerRef.current || !playerReady) {
+        if (currentPlaylist.length === 0 || !playerRef.current || !playerReady) return;
+
+        // Restart current track if played more than 3 sec
+        if (playerRef.current.getCurrentTime() > 3 && currentTrackIndex !== -1) {
+            playerRef.current.seekTo(0, true);
             return;
         }
 
-        try {
-            // If current time > 3 seconds, restart current track
-            const currentTimeValue = playerRef.current.getCurrentTime();
-            if (currentTimeValue > 3 && currentTrackIndex !== -1) {
-                playerRef.current.seekTo(0, true);
-                return;
-            }
-        } catch (e) {
-            console.error("Error getting current time:", e);
-        }
+        const prevIndex = calculatePrevIndex(currentTrackIndex, currentPlaylist.length, isShuffling, repeatMode);
 
-        let prevIndex: number;
-
-        if (isShuffling) {
-            // Random previous
-            if (currentPlaylist.length > 1) {
-                do {
-                    prevIndex = Math.floor(Math.random() * currentPlaylist.length);
-                } while (prevIndex === currentTrackIndex);
-            } else {
-                prevIndex = currentTrackIndex;
-            }
-        } else {
-            prevIndex = currentTrackIndex - 1;
-        }
-
-        if (prevIndex < 0) {
-            if (repeatMode === "all" || repeatMode === "one") {
-                playTrackByIndex(currentPlaylist.length - 1);
-            }
-            // Otherwise stay at beginning
-        } else {
+        if (prevIndex !== -1) {
             playTrackByIndex(prevIndex);
         }
-    }, [
-        currentPlaylist.length,
-        currentTrackIndex,
-        isShuffling,
-        repeatMode,
-        playTrackByIndex,
-        playerReady,
-    ]);
+    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex, playerReady]);
 
     // Toggle shuffle
     const toggleShuffle = useCallback(() => {
@@ -440,3 +382,63 @@ export function usePlayer() {
 
 // Export handleTrackEnd for use in YouTube component
 export { PlayerContext };
+
+// Helper functions for index calculation
+function calculateNextIndex(
+    currentIndex: number,
+    total: number,
+    isShuffling: boolean,
+    repeatMode: RepeatMode
+): number {
+    if (total === 0) return -1;
+
+    let nextIndex: number;
+    if (isShuffling) {
+        if (total > 1) {
+            // Simple random for now (avoid same track)
+            do {
+                nextIndex = Math.floor(Math.random() * total);
+            } while (nextIndex === currentIndex);
+        } else {
+            nextIndex = currentIndex;
+        }
+    } else {
+        nextIndex = currentIndex + 1;
+    }
+
+    if (nextIndex >= total) {
+        if (repeatMode === "all") return 0;
+        return -1; // End of playlist
+    }
+    return nextIndex;
+}
+
+function calculatePrevIndex(
+    currentIndex: number,
+    total: number,
+    isShuffling: boolean,
+    repeatMode: RepeatMode
+): number {
+    if (total === 0) return -1;
+
+    let prevIndex: number;
+    if (isShuffling) {
+        if (total > 1) {
+            do {
+                prevIndex = Math.floor(Math.random() * total);
+            } while (prevIndex === currentIndex);
+        } else {
+            prevIndex = currentIndex;
+        }
+    } else {
+        prevIndex = currentIndex - 1;
+    }
+
+    if (prevIndex < 0) {
+        if (repeatMode === "all" || repeatMode === "one") {
+            return total - 1;
+        }
+        return -1; // Beginning of playlist (or do nothing)
+    }
+    return prevIndex;
+}
