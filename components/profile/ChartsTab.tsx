@@ -151,13 +151,11 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         {data.videos.map((item: ChartVideo, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
-                                <div
+                                <button
                                     key={item.playlistId || i}
-                                    className="flex-none w-[200px] group cursor-pointer"
+                                    type="button"
+                                    className="flex-none w-[200px] group cursor-pointer text-left bg-transparent border-none p-0"
                                     onClick={() => item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
-                                    role="button"
-                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-video mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
@@ -176,7 +174,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                         </div>
                                     </div>
                                     <h3 className="text-sm font-medium text-white truncate">{item.title}</h3>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
@@ -194,13 +192,11 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         {data.genres.map((item: ChartVideo, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === item.playlistId);
                             return (
-                                <div
+                                <button
                                     key={item.playlistId || i}
-                                    className="flex-none w-[140px] group cursor-pointer"
+                                    type="button"
+                                    className="flex-none w-[140px] group cursor-pointer text-left bg-transparent border-none p-0"
                                     onClick={() => item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.playlistId && !isItemLoading && handlePlaylistClick(item.playlistId)}
-                                    role="button"
-                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-square mb-2 rounded-md overflow-hidden bg-zinc-900">
                                         {item.thumbnails?.[0]?.url && (
@@ -219,7 +215,7 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                         </div>
                                     </div>
                                     <h3 className="text-sm font-medium text-white truncate">{item.title}</h3>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
@@ -237,13 +233,11 @@ export function ChartsTab({ country }: ChartsTabProps) {
                         {data.artists.map((artist: ChartArtist, i: number) => {
                             const isItemLoading = !!(loadingId && loadingId === artist.browseId);
                             return (
-                                <div
+                                <button
                                     key={artist.browseId || i}
-                                    className="flex-none w-[100px] text-center group cursor-pointer"
+                                    type="button"
+                                    className="flex-none w-[100px] text-center group cursor-pointer bg-transparent border-none p-0"
                                     onClick={() => artist.browseId && !isItemLoading && handleArtistClick(artist.browseId, artist.title)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && artist.browseId && !isItemLoading && handleArtistClick(artist.browseId, artist.title)}
-                                    role="button"
-                                    tabIndex={0}
                                 >
                                     <div className="relative aspect-square mb-2 rounded-full overflow-hidden bg-zinc-800">
                                         {artist.thumbnails?.[0]?.url && (
@@ -263,12 +257,13 @@ export function ChartsTab({ country }: ChartsTabProps) {
                                     </div>
                                     <h3 className="text-xs font-medium text-white truncate">{artist.title}</h3>
                                     <p className="text-xs text-zinc-500 truncate">{artist.subscribers}</p>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
                 </section>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

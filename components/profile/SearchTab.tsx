@@ -276,13 +276,11 @@ export function SearchTab() {
             {/* Results */}
             <div className="space-y-2">
                 {results.map((item, i) => (
-                    <div
+                    <button
                         key={`${item.videoId || item.browseId}-${i}`}
+                        type="button"
                         onClick={() => handleItemClick(item)}
-                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleItemClick(item)}
-                        role="button"
-                        tabIndex={0}
-                        className="flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group"
+                        className="w-full flex items-center gap-4 p-3 bg-zinc-900 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
                     >
                         {/* Thumbnail */}
                         <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded overflow-hidden">
@@ -322,7 +320,7 @@ export function SearchTab() {
                                 {item.category}
                             </span>
                         )}
-                    </div>
+                    </button>
                 ))}
             </div>
 

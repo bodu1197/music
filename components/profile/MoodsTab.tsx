@@ -152,13 +152,11 @@ export function MoodsTab({ country }: MoodsTabProps) {
                             {playlistsData.map((playlist: MoodPlaylist, i: number) => {
                                 const isLoading = loadingPlaylistId === playlist.playlistId;
                                 return (
-                                    <div
+                                    <button
                                         key={playlist.playlistId || i}
-                                        className="bg-zinc-900 rounded-lg overflow-hidden cursor-pointer hover:bg-zinc-800 transition-colors group"
+                                        type="button"
+                                        className="bg-zinc-900 rounded-lg overflow-hidden cursor-pointer hover:bg-zinc-800 transition-colors group text-left w-full border-none p-0 block"
                                         onClick={() => playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
-                                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
-                                        role="button"
-                                        tabIndex={0}
                                     >
                                         <div className="relative aspect-square">
                                             {playlist.thumbnails && playlist.thumbnails.length > 0 && (
@@ -180,14 +178,13 @@ export function MoodsTab({ country }: MoodsTabProps) {
                                         <div className="p-2">
                                             <h3 className="font-medium text-white text-xs truncate">{playlist.title}</h3>
                                         </div>
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
                     )}
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 }

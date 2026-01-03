@@ -21,10 +21,7 @@ export default function PlayerSidebar() {
                 <div
                     className="fixed inset-0 bg-black/50 z-40 md:hidden"
                     onClick={toggleQueue}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleQueue()}
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Close queue"
+                    role="presentation"
                 />
             )}
 
@@ -99,52 +96,52 @@ function QueueItem({ track, index, isPlaying, onClick }: QueueItemProps) {
     const thumbnail = track.thumbnail || "/images/default-album.svg";
 
     return (
-        <li
-            onClick={onClick}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
-            role="button"
-            tabIndex={0}
-            className={cn(
-                "flex items-center gap-3 p-2 rounded cursor-pointer transition-colors",
-                "hover:bg-white/5",
-                isPlaying && "bg-[#667eea]/20"
-            )}
-        >
-            {/* Track Number / Playing Indicator */}
-            <div className="w-6 text-center flex-shrink-0">
-                {isPlaying ? (
-                    <div className="flex items-end justify-center gap-[2px] h-4">
-                        <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite]" style={{ height: "8px" }} />
-                        <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite_0.2s]" style={{ height: "12px" }} />
-                        <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite_0.4s]" style={{ height: "6px" }} />
-                    </div>
-                ) : (
-                    <span className="text-xs text-white/40">{index + 1}</span>
+        <li className="list-none">
+            <button
+                type="button"
+                onClick={onClick}
+                className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded cursor-pointer transition-colors text-left",
+                    "hover:bg-white/5",
+                    isPlaying && "bg-[#667eea]/20"
                 )}
-            </div>
-
-            {/* Thumbnail */}
-            <div
-                className="w-9 h-9 bg-zinc-800 rounded flex-shrink-0 overflow-hidden"
-                style={{
-                    backgroundImage: `url(${thumbnail})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            />
-
-            {/* Track Info */}
-            <div className="flex-1 min-w-0">
-                <div
-                    className={cn(
-                        "text-sm truncate",
-                        isPlaying ? "text-white font-medium" : "text-white/80"
+            >
+                {/* Track Number / Playing Indicator */}
+                <div className="w-6 text-center flex-shrink-0">
+                    {isPlaying ? (
+                        <div className="flex items-end justify-center gap-[2px] h-4">
+                            <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite]" style={{ height: "8px" }} />
+                            <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite_0.2s]" style={{ height: "12px" }} />
+                            <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite_0.4s]" style={{ height: "6px" }} />
+                        </div>
+                    ) : (
+                        <span className="text-xs text-white/40">{index + 1}</span>
                     )}
-                >
-                    {track.title}
                 </div>
-                <div className="text-xs text-white/50 truncate">{track.artist}</div>
-            </div>
+
+                {/* Thumbnail */}
+                <div
+                    className="w-9 h-9 bg-zinc-800 rounded flex-shrink-0 overflow-hidden"
+                    style={{
+                        backgroundImage: `url(${thumbnail})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                    }}
+                />
+
+                {/* Track Info */}
+                <div className="flex-1 min-w-0">
+                    <div
+                        className={cn(
+                            "text-sm truncate",
+                            isPlaying ? "text-white font-medium" : "text-white/80"
+                        )}
+                    >
+                        {track.title}
+                    </div>
+                    <div className="text-xs text-white/50 truncate">{track.artist}</div>
+                </div>
+            </button>
         </li>
     );
 }

@@ -7,6 +7,7 @@ import React, {
     useCallback,
     useRef,
     ReactNode,
+    MutableRefObject,
 } from "react";
 
 // Track interface
@@ -65,7 +66,7 @@ interface PlayerContextType {
     clearQueue: () => void;
 
     // YouTube Player ref (for direct access)
-    playerRef: React.MutableRefObject<YT.Player | null>;
+    playerRef: MutableRefObject<YT.Player | null>;
     setPlayerReady: (ready: boolean) => void;
     setIsPlaying: (playing: boolean) => void;
     setCurrentTime: (time: number) => void;

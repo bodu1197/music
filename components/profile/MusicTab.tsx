@@ -245,13 +245,11 @@ export function MusicTab({ country }: MusicTabProps) {
                                 const isItemLoading = !!(loadingId && (loadingId === item.browseId || loadingId === item.playlistId));
 
                                 return (
-                                    <div
+                                    <button
                                         key={item.videoId || item.browseId || item.playlistId || `item-${sIndex}-${i}`}
-                                        className="flex-none w-[140px] group cursor-pointer"
+                                        type="button"
+                                        className="flex-none w-[140px] group cursor-pointer text-left bg-transparent border-none p-0"
                                         onClick={() => isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
-                                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
-                                        role="button"
-                                        tabIndex={0}
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
@@ -289,7 +287,7 @@ export function MusicTab({ country }: MusicTabProps) {
                                             </h3>
                                             <p className="text-xs text-zinc-400 truncate">{subtitle}</p>
                                         </div>
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>

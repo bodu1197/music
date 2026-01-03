@@ -301,13 +301,11 @@ export default function ArtistPage() {
                     </div>
                     <div className="space-y-1">
                         {displaySongs.map((song: any, i: number) => (
-                            <div
+                            <button
                                 key={song.videoId || i}
+                                type="button"
                                 onClick={() => handlePlaySong(song)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handlePlaySong(song)}
-                                role="button"
-                                tabIndex={0}
-                                className="flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group"
+                                className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
                             >
                                 <span className="w-6 text-center text-zinc-500 group-hover:hidden">{i + 1}</span>
                                 <Play className="w-4 h-4 text-white hidden group-hover:block" />
@@ -323,7 +321,7 @@ export default function ArtistPage() {
                                     </p>
                                 </div>
                                 <span className="text-zinc-500 text-sm">{song.duration}</span>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </section>
@@ -357,13 +355,11 @@ export default function ArtistPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {displayAlbums.map((album: any, i: number) => (
-                            <div
+                            <button
                                 key={album.browseId || i}
+                                type="button"
                                 onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && album.browseId && handlePlayAlbum(album.browseId)}
-                                role="button"
-                                tabIndex={0}
-                                className="group cursor-pointer"
+                                className="group cursor-pointer text-left w-full"
                             >
                                 <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
                                     {album.thumbnails?.[0]?.url && (
@@ -379,7 +375,7 @@ export default function ArtistPage() {
                                 </div>
                                 <h3 className="text-white font-medium text-sm truncate">{album.title}</h3>
                                 <p className="text-zinc-500 text-xs">{album.year}</p>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </section>
@@ -413,13 +409,11 @@ export default function ArtistPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {displaySingles.map((single: any, i: number) => (
-                            <div
+                            <button
                                 key={single.browseId || i}
+                                type="button"
                                 onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && single.browseId && handlePlayAlbum(single.browseId)}
-                                role="button"
-                                tabIndex={0}
-                                className="group cursor-pointer"
+                                className="group cursor-pointer text-left w-full"
                             >
                                 <div className="relative aspect-square mb-2 bg-zinc-800 rounded-lg overflow-hidden">
                                     {single.thumbnails?.[0]?.url && (
@@ -450,13 +444,11 @@ export default function ArtistPage() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {artist.videos.results.map((video: any, i: number) => (
-                            <div
+                            <button
                                 key={video.videoId || i}
+                                type="button"
                                 onClick={() => handlePlaySong(video)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handlePlaySong(video)}
-                                role="button"
-                                tabIndex={0}
-                                className="flex gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group"
+                                className="w-full flex gap-4 p-3 hover:bg-zinc-800 rounded-lg cursor-pointer group text-left"
                             >
                                 <div className="relative w-40 aspect-video bg-zinc-800 rounded overflow-hidden flex-shrink-0">
                                     {video.thumbnails?.[0]?.url && (
@@ -470,41 +462,42 @@ export default function ArtistPage() {
                                     <h3 className="text-white font-medium line-clamp-2">{video.title}</h3>
                                     <p className="text-sm text-zinc-400 mt-1">{video.views}</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </section>
-            )}
+            )
+            }
 
             {/* Related Artists */}
-            {artist.related?.results && artist.related.results.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5" />
-                        Related Artists
-                    </h2>
-                    <div className="flex gap-4 overflow-x-auto pb-4">
-                        {artist.related.results.map((related: any, i: number) => (
-                            <div
-                                key={related.browseId || i}
-                                onClick={() => related.browseId && router.push(`/artist/${related.browseId}`)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && related.browseId && router.push(`/artist/${related.browseId}`)}
-                                role="button"
-                                tabIndex={0}
-                                className="flex-shrink-0 w-32 text-center cursor-pointer group"
-                            >
-                                <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">
-                                    {related.thumbnails?.[0]?.url && (
-                                        <img src={related.thumbnails[0].url} alt={related.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                    )}
-                                </div>
-                                <h3 className="text-white font-medium text-sm truncate">{related.title}</h3>
-                                <p className="text-zinc-500 text-xs">{related.subscribers}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-        </div>
+            {
+                artist.related?.results && artist.related.results.length > 0 && (
+                    <section className="mb-8">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Related Artists
+                        </h2>
+                        <div className="flex gap-4 overflow-x-auto pb-4">
+                            {artist.related.results.map((related: any, i: number) => (
+                                <button
+                                    key={related.browseId || i}
+                                    type="button"
+                                    onClick={() => related.browseId && router.push(`/artist/${related.browseId}`)}
+                                    className="flex-shrink-0 w-32 text-center cursor-pointer group bg-transparent border-none p-0"
+                                >
+                                    <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 mb-2 mx-auto">
+                                        {related.thumbnails?.[0]?.url && (
+                                            <img src={related.thumbnails[0].url} alt={related.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        )}
+                                    </div>
+                                    <h3 className="text-white font-medium text-sm truncate">{related.title}</h3>
+                                    <p className="text-zinc-500 text-xs">{related.subscribers}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </section >
+                )
+            }
+        </div >
     );
 }
