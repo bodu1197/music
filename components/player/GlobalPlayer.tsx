@@ -69,7 +69,7 @@ export default function GlobalPlayer() {
 // Sub-Components
 // ==========================================
 
-function PlayerControls({ player }: { player: ReturnType<typeof usePlayer> }) {
+function PlayerControls({ player }: { readonly player: ReturnType<typeof usePlayer> }) {
     const {
         isPlaying,
         isShuffling,
@@ -154,7 +154,7 @@ function PlayerControls({ player }: { player: ReturnType<typeof usePlayer> }) {
     );
 }
 
-function ProgressBar({ player }: { player: ReturnType<typeof usePlayer> }) {
+function ProgressBar({ player }: { readonly player: ReturnType<typeof usePlayer> }) {
     const { currentTime, duration, seekTo } = player;
     const progressRef = useRef<HTMLInputElement>(null);
 
@@ -207,7 +207,7 @@ function ProgressBar({ player }: { player: ReturnType<typeof usePlayer> }) {
     );
 }
 
-function VolumeControl({ player }: { player: ReturnType<typeof usePlayer> }) {
+function VolumeControl({ player }: { readonly player: ReturnType<typeof usePlayer> }) {
     const { volume, isMuted, toggleMute, setVolume, toggleQueue, isQueueOpen } = player;
     const volumeRef = useRef<HTMLInputElement>(null);
 

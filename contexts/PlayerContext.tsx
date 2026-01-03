@@ -8,7 +8,7 @@ import React, {
     useRef,
     useMemo,
     ReactNode,
-    MutableRefObject,
+    RefObject,
 } from "react";
 
 // Track interface
@@ -67,7 +67,7 @@ interface PlayerContextType {
     clearQueue: () => void;
 
     // YouTube Player ref (for direct access)
-    playerRef: MutableRefObject<YT.Player | null>;
+    playerRef: RefObject<YT.Player | null>;
     setPlayerReady: (ready: boolean) => void;
     setIsPlaying: (playing: boolean) => void;
     setCurrentTime: (time: number) => void;
@@ -194,11 +194,11 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
 
         const nextIndex = calculateNextIndex(currentTrackIndex, currentPlaylist.length, isShuffling, repeatMode);
 
-        if (nextIndex !== -1) {
-            playTrackByIndex(nextIndex);
-        } else {
+        if (nextIndex === -1) {
             setIsPlaying(false);
             setCurrentTrackIndex(-1);
+        } else {
+            playTrackByIndex(nextIndex);
         }
     }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex]);
 

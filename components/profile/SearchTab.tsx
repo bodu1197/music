@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
-import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, PlaylistTrack, SearchResultType, WatchTrack } from "@/types/music";
+import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, SearchResultType, WatchTrack } from "@/types/music";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -142,7 +142,7 @@ export function SearchTab() {
                             videoId: t.videoId,
                             title: t.title || "Unknown",
                             artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
-                            thumbnail: Array.isArray(t.thumbnail) ? t.thumbnail[t.thumbnail.length - 1]?.url : "/images/default-album.svg"
+                            thumbnail: Array.isArray(t.thumbnail) ? t.thumbnail.at(-1)?.url : "/images/default-album.svg"
                         } : null)
                         .filter((t: Track | null): t is Track => t !== null);
                 }

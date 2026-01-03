@@ -90,10 +90,10 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                 containerRef.current.appendChild(playerDiv);
             }
 
-            if (!playerDiv || !window.YT?.Player) return;
-
+            if (!playerDiv || !globalThis.YT?.Player) return;
             try {
-                globalPlayerInstance = new window.YT.Player(PLAYER_ELEMENT_ID, {
+                globalPlayerInstance = new globalThis.YT.Player(PLAYER_ELEMENT_ID, {
+                    // ... (rest of config)
                     height: "100%",
                     width: "100%",
                     playerVars: {
@@ -121,7 +121,7 @@ export default function YouTubePlayer({ className }: YouTubePlayerProps) {
                                     event.target.loadVideoById(globalPendingVideoId, 0);
                                     globalPendingVideoId = null;
                                 }
-                            } catch (e) { /* ignore */ }
+                            } catch (e) { console.debug("Initial setup error", e); }
                         },
                         onStateChange: (event: YT.OnStateChangeEvent) => {
                             const state = event.data;
