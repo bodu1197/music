@@ -163,8 +163,6 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
 
             const existingCallback = globalThis.onYouTubeIframeAPIReady;
             globalThis.onYouTubeIframeAPIReady = () => {
-                // apiScriptLoaded = true; // variable removed
-                // apiScriptLoading = false; // variable removed
                 if (existingCallback) existingCallback();
                 createPlayer();
             };
