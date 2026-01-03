@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, Loader2, Music, Video, Disc, User, ListMusic } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
-import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, PlaylistTrack, SearchResultType } from "@/types/music";
+import type { SearchResult, Artist, AlbumData, PlaylistData, AlbumTrack, PlaylistTrack, SearchResultType, WatchTrack } from "@/types/music";
 
 const FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -131,7 +131,7 @@ export function SearchTab() {
                             thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
                             album: albumData.title
                         } : null)
-                        .filter((t): t is Track => t !== null);
+                        .filter((t: Track | null): t is Track => t !== null);
                 }
             } else if (item.resultType === "playlist" && item.browseId) {
                 // Playlist
@@ -144,7 +144,7 @@ export function SearchTab() {
                             artist: t.artists?.map((a: Artist) => a.name).join(", ") || "Unknown Artist",
                             thumbnail: Array.isArray(t.thumbnail) ? t.thumbnail[t.thumbnail.length - 1]?.url : "/images/default-album.svg"
                         } : null)
-                        .filter((t): t is Track => t !== null);
+                        .filter((t: Track | null): t is Track => t !== null);
                 }
             }
         } catch (e) {
