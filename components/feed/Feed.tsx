@@ -38,14 +38,14 @@ export default function Feed() {
         <div className="max-w-[470px] mx-auto pt-8">
             {/* Stories Placeholder */}
             <div className="flex gap-4 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={`story-${i}`} className="flex flex-col items-center gap-1 flex-shrink-0">
+                {Array.from({ length: 8 }, (_, i) => ({ id: `story-${i}`, name: `user_${i}` })).map((story) => (
+                    <div key={story.id} className="flex flex-col items-center gap-1 flex-shrink-0">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-purple-600 p-[2px]">
                             <div className="w-full h-full rounded-full bg-black p-[2px]">
                                 <div className="w-full h-full rounded-full bg-zinc-700" />
                             </div>
                         </div>
-                        <span className="text-xs text-zinc-400">user_{i}</span>
+                        <span className="text-xs text-zinc-400">{story.name}</span>
                     </div>
                 ))}
             </div>

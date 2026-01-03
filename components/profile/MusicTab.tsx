@@ -217,7 +217,7 @@ export function MusicTab({ country }: MusicTabProps) {
         <div className="space-y-8 animate-in fade-in duration-500">
             {sections.map((shelf: HomeSection, sIndex: number) => {
                 // 데이터 절대 자르지 않음 - 빈 shelf만 건너뜀
-                if (!shelf || !shelf.contents || !Array.isArray(shelf.contents) || shelf.contents.length === 0) return null;
+                if (!shelf?.contents?.length) return null;
 
                 return (
                     <div key={`${shelf.title || 'shelf'}-${sIndex}`} className="mb-8 pl-1">
