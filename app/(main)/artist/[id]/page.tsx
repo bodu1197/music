@@ -222,7 +222,7 @@ export default function ArtistPage() {
             {/* Artist Header */}
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                 {/* Thumbnail */}
-                <div className="w-48 h-48 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0">
+                <div className="w-48 h-48 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0 relative">
                     {thumbnail ? (
                         <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
                     ) : (
