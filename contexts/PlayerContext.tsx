@@ -308,22 +308,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
         setIsPlaying(false);
     }, []);
 
-    // Handle track end based on repeat mode
-    const handleTrackEnd = useCallback(() => {
-        if (repeatMode === "one") {
-            // Repeat current track
-            if (playerRef.current) {
-                try {
-                    playerRef.current.seekTo(0, true);
-                    playerRef.current.playVideo();
-                } catch (e) {
-                    console.error("Error repeating track:", e);
-                }
-            }
-        } else {
-            playNext();
-        }
-    }, [repeatMode, playNext]);
+
 
     // Note: Video loading is handled by YouTubePlayer component
     // which watches currentTrack changes and uses lastVideoIdRef to prevent duplicate loads
