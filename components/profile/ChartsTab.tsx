@@ -171,6 +171,78 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         }
     };
 
+    const renderArtistsContent = () => {
+        if (isLoadingArtists) {
+            return (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-zinc-500 animate-spin" />
+                </div>
+            );
+        }
+
+        if (artists.length === 0) {
+            return (
+                <div className="py-8 text-center text-zinc-500">
+                    No artist data available
+                </div>
+            );
+        }
+
+        return (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {artists.slice(0, 40).map((artist) => {
+                    const isArtistLoading = loadingId === artist.browseId;
+                    const thumbnailUrl = artist.thumbnail?.at(-1)?.url || "/images/default-artist.svg";
+
+                    return (
+                        <button
+                            key={artist.browseId}
+                            type="button"
+                            onClick={() => handleArtistClick(artist)}
+                            disabled={!!loadingId}
+                            className="group flex flex-col items-center p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 transition-all duration-200 disabled:opacity-50"
+                        >
+                            {/* Rank Badge */}
+                            <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-xs font-bold text-white">
+                                {artist.rank}
+                            </div>
+
+                            {/* Artist Image */}
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden mb-2 ring-2 ring-zinc-700 group-hover:ring-zinc-500 transition-all">
+                                {isArtistLoading ? (
+                                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                    </div>
+                                ) : (
+                                    <Image
+                                        src={thumbnailUrl}
+                                        alt={artist.title}
+                                        fill
+                                        className="object-cover"
+                                        sizes="80px"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Artist Name */}
+                            <span className="text-xs sm:text-sm font-medium text-white text-center line-clamp-1 w-full">
+                                {artist.title}
+                            </span>
+
+                            {/* Trend & Subscribers */}
+                            <div className="flex items-center gap-1 mt-1">
+                                {getTrendIcon(artist.trend)}
+                                <span className="text-xs text-zinc-500">
+                                    {artist.subscribers}
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    };
+
     if (!isSupported && country.code !== "ZZ") {
         return (
             <div className="py-12 text-center">
@@ -255,67 +327,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                     </h2>
                 </div>
 
-                {isLoadingArtists ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 text-zinc-500 animate-spin" />
-                    </div>
-                ) : artists.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        {artists.slice(0, 40).map((artist) => {
-                            const isArtistLoading = loadingId === artist.browseId;
-                            const thumbnailUrl = artist.thumbnail?.at(-1)?.url || "/images/default-artist.svg";
-
-                            return (
-                                <button
-                                    key={artist.browseId}
-                                    type="button"
-                                    onClick={() => handleArtistClick(artist)}
-                                    disabled={!!loadingId}
-                                    className="group flex flex-col items-center p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 transition-all duration-200 disabled:opacity-50"
-                                >
-                                    {/* Rank Badge */}
-                                    <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-xs font-bold text-white">
-                                        {artist.rank}
-                                    </div>
-
-                                    {/* Artist Image */}
-                                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden mb-2 ring-2 ring-zinc-700 group-hover:ring-zinc-500 transition-all">
-                                        {isArtistLoading ? (
-                                            <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                                                <Loader2 className="w-6 h-6 text-white animate-spin" />
-                                            </div>
-                                        ) : (
-                                            <Image
-                                                src={thumbnailUrl}
-                                                alt={artist.title}
-                                                fill
-                                                className="object-cover"
-                                                sizes="80px"
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Artist Name */}
-                                    <span className="text-xs sm:text-sm font-medium text-white text-center line-clamp-1 w-full">
-                                        {artist.title}
-                                    </span>
-
-                                    {/* Trend & Subscribers */}
-                                    <div className="flex items-center gap-1 mt-1">
-                                        {getTrendIcon(artist.trend)}
-                                        <span className="text-xs text-zinc-500">
-                                            {artist.subscribers}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="py-8 text-center text-zinc-500">
-                        No artist data available
-                    </div>
-                )}
+                {renderArtistsContent()}
             </div>
         </div>
     );
