@@ -22,6 +22,26 @@ TTL_MOODS = 72 * 3600          # 72시간 (3일) - 무드 카테고리
 TTL_MOOD_PLAYLISTS = 48 * 3600 # 48시간 - 무드 플레이리스트
 CACHE_TTL = 24 * 3600          # 24시간 - 기본값
 
+# ============================================
+# All Supported Countries (73 countries)
+# ============================================
+ALL_COUNTRIES = [
+    "ZZ",  # Global
+    "AR", "AU", "AT", "BE", "BO", "BR", "CA", "CL", "CO", "CR",
+    "CZ", "DK", "DO", "EC", "EG", "SV", "EE", "FI", "FR", "DE",
+    "GT", "HN", "HU", "IS", "IN", "ID", "IE", "IL", "IT", "JP",
+    "KE", "KR", "LU", "MX", "NL", "NZ", "NI", "NG", "NO", "PA",
+    "PY", "PE", "PL", "PT", "RO", "RU", "RS", "SA", "ZA", "ES",
+    "SE", "CH", "TZ", "TR", "UG", "UA", "AE", "GB", "US", "UY", "ZW",
+    # Smart Mapping Countries
+    "HK", "CN", "TW", "VN", "TH", "MY", "SG", "PH"
+]
+
+# Cache Warming: 24시간마다 모든 국가 데이터 미리 캐싱
+CACHE_WARMING_ENABLED = os.getenv("CACHE_WARMING_ENABLED", "true").lower() == "true"
+CACHE_WARMING_INTERVAL_HOURS = 24
+
+
 
 # Redis client (initialized lazily)
 redis_client = None
@@ -688,3 +708,135 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ============================================
+# Cache Warming System
+# ============================================
+# Pre-caches all countries' data on startup and every 24 hours
+
+import threading
+from contextlib import asynccontextmanager
+
+def warm_all_caches_sync():
+    """
+    Synchronously warm all caches for all countries.
+    This runs in background thread to not block server startup.
+    """
+    if not CACHE_WARMING_ENABLED:
+        print("[CACHE WARMING] Disabled via environment variable")
+        return
+    
+    print(f"[CACHE WARMING] Starting cache warming for {len(ALL_COUNTRIES)} countries...")
+    success_count = 0
+    error_count = 0
+    
+    for country in ALL_COUNTRIES:
+        try:
+            # Warm charts cache
+            cache_key = make_cache_key("charts", country, "en")
+            if cache_get(cache_key) is None:
+                yt = get_ytmusic(country=country, language="en")
+                result = yt.get_charts(country=country)
+                cache_set(cache_key, result, TTL_CHARTS)
+                print(f"[CACHE WARMING] Charts cached for {country}")
+            
+            # Warm home cache  
+            cache_key = make_cache_key("home", 100, country, "en")
+            if cache_get(cache_key) is None:
+                yt = get_ytmusic(country=country, language="en")
+                result = yt.get_home(limit=100)
+                cache_set(cache_key, result, TTL_HOME)
+                print(f"[CACHE WARMING] Home cached for {country}")
+            
+            # Warm moods cache
+            cache_key = make_cache_key("moods", country, "en")
+            if cache_get(cache_key) is None:
+                yt = get_ytmusic(country=country, language="en")
+                result = yt.get_mood_categories()
+                cache_set(cache_key, result, TTL_MOODS)
+                print(f"[CACHE WARMING] Moods cached for {country}")
+            
+            success_count += 1
+            
+        except Exception as e:
+            error_count += 1
+            print(f"[CACHE WARMING] Error for {country}: {e}")
+    
+    print(f"[CACHE WARMING] Complete! Success: {success_count}, Errors: {error_count}")
+
+def start_cache_warming_scheduler():
+    """Start background scheduler for periodic cache warming"""
+    import time
+    
+    def scheduler_loop():
+        while True:
+            # Wait 24 hours before next warming
+            time.sleep(CACHE_WARMING_INTERVAL_HOURS * 3600)
+            print("[CACHE WARMING] Starting scheduled cache refresh...")
+            warm_all_caches_sync()
+    
+    thread = threading.Thread(target=scheduler_loop, daemon=True)
+    thread.start()
+    print("[CACHE WARMING] Scheduler started (every 24 hours)")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: startup and shutdown events"""
+    # Startup: warm caches in background thread
+    if CACHE_WARMING_ENABLED and REDIS_URL:
+        print("[STARTUP] Starting cache warming in background...")
+        warming_thread = threading.Thread(target=warm_all_caches_sync, daemon=True)
+        warming_thread.start()
+        start_cache_warming_scheduler()
+    yield
+    # Shutdown: cleanup if needed
+    print("[SHUTDOWN] Server shutting down...")
+
+# Apply lifespan to app
+app.router.lifespan_context = lifespan
+
+@app.get("/cache/warm-all")
+async def warm_all_caches_endpoint():
+    """
+    Manually trigger cache warming for all countries.
+    This runs in background and returns immediately.
+    """
+    if not CACHE_WARMING_ENABLED:
+        return {"status": "disabled", "message": "Cache warming is disabled"}
+    
+    # Start warming in background thread
+    thread = threading.Thread(target=warm_all_caches_sync, daemon=True)
+    thread.start()
+    
+    return {
+        "status": "started",
+        "message": f"Cache warming started for {len(ALL_COUNTRIES)} countries",
+        "countries": len(ALL_COUNTRIES)
+    }
+
+@app.get("/cache/countries")
+def get_cached_countries():
+    """Get list of all countries and their cache status"""
+    r = get_redis()
+    if not r:
+        return {"error": "Redis not connected"}
+    
+    status = {}
+    for country in ALL_COUNTRIES:
+        charts_key = make_cache_key("charts", country, "en")
+        home_key = make_cache_key("home", 100, country, "en")
+        moods_key = make_cache_key("moods", country, "en")
+        
+        status[country] = {
+            "charts": r.exists(charts_key) == 1,
+            "home": r.exists(home_key) == 1,
+            "moods": r.exists(moods_key) == 1
+        }
+    
+    cached_count = sum(1 for s in status.values() if all(s.values()))
+    
+    return {
+        "total_countries": len(ALL_COUNTRIES),
+        "fully_cached": cached_count,
+        "countries": status
+    }
