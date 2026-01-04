@@ -41,7 +41,11 @@ jobs:
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
             --min-instances 1 \
-            --max-instances 10
+            --max-instances 100 \
+            --memory 2Gi \
+            --cpu 2 \
+            --set-env-vars "REDIS_URL=${{ secrets.REDIS_URL }},PROXY_URL_TEMPLATE=${{ secrets.PROXY_URL_TEMPLATE }}"
+
 
       - name: Show deployed URL
         run: |
