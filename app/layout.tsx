@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { PrefetchProvider } from "@/contexts/PrefetchContext";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-black text-white`}>
         <AuthProvider>
-          {children}
+          <PrefetchProvider>
+            {children}
+          </PrefetchProvider>
         </AuthProvider>
       </body>
     </html>

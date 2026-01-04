@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
+import { usePrefetch } from "@/contexts/PrefetchContext";
 import { Play, Loader2 } from "lucide-react";
 import type { HomeSectionContent, HomeSection, Artist, AlbumData, AlbumTrack, WatchTrack } from "@/types/music";
+
 
 interface MusicTabProps {
     country: { code: string; name: string; lang: string };
@@ -50,7 +52,8 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-    const [loadingId, setLoadingId] = useState<string | null>(null); // browseId 또는 playlistId
+    const { getAlbum, getPlaylist, prefetchAlbum, prefetchPlaylist, prefetchFromHomeData } = usePrefetch();
+    const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const { data, error, isLoading } = useSWR(
         ["/music/home/cached", country.code, country.lang],
@@ -61,6 +64,14 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
             keepPreviousData: true,
         }
     );
+
+    // 🔥 홈 데이터 로드되면 모든 앨범/플레이리스트 백그라운드 프리페치
+    useEffect(() => {
+        if (data && Array.isArray(data)) {
+            prefetchFromHomeData(data);
+        }
+    }, [data, prefetchFromHomeData]);
+
 
     // 케이스 1: 배너 1개 = videoId 1개 → 섹션 전체가 플레이리스트
     const handleTrackClick = (sectionContents: HomeSectionContent[], clickedIndex: number) => {
@@ -93,85 +104,104 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     };
 
-    // 케이스 2: browseId 있음 (앨범/싱글) → album API 호출
+    // 케이스 2: browseId 있음 (앨범/싱글) → 캐시 확인 후 API 호출
     const handleAlbumClick = async (browseId: string) => {
         console.log("[MusicTab] Album clicked, browseId:", browseId);
-        setLoadingId(browseId);
 
-        try {
-            const albumData = await api.music.album(browseId);
-            console.log("[MusicTab] Album data:", albumData);
+        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
+        let albumData = getAlbum(browseId);
 
-            if (!albumData?.tracks || albumData.tracks.length === 0) {
-                console.log("[MusicTab] No tracks in album");
+        if (albumData) {
+            console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
+        } else {
+            // 캐시에 없으면 API 호출
+            setLoadingId(browseId);
+            try {
+                albumData = await prefetchAlbum(browseId) || undefined;
+                console.log("[MusicTab] API response:", albumData);
+            } catch (e) {
+                console.error("[MusicTab] Error loading album:", e);
+                setLoadingId(null);
                 return;
             }
-
-            // Convert album tracks to Track format
-            const tracks: Track[] = albumData.tracks
-                .map((t: AlbumTrack) => albumTrackToTrack(t, albumData))
-                .filter((t: Track | null): t is Track => t !== null);
-
-            console.log("[MusicTab] Album tracks:", tracks.length, "items");
-
-            if (tracks.length === 0) {
-                console.log("[MusicTab] No playable tracks in album");
-                return;
-            }
-
-            // Set playlist starting from first track
-            setPlaylist(tracks, 0);
-
-            // Open queue sidebar
-            if (!isQueueOpen) {
-                toggleQueue();
-            }
-        } catch (e) {
-            console.error("[MusicTab] Error loading album:", e);
-        } finally {
             setLoadingId(null);
+        }
+
+        if (!albumData?.tracks || albumData.tracks.length === 0) {
+            console.log("[MusicTab] No tracks in album");
+            return;
+        }
+
+        // Convert album tracks to Track format
+        const tracks: Track[] = albumData.tracks
+            .map((t: AlbumTrack) => albumTrackToTrack(t, albumData!))
+            .filter((t: Track | null): t is Track => t !== null);
+
+        console.log("[MusicTab] Album tracks:", tracks.length, "items");
+
+        if (tracks.length === 0) {
+            console.log("[MusicTab] No playable tracks in album");
+            return;
+        }
+
+        // Set playlist starting from first track
+        setPlaylist(tracks, 0);
+
+        // Open queue sidebar
+        if (!isQueueOpen) {
+            toggleQueue();
         }
     };
 
-    // 케이스 3: playlistId 있음 → watch API 호출
+    // 케이스 3: playlistId 있음 → 캐시 확인 후 watch API 호출
     const handlePlaylistClick = async (playlistId: string) => {
         console.log("[MusicTab] Playlist clicked, playlistId:", playlistId);
-        setLoadingId(playlistId);
 
-        try {
-            const playlistData = await api.music.watch(undefined, playlistId);
-            console.log("[MusicTab] Playlist data:", playlistData);
+        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
+        let playlistData = getPlaylist(playlistId);
 
-            if (!playlistData?.tracks || playlistData.tracks.length === 0) {
-                console.log("[MusicTab] No tracks in playlist");
+        if (playlistData) {
+            console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
+        } else {
+            // 캐시에 없으면 API 호출
+            setLoadingId(playlistId);
+            try {
+                playlistData = await prefetchPlaylist(playlistId) || undefined;
+                console.log("[MusicTab] API response:", playlistData);
+            } catch (e) {
+                console.error("[MusicTab] Error loading playlist:", e);
+                setLoadingId(null);
                 return;
             }
-
-            // Convert playlist tracks to Track format
-            const tracks: Track[] = playlistData.tracks
-                .map((t: WatchTrack) => playlistTrackToTrack(t))
-                .filter((t: Track | null): t is Track => t !== null);
-
-            console.log("[MusicTab] Playlist tracks:", tracks.length, "items");
-
-            if (tracks.length === 0) {
-                console.log("[MusicTab] No playable tracks in playlist");
-                return;
-            }
-
-            // Set playlist starting from first track
-            setPlaylist(tracks, 0);
-
-            // Open queue sidebar
-            if (!isQueueOpen) {
-                toggleQueue();
-            }
-        } catch (e) {
-            console.error("[MusicTab] Error loading playlist:", e);
-        } finally {
             setLoadingId(null);
         }
+
+        if (!playlistData?.tracks || playlistData.tracks.length === 0) {
+            console.log("[MusicTab] No tracks in playlist");
+            return;
+        }
+
+        // Convert playlist tracks to Track format
+        const tracks: Track[] = playlistData.tracks
+            .map((t: WatchTrack) => playlistTrackToTrack(t))
+            .filter((t: Track | null): t is Track => t !== null);
+
+        console.log("[MusicTab] Playlist tracks:", tracks.length, "items");
+
+        if (tracks.length === 0) {
+            console.log("[MusicTab] No playable tracks in playlist");
+            return;
+        }
+
+        // Set playlist starting from first track
+        setPlaylist(tracks, 0);
+
+        // Open queue sidebar
+        if (!isQueueOpen) {
+            toggleQueue();
+        }
     };
+
 
     // 클릭 핸들러 - 자동 감지: videoId, browseId, playlistId
     const handleItemClick = (item: HomeSectionContent, sectionContents: HomeSectionContent[], index: number) => {
