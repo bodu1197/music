@@ -41,7 +41,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     // Fetch playlists for selected category (on-demand, only when category is selected)
     const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
         selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
-        () => api.music.moodsPlaylists(selectedCategory!.params, country.code, country.lang),
+        () => api.music.moodPlaylists(selectedCategory!.params, country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
