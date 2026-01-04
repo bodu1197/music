@@ -20,7 +20,11 @@ TTL_HOME = 24 * 3600           # 24시간 - 홈 피드
 TTL_CHARTS = 24 * 3600         # 24시간 - 차트 순위
 TTL_MOODS = 72 * 3600          # 72시간 (3일) - 무드 카테고리
 TTL_MOOD_PLAYLISTS = 48 * 3600 # 48시간 - 무드 플레이리스트
+TTL_ARTIST = 24 * 3600         # 24시간 - 아티스트 정보
+TTL_ALBUM = 72 * 3600          # 72시간 - 앨범 정보 (잘 안 변함)
+TTL_SONG = 72 * 3600           # 72시간 - 곡 정보 (잘 안 변함)
 CACHE_TTL = 24 * 3600          # 24시간 - 기본값
+
 
 # ============================================
 # All Supported Countries (73 countries)
@@ -258,11 +262,26 @@ def get_search_suggestions(q: str):
 
 @app.get("/artist/{artist_id}")
 def get_artist(artist_id: str, country: str = "US", language: str = "en"):
+    cache_key = make_cache_key("artist", artist_id, country, language)
+    
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /artist/{artist_id}")
+        return cached
+    
     try:
+        print(f"[REDIS MISS] /artist/{artist_id}")
         yt = get_ytmusic(country=country, language=language)
-        return run_with_retry(yt.get_artist, artist_id)
+        result = run_with_retry(yt.get_artist, artist_id)
+        
+        # Store in Redis cache (24시간 TTL)
+        cache_set(cache_key, result, TTL_ARTIST)
+        
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 def parse_song_item(item):
     """Parse a song item from musicPlaylistShelfRenderer"""
@@ -479,17 +498,45 @@ def get_artist_all_albums(artist_id: str, type: str = "albums"):
 
 @app.get("/album/{browse_id}")
 def get_album(browse_id: str):
+    cache_key = make_cache_key("album", browse_id)
+    
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /album/{browse_id}")
+        return cached
+    
     try:
+        print(f"[REDIS MISS] /album/{browse_id}")
         yt = get_ytmusic()
-        return run_with_retry(yt.get_album, browse_id)
+        result = run_with_retry(yt.get_album, browse_id)
+        
+        # Store in Redis cache (72시간 TTL)
+        cache_set(cache_key, result, TTL_ALBUM)
+        
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/song/{video_id}")
 def get_song(video_id: str):
+    cache_key = make_cache_key("song", video_id)
+    
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /song/{video_id}")
+        return cached
+    
     try:
+        print(f"[REDIS MISS] /song/{video_id}")
         yt = get_ytmusic()
-        return run_with_retry(yt.get_song, video_id)
+        result = run_with_retry(yt.get_song, video_id)
+        
+        # Store in Redis cache (72시간 TTL)
+        cache_set(cache_key, result, TTL_SONG)
+        
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
