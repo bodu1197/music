@@ -18,7 +18,7 @@ interface PrefetchContextType {
     // 데이터 프리페치 (백그라운드)
     prefetchAlbum: (browseId: string) => Promise<AlbumData | null>;
     prefetchPlaylist: (playlistId: string) => Promise<WatchPlaylist | null>;
-    prefetchFromHomeData: (homeData: HomeSection[]) => void;
+    prefetchFromHomeData: (homeData: HomeSection[]) => Promise<void>;
 
     // 상태
     isReady: boolean;
@@ -103,12 +103,12 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    // 홈 데이터에서 모든 앨범/플레이리스트 프리페치
-    const prefetchFromHomeData = useCallback((homeData: HomeSection[]) => {
+    // 홈 데이터에서 모든 앨범/플레이리스트 프리페치 (완료까지 대기)
+    const prefetchFromHomeData = useCallback(async (homeData: HomeSection[]): Promise<void> => {
         if (!homeData || !Array.isArray(homeData)) return;
 
-        console.log("[Prefetch] Starting prefetch from home data...");
-        let count = 0;
+        console.log("[Prefetch] 🔥 Starting aggressive prefetch from home data...");
+        const promises: Promise<unknown>[] = [];
 
         for (const section of homeData) {
             if (!section?.contents) continue;
@@ -118,21 +118,25 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
 
                 // 앨범 프리페치
                 if (item.browseId && item.browseId.startsWith("MPREb")) {
-                    prefetchAlbum(item.browseId);
-                    count++;
+                    promises.push(prefetchAlbum(item.browseId));
                 }
 
                 // 플레이리스트 프리페치
                 if (item.playlistId) {
-                    prefetchPlaylist(item.playlistId);
-                    count++;
+                    promises.push(prefetchPlaylist(item.playlistId));
                 }
             }
         }
 
-        console.log(`[Prefetch] Queued ${count} items for prefetching`);
+        console.log(`[Prefetch] ⏳ Waiting for ${promises.length} items to load...`);
+
+        // 모든 프리페치 완료 대기
+        await Promise.allSettled(promises);
+
+        console.log(`[Prefetch] ✅ All ${promises.length} items loaded! Ready for instant clicks.`);
         setIsReady(true);
     }, [prefetchAlbum, prefetchPlaylist]);
+
 
     return (
         <PrefetchContext.Provider
