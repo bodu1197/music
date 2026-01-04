@@ -14,7 +14,14 @@ app = FastAPI(title="Sori Music API")
 # Falls back to in-memory cache if Redis is unavailable
 
 REDIS_URL = os.getenv("REDIS_URL")  # e.g. "rediss://default:xxx@xxx.upstash.io:6379"
-CACHE_TTL = 3600  # 1 hour in seconds
+
+# Endpoint-specific TTL (Time To Live) in seconds
+TTL_HOME = 24 * 3600           # 24시간 - 홈 피드
+TTL_CHARTS = 24 * 3600         # 24시간 - 차트 순위
+TTL_MOODS = 72 * 3600          # 72시간 (3일) - 무드 카테고리
+TTL_MOOD_PLAYLISTS = 48 * 3600 # 48시간 - 무드 플레이리스트
+CACHE_TTL = 24 * 3600          # 24시간 - 기본값
+
 
 # Redis client (initialized lazily)
 redis_client = None
@@ -506,8 +513,8 @@ def get_home(limit: int = 100, country: str = "US", language: str = "en"):
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_home, limit=limit)
 
-        # Store in Redis cache
-        cache_set(cache_key, result)
+        # Store in Redis cache (24시간 TTL)
+        cache_set(cache_key, result, TTL_HOME)
 
         return result
     except Exception as e:
@@ -528,8 +535,8 @@ def get_charts(country: str = "US", language: str = "en"):
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_charts, country=country)
 
-        # Store in Redis cache
-        cache_set(cache_key, result)
+        # Store in Redis cache (24시간 TTL)
+        cache_set(cache_key, result, TTL_CHARTS)
 
         return result
     except Exception as e:
@@ -555,8 +562,8 @@ def get_mood_categories(country: str = "US", language: str = "en"):
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_mood_categories)
 
-        # Store in Redis cache
-        cache_set(cache_key, result)
+        # Store in Redis cache (72시간 TTL)
+        cache_set(cache_key, result, TTL_MOODS)
 
         return result
     except Exception as e:
@@ -673,8 +680,8 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
 
         final_result = result if result else []
 
-        # Store in Redis cache
-        cache_set(cache_key, final_result)
+        # Store in Redis cache (48시간 TTL)
+        cache_set(cache_key, final_result, TTL_MOOD_PLAYLISTS)
 
         return final_result
 
