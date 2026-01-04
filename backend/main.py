@@ -206,9 +206,9 @@ def get_search_suggestions(q: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/artist/{artist_id}")
-def get_artist(artist_id: str):
+def get_artist(artist_id: str, country: str = "US", language: str = "en"):
     try:
-        yt = get_ytmusic()
+        yt = get_ytmusic(country=country, language=language)
         return run_with_retry(yt.get_artist, artist_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

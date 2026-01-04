@@ -37,8 +37,9 @@ export const api = {
         },
 
         // Get artist details
-        artist: async (artistId: string) => {
-            const res = await fetch(`${API_URL}/artist/${artistId}`);
+        artist: async (artistId: string, country: string = 'US', language: string = 'en') => {
+            const params = new URLSearchParams({ country, language });
+            const res = await fetch(`${API_URL}/artist/${artistId}?${params}`);
             if (!res.ok) throw new Error('Failed to fetch artist');
             return res.json();
         },

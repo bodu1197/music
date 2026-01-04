@@ -132,7 +132,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         setLoadingId(artist.browseId);
 
         try {
-            const artistData = await api.music.artist(artist.browseId);
+            const artistData = await api.music.artist(artist.browseId, country.code, country.lang);
 
             if (!artistData?.songs?.results || artistData.songs.results.length === 0) {
                 console.log("[ChartsTab] No artist songs found");
