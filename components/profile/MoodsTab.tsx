@@ -38,21 +38,12 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         { revalidateOnFocus: false }
     );
 
-    // Get playlists for selected category from cached data
-    const playlistsData = useMemo((): MoodPlaylist[] | null => {
-        if (!selectedCategory || !moodsAllData) return null;
-
-        // Find the category in the data
-        for (const categories of Object.values(moodsAllData)) {
-            if (Array.isArray(categories)) {
-                const found = categories.find((cat) => cat.params === selectedCategory.params);
-                if (found && 'playlists' in found) {
-                    return (found as { playlists?: MoodPlaylist[] }).playlists || [];
-                }
-            }
-        }
-        return [];
-    }, [selectedCategory, moodsAllData]);
+    // Fetch playlists for selected category (on-demand, only when category is selected)
+    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
+        selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
+        () => api.music.moodsPlaylists(selectedCategory!.params, country.code, country.lang),
+        { revalidateOnFocus: false }
+    );
 
     // Reset selected category when country changes
     useEffect(() => {
@@ -120,7 +111,17 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                         {selectedCategory.title}
                     </h2>
 
-                    {!playlistsData || playlistsData.length === 0 ? (
+                    {playlistsLoading ? (
+                        <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
+                            <Loader2 className="w-8 h-8 animate-spin" />
+                            <p>Loading playlists...</p>
+                        </div>
+                    ) : playlistsError ? (
+                        <div className="text-center text-red-500 py-10 flex flex-col items-center gap-2">
+                            <AlertCircle className="w-8 h-8" />
+                            <p>Error: {playlistsError.message}</p>
+                        </div>
+                    ) : !playlistsData || playlistsData.length === 0 ? (
                         <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
                             <AlertCircle className="w-8 h-8" />
                             <p>No playlists available for this category.</p>
