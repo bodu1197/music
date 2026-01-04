@@ -796,6 +796,7 @@ def warm_all_caches_sync():
     """
     Synchronously warm all caches for all countries.
     This runs in background thread to not block server startup.
+    Also prefetches albums/playlists from home data for instant banner clicks.
     """
     if not CACHE_WARMING_ENABLED:
         print("[CACHE WARMING] Disabled via environment variable")
@@ -804,29 +805,64 @@ def warm_all_caches_sync():
     print(f"[CACHE WARMING] Starting cache warming for {len(ALL_COUNTRIES)} countries...")
     success_count = 0
     error_count = 0
+    prefetch_count = 0
     
     for country in ALL_COUNTRIES:
         try:
+            yt = get_ytmusic(country=country, language="en")
+            
             # Warm charts cache
             cache_key = make_cache_key("charts", country, "en")
             if cache_get(cache_key) is None:
-                yt = get_ytmusic(country=country, language="en")
                 result = yt.get_charts(country=country)
                 cache_set(cache_key, result, TTL_CHARTS)
                 print(f"[CACHE WARMING] Charts cached for {country}")
             
-            # Warm home cache  
+            # Warm home cache + prefetch albums/playlists
             cache_key = make_cache_key("home", 100, country, "en")
-            if cache_get(cache_key) is None:
-                yt = get_ytmusic(country=country, language="en")
-                result = yt.get_home(limit=100)
-                cache_set(cache_key, result, TTL_HOME)
+            home_data = cache_get(cache_key)
+            if home_data is None:
+                home_data = yt.get_home(limit=100)
+                cache_set(cache_key, home_data, TTL_HOME)
                 print(f"[CACHE WARMING] Home cached for {country}")
+            
+            # Prefetch albums and playlists from home data
+            if home_data and isinstance(home_data, list):
+                for section in home_data:
+                    if not section or not isinstance(section, dict):
+                        continue
+                    contents = section.get("contents", [])
+                    for item in contents:
+                        if not item or not isinstance(item, dict):
+                            continue
+                        
+                        # Prefetch album data
+                        browse_id = item.get("browseId")
+                        if browse_id and browse_id.startswith("MPREb"):
+                            album_key = make_cache_key("album", browse_id)
+                            if cache_get(album_key) is None:
+                                try:
+                                    album_data = yt.get_album(browse_id)
+                                    cache_set(album_key, album_data, TTL_ALBUM)
+                                    prefetch_count += 1
+                                except Exception:
+                                    pass
+                        
+                        # Prefetch playlist/watch data
+                        playlist_id = item.get("playlistId")
+                        if playlist_id:
+                            watch_key = make_cache_key("watch", None, playlist_id)
+                            if cache_get(watch_key) is None:
+                                try:
+                                    watch_data = yt.get_watch_playlist(playlistId=playlist_id)
+                                    cache_set(watch_key, watch_data, CACHE_TTL)
+                                    prefetch_count += 1
+                                except Exception:
+                                    pass
             
             # Warm moods cache
             cache_key = make_cache_key("moods", country, "en")
             if cache_get(cache_key) is None:
-                yt = get_ytmusic(country=country, language="en")
                 result = yt.get_mood_categories()
                 cache_set(cache_key, result, TTL_MOODS)
                 print(f"[CACHE WARMING] Moods cached for {country}")
@@ -837,7 +873,8 @@ def warm_all_caches_sync():
             error_count += 1
             print(f"[CACHE WARMING] Error for {country}: {e}")
     
-    print(f"[CACHE WARMING] Complete! Success: {success_count}, Errors: {error_count}")
+    print(f"[CACHE WARMING] Complete! Countries: {success_count}, Errors: {error_count}, Prefetched: {prefetch_count}")
+
 
 def start_cache_warming_scheduler():
     """Start background scheduler for periodic cache warming"""
