@@ -114,10 +114,10 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         if (albumData) {
             console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
         } else {
-            // 캐시에 없으면 API 호출
+            // 캐시에 없으면 직접 API 호출 (기존 방식)
             setLoadingId(browseId);
             try {
-                albumData = await prefetchAlbum(browseId) || undefined;
+                albumData = await api.music.album(browseId);
                 console.log("[MusicTab] API response:", albumData);
             } catch (e) {
                 console.error("[MusicTab] Error loading album:", e);
@@ -163,10 +163,10 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         if (playlistData) {
             console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
         } else {
-            // 캐시에 없으면 API 호출
+            // 캐시에 없으면 직접 API 호출 (기존 방식)
             setLoadingId(playlistId);
             try {
-                playlistData = await prefetchPlaylist(playlistId) || undefined;
+                playlistData = await api.music.watch(undefined, playlistId);
                 console.log("[MusicTab] API response:", playlistData);
             } catch (e) {
                 console.error("[MusicTab] Error loading playlist:", e);
@@ -201,6 +201,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
             toggleQueue();
         }
     };
+
 
 
     // 클릭 핸들러 - 자동 감지: videoId, browseId, playlistId
