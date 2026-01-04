@@ -2,38 +2,64 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
 import os
-from cachetools import TTLCache
-import threading
+import json
 import hashlib
 
 app = FastAPI(title="Sori Music API")
 
 # ============================================
-# In-Memory Cache Configuration
+# Redis Cache Configuration
 # ============================================
-# TTL = Time To Live (seconds)
-# maxsize = Maximum number of entries
+# Uses Upstash Redis for persistent, shared caching
+# Falls back to in-memory cache if Redis is unavailable
 
-# Cache for home feed (1 hour, per country/language combo)
-home_cache = TTLCache(maxsize=50, ttl=3600)
-home_cache_lock = threading.Lock()
+REDIS_URL = os.getenv("REDIS_URL")  # e.g. "rediss://default:xxx@xxx.upstash.io:6379"
+CACHE_TTL = 3600  # 1 hour in seconds
 
-# Cache for charts (1 hour, per country)
-charts_cache = TTLCache(maxsize=50, ttl=3600)
-charts_cache_lock = threading.Lock()
+# Redis client (initialized lazily)
+redis_client = None
 
-# Cache for mood categories (1 hour, per country/language)
-moods_cache = TTLCache(maxsize=50, ttl=3600)
-moods_cache_lock = threading.Lock()
+def get_redis():
+    """Get Redis client, initialize if needed"""
+    global redis_client
+    if redis_client is None and REDIS_URL:
+        try:
+            import redis
+            redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+            # Test connection
+            redis_client.ping()
+            print("Redis connected successfully!")
+        except Exception as e:
+            print(f"Redis connection failed: {e}")
+            redis_client = None
+    return redis_client
 
-# Cache for mood playlists (1 hour, per params/country/language)
-mood_playlists_cache = TTLCache(maxsize=200, ttl=3600)
-mood_playlists_cache_lock = threading.Lock()
+def cache_get(key: str):
+    """Get value from cache (Redis or fallback)"""
+    r = get_redis()
+    if r:
+        try:
+            data = r.get(key)
+            if data:
+                return json.loads(data)
+        except Exception as e:
+            print(f"Redis get error: {e}")
+    return None
+
+def cache_set(key: str, value, ttl: int = CACHE_TTL):
+    """Set value in cache (Redis or fallback)"""
+    r = get_redis()
+    if r:
+        try:
+            r.setex(key, ttl, json.dumps(value))
+        except Exception as e:
+            print(f"Redis set error: {e}")
 
 def make_cache_key(*args) -> str:
     """Create a hash key from arguments"""
     key_str = ":".join(str(arg) for arg in args)
     return hashlib.md5(key_str.encode()).hexdigest()
+
 
 # CORS middleware to allow requests from any origin
 app.add_middleware(
@@ -103,29 +129,27 @@ def health_check():
 
 @app.get("/cache/status")
 def cache_status():
-    """Get current cache statistics"""
+    """Get current cache statistics from Redis"""
+    r = get_redis()
+    if r:
+        try:
+            info = r.info("memory")
+            dbsize = r.dbsize()
+            return {
+                "type": "redis",
+                "connected": True,
+                "keys": dbsize,
+                "memory_used": info.get("used_memory_human", "unknown"),
+                "ttl": CACHE_TTL
+            }
+        except Exception as e:
+            return {"type": "redis", "connected": False, "error": str(e)}
     return {
-        "home_cache": {
-            "size": len(home_cache),
-            "maxsize": home_cache.maxsize,
-            "ttl": home_cache.ttl
-        },
-        "charts_cache": {
-            "size": len(charts_cache),
-            "maxsize": charts_cache.maxsize,
-            "ttl": charts_cache.ttl
-        },
-        "moods_cache": {
-            "size": len(moods_cache),
-            "maxsize": moods_cache.maxsize,
-            "ttl": moods_cache.ttl
-        },
-        "mood_playlists_cache": {
-            "size": len(mood_playlists_cache),
-            "maxsize": mood_playlists_cache.maxsize,
-            "ttl": mood_playlists_cache.ttl
-        }
+        "type": "none",
+        "connected": False,
+        "message": "Redis not configured (REDIS_URL not set)"
     }
+
 
 @app.post("/cache/warm")
 async def warm_cache(country: str = "KR", language: str = "ko"):
@@ -471,20 +495,19 @@ def get_playlist(playlist_id: str, limit: int = 100):
 def get_home(limit: int = 100, country: str = "US", language: str = "en"):
     cache_key = make_cache_key("home", limit, country, language)
 
-    # Check cache first
-    with home_cache_lock:
-        if cache_key in home_cache:
-            print(f"[CACHE HIT] /home country={country} lang={language}")
-            return home_cache[cache_key]
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /home country={country} lang={language}")
+        return cached
 
     try:
-        print(f"[CACHE MISS] /home country={country} lang={language}")
+        print(f"[REDIS MISS] /home country={country} lang={language}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_home, limit=limit)
 
-        # Store in cache
-        with home_cache_lock:
-            home_cache[cache_key] = result
+        # Store in Redis cache
+        cache_set(cache_key, result)
 
         return result
     except Exception as e:
@@ -494,24 +517,24 @@ def get_home(limit: int = 100, country: str = "US", language: str = "en"):
 def get_charts(country: str = "US", language: str = "en"):
     cache_key = make_cache_key("charts", country, language)
 
-    # Check cache first
-    with charts_cache_lock:
-        if cache_key in charts_cache:
-            print(f"[CACHE HIT] /charts country={country}")
-            return charts_cache[cache_key]
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /charts country={country}")
+        return cached
 
     try:
-        print(f"[CACHE MISS] /charts country={country}")
+        print(f"[REDIS MISS] /charts country={country}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_charts, country=country)
 
-        # Store in cache
-        with charts_cache_lock:
-            charts_cache[cache_key] = result
+        # Store in Redis cache
+        cache_set(cache_key, result)
 
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/moods")
 def get_mood_categories(country: str = "US", language: str = "en"):
@@ -521,24 +544,24 @@ def get_mood_categories(country: str = "US", language: str = "en"):
     """
     cache_key = make_cache_key("moods", country, language)
 
-    # Check cache first
-    with moods_cache_lock:
-        if cache_key in moods_cache:
-            print(f"[CACHE HIT] /moods country={country} lang={language}")
-            return moods_cache[cache_key]
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /moods country={country} lang={language}")
+        return cached
 
     try:
-        print(f"[CACHE MISS] /moods country={country} lang={language}")
+        print(f"[REDIS MISS] /moods country={country} lang={language}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_mood_categories)
 
-        # Store in cache
-        with moods_cache_lock:
-            moods_cache[cache_key] = result
+        # Store in Redis cache
+        cache_set(cache_key, result)
 
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 import re
 
@@ -627,14 +650,14 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     """
     cache_key = make_cache_key("mood_playlists", params, country, language)
 
-    # Check cache first
-    with mood_playlists_cache_lock:
-        if cache_key in mood_playlists_cache:
-            print(f"[CACHE HIT] /moods/playlists params={params[:20]}... country={country}")
-            return mood_playlists_cache[cache_key]
+    # Check Redis cache first
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[REDIS HIT] /moods/playlists params={params[:20]}... country={country}")
+        return cached
 
     try:
-        print(f"[CACHE MISS] /moods/playlists params={params[:20]}... country={country}")
+        print(f"[REDIS MISS] /moods/playlists params={params[:20]}... country={country}")
         yt = get_ytmusic(country=country, language=language)
 
         # Try ytmusicapi's built-in parser first (works for Moods)
@@ -650,11 +673,11 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
 
         final_result = result if result else []
 
-        # Store in cache
-        with mood_playlists_cache_lock:
-            mood_playlists_cache[cache_key] = final_result
+        # Store in Redis cache
+        cache_set(cache_key, final_result)
 
         return final_result
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
