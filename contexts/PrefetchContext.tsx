@@ -2,22 +2,22 @@
 
 import React, { createContext, useContext, useCallback, useRef, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { AlbumData, WatchPlaylistData, HomeSectionContent, HomeSection } from "@/types/music";
+import type { AlbumData, WatchPlaylist, HomeSectionContent, HomeSection } from "@/types/music";
 
 // 프리페치된 데이터 캐시
 interface PrefetchCache {
     albums: Map<string, AlbumData>;
-    playlists: Map<string, WatchPlaylistData>;
+    playlists: Map<string, WatchPlaylist>;
 }
 
 interface PrefetchContextType {
     // 캐시된 데이터 가져오기 (즉시 반환)
     getAlbum: (browseId: string) => AlbumData | undefined;
-    getPlaylist: (playlistId: string) => WatchPlaylistData | undefined;
+    getPlaylist: (playlistId: string) => WatchPlaylist | undefined;
 
     // 데이터 프리페치 (백그라운드)
     prefetchAlbum: (browseId: string) => Promise<AlbumData | null>;
-    prefetchPlaylist: (playlistId: string) => Promise<WatchPlaylistData | null>;
+    prefetchPlaylist: (playlistId: string) => Promise<WatchPlaylist | null>;
     prefetchFromHomeData: (homeData: HomeSection[]) => void;
 
     // 상태
@@ -43,7 +43,7 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // 플레이리스트 데이터 가져오기 (캐시에서 즉시)
-    const getPlaylist = useCallback((playlistId: string): WatchPlaylistData | undefined => {
+    const getPlaylist = useCallback((playlistId: string): WatchPlaylist | undefined => {
         return cacheRef.current.playlists.get(playlistId);
     }, []);
 
@@ -76,7 +76,7 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // 플레이리스트 프리페치
-    const prefetchPlaylist = useCallback(async (playlistId: string): Promise<WatchPlaylistData | null> => {
+    const prefetchPlaylist = useCallback(async (playlistId: string): Promise<WatchPlaylist | null> => {
         // 이미 캐시에 있으면 반환
         if (cacheRef.current.playlists.has(playlistId)) {
             return cacheRef.current.playlists.get(playlistId)!;
