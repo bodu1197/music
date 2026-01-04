@@ -50,12 +50,12 @@ export default function ProfilePage() {
                 localStorage.removeItem("user_country_name");
             }
 
-            // 2. IP Detection - accept ANY country
+            // 2. IP Detection - only use countries with chart support
             try {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
                 if (data.country_code) {
-                    // Check if in popular list first (has correct language mapping)
+                    // Check if country has chart support
                     const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
                     if (found) {
                         setCurrentCountry(found);
@@ -64,16 +64,12 @@ export default function ProfilePage() {
                         localStorage.setItem("user_country_name", found.name);
                         return;
                     }
-                    // For unlisted countries, default to English
-                    const country = {
-                        code: data.country_code,
-                        name: data.country_name || data.country_code,
-                        lang: "en"
-                    };
-                    setCurrentCountry(country);
-                    localStorage.setItem("user_country_code", country.code);
-                    localStorage.setItem("user_country_lang", country.lang);
-                    localStorage.setItem("user_country_name", country.name);
+                    // Unsupported countries → Global charts
+                    const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
+                    setCurrentCountry(global);
+                    localStorage.setItem("user_country_code", global.code);
+                    localStorage.setItem("user_country_lang", global.lang);
+                    localStorage.setItem("user_country_name", global.name);
                     return;
                 }
             } catch (e) {

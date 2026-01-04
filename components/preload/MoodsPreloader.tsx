@@ -29,10 +29,7 @@ export function MoodsPreloader() {
                 () => api.music.homeCached(100, countryCode, countryLang)
             );
 
-            preload(
-                ["/charts/cached", countryCode, countryLang],
-                () => api.music.chartsCached(countryCode)
-            );
+            // Charts now use hardcoded IDs - no preload needed
         }
 
         // Start preloading after a short delay to not block initial page render
