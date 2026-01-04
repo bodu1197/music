@@ -26,8 +26,8 @@ interface ChartArtist {
     title: string;
     browseId: string;
     subscribers: string;
-    thumbnail: { url: string; width: number; height: number }[];
-    rank: number;
+    thumbnails: { url: string; width: number; height: number }[];
+    rank: number | string;
     trend: "up" | "down" | "neutral";
 }
 
@@ -192,7 +192,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {artists.slice(0, 40).map((artist) => {
                     const isArtistLoading = loadingId === artist.browseId;
-                    const thumbnailUrl = artist.thumbnail?.at(-1)?.url || "/images/default-artist.svg";
+                    const thumbnailUrl = artist.thumbnails?.at(-1)?.url || "/images/default-artist.svg";
 
                     return (
                         <button
