@@ -48,7 +48,27 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         { revalidateOnFocus: false }
     );
 
-    // 🔥 플레이리스트 로드되면 모두 프리페치
+    // 🔥 페이지 접속 시 모든 카테고리의 플레이리스트 미리 로드!
+    useEffect(() => {
+        if (moodsAllData && typeof moodsAllData === 'object') {
+            Object.values(moodsAllData).forEach((categories) => {
+                if (Array.isArray(categories)) {
+                    (categories as MoodCategory[]).forEach((cat) => {
+                        if (cat.params) {
+                            // 모든 카테고리의 플레이리스트 미리 로드
+                            preload(
+                                ["/moods/playlists", cat.params, country.code, country.lang],
+                                () => api.music.moodPlaylists(cat.params, country.code, country.lang)
+                            );
+                        }
+                    });
+                }
+            });
+            console.log("[MoodsTab] 🚀 All category playlists preloaded on page load!");
+        }
+    }, [moodsAllData, country.code, country.lang]);
+
+    // 🔥 플레이리스트 로드되면 watch 데이터 프리페치
     useEffect(() => {
         if (playlistsData && Array.isArray(playlistsData)) {
             playlistsData.forEach((playlist: MoodPlaylist) => {
