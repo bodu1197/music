@@ -45,6 +45,38 @@ ALL_COUNTRIES = [
 CACHE_WARMING_ENABLED = os.getenv("CACHE_WARMING_ENABLED", "true").lower() == "true"
 CACHE_WARMING_INTERVAL_HOURS = 24
 
+# ============================================
+# Chart Playlist IDs (from charts-constants.ts)
+# ============================================
+CHART_CONFIGS = {
+    "ZZ": {"topSongs": "PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i", "topVideos": "PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM"},
+    "AR": {"topSongs": "PL4fGSI1pDJn4Kd7YEG9LbUqvt64PLs9Fo", "topVideos": "PL4fGSI1pDJn403fWAsjzCMsLEgBTOa25K"},
+    "AU": {"topSongs": "PL4fGSI1pDJn7xvYy-bP6UFeG5tITQgScd", "topVideos": "PL4fGSI1pDJn44PMHPLYatj8rta8WYtZ8_"},
+    "BR": {"topSongs": "PL4fGSI1pDJn7rGBE8kEC0CqTa1nMh9AKB", "topVideos": "PL4fGSI1pDJn4Gs2meaJRo9O8PNYvhjHIg"},
+    "CA": {"topSongs": "PL4fGSI1pDJn57Q7WbODbmXjyjgXi0BTyD", "topVideos": "PL4fGSI1pDJn4IeWA7bBJYh__qgOCRMkIh"},
+    "DE": {"topSongs": "PL4fGSI1pDJn6KpOXlp0MH8qA9tngXaUJ-", "topVideos": "PL4fGSI1pDJn4X-OicSCOy-dChXWdTgziQ"},
+    "FR": {"topSongs": "PL4fGSI1pDJn7bK3y1Hx-qpHBqfr6cesNs", "topVideos": "PL4fGSI1pDJn50iCQRUVmgUjOrCggCQ9nR"},
+    "GB": {"topSongs": "PL4fGSI1pDJn6_f5P3MnzXg9l3GDfnSlXa", "topVideos": "PL4fGSI1pDJn688ebB8czINn0_nov50e3A"},
+    "ID": {"topSongs": "PL4fGSI1pDJn5ObxTlEPlkkornHXUiKX1z", "topVideos": "PL4fGSI1pDJn5QPpj0R4vVgRWk8sSq549G"},
+    "IN": {"topSongs": "PL4fGSI1pDJn4pTWyM3t61lOyZ6_4jcNOw", "topVideos": "PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq"},
+    "IT": {"topSongs": "PL4fGSI1pDJn5JiDypHxveEplQrd7XQMlX", "topVideos": "PL4fGSI1pDJn5BPviUFX4a3IMnAgyknC68"},
+    "JP": {"topSongs": "PL4fGSI1pDJn4-UIb6RKHdxam-oAUULIGB", "topVideos": "PL4fGSI1pDJn5FhDrWnRp2NLzJCoPliNgT"},
+    "KR": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},
+    "MX": {"topSongs": "PL4fGSI1pDJn6fko1AmNa_pdGPZr5ROFvd", "topVideos": "PL4fGSI1pDJn5cDciLg1q9tabl7gzBZWOp"},
+    "NL": {"topSongs": "PL4fGSI1pDJn7CXu1B1U0lYQ0qfPB9TVfa", "topVideos": "PL4fGSI1pDJn5i2QIxSEhPqSzhqsWhhrBJ"},
+    "PL": {"topSongs": "PL4fGSI1pDJn68fmsRw9f6g-NzU5UA45v1", "topVideos": "PL4fGSI1pDJn69d7Zwro65Q7ORLxFVqr_U"},
+    "RU": {"topSongs": "PL4fGSI1pDJn5C8dBiYt0BTREyCHbZ47qc", "topVideos": "PL4fGSI1pDJn6cLcPmcc9b_l8oM0aJtsqL"},
+    "ES": {"topSongs": "PL4fGSI1pDJn6sMPCoD7PdSlEgyUylgxuT", "topVideos": "PL4fGSI1pDJn4jhQB4kb9M36dvVmJQPt4T"},
+    "TR": {"topSongs": "PL4fGSI1pDJn5tdVDtIAZArERm_vv4uFCR", "topVideos": "PL4fGSI1pDJn6rnJKpaAkK1XK8QUfa9KqP"},
+    "US": {"topSongs": "PL4fGSI1pDJn6O1LS0XSdF3RyO0Rq_LDeI", "topVideos": "PL4fGSI1pDJn69On1f-8NAvX_CYlx7QyZc"},
+}
+
+def get_chart_playlist_ids(country: str):
+    """Get chart playlist IDs for a country (fallback to ZZ/Global)"""
+    config = CHART_CONFIGS.get(country, CHART_CONFIGS.get("ZZ", {}))
+    return [config.get("topSongs"), config.get("topVideos")]
+
+
 
 
 # Redis client (initialized lazily)
@@ -817,6 +849,21 @@ def warm_all_caches_sync():
                 result = yt.get_charts(country=country)
                 cache_set(cache_key, result, TTL_CHARTS)
                 print(f"[CACHE WARMING] Charts cached for {country}")
+            
+            # Prefetch chart playlists (topSongs, topVideos, trending)
+            # These are hardcoded chart playlist IDs from charts-constants.ts
+            chart_playlists = get_chart_playlist_ids(country)
+            for playlist_id in chart_playlists:
+                if playlist_id:
+                    watch_key = make_cache_key("watch", None, playlist_id)
+                    if cache_get(watch_key) is None:
+                        try:
+                            watch_data = yt.get_watch_playlist(playlistId=playlist_id)
+                            cache_set(watch_key, watch_data, CACHE_TTL)
+                            prefetch_count += 1
+                        except Exception:
+                            pass
+
             
             # Warm home cache + prefetch albums/playlists
             cache_key = make_cache_key("home", 100, country, "en")
