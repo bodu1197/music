@@ -52,7 +52,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
-    const { getAlbum, getPlaylist, prefetchFromHomeData, isReady: isPrefetchReady, prefetchedCount } = usePrefetch();
+    const { getAlbum, prefetchFromHomeData, isReady: isPrefetchReady } = usePrefetch();
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [isPrefetching, setIsPrefetching] = useState(false);
 
@@ -137,9 +137,11 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
             return;
         }
 
+        if (!albumData) return;
+
         // Convert album tracks to Track format
         const tracks: Track[] = albumData.tracks
-            .map((t: AlbumTrack) => albumTrackToTrack(t, albumData!))
+            .map((t: AlbumTrack) => albumTrackToTrack(t, albumData))
             .filter((t: Track | null): t is Track => t !== null);
 
         console.log("[MusicTab] Album tracks:", tracks.length, "items");

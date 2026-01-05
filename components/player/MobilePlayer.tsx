@@ -65,9 +65,19 @@ export default function MobilePlayer() {
                     {/* Progress Bar */}
                     <div
                         ref={progressRef}
-                        className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer relative overflow-hidden"
+                        className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/20"
                         onClick={handleProgressClick}
                         onTouchStart={handleProgressClick}
+                        role="slider"
+                        tabIndex={0}
+                        aria-valuemin={0}
+                        aria-valuemax={duration}
+                        aria-valuenow={currentTime}
+                        aria-label="Seek progress"
+                        onKeyDown={(e) => {
+                            if (e.key === 'ArrowRight') seekTo(Math.min(duration, currentTime + 5));
+                            if (e.key === 'ArrowLeft') seekTo(Math.max(0, currentTime - 5));
+                        }}
                     >
                         <div
                             className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all duration-100"
@@ -178,7 +188,7 @@ function MobileControls({ player }: { readonly player: ReturnType<typeof usePlay
                 onClick={toggleRepeat}
                 className={cn(
                     "w-10 h-10 flex items-center justify-center transition-all relative active:scale-90",
-                    repeatMode !== "none" ? "text-[#667eea]" : "text-white/60 hover:text-white"
+                    repeatMode === "none" ? "text-white/60 hover:text-white" : "text-[#667eea]"
                 )}
                 title={repeatMode === "one" ? "Repeat One" : repeatMode === "all" ? "Repeat All" : "Repeat Off"}
             >

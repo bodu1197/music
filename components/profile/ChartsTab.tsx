@@ -4,7 +4,6 @@ import { useState } from "react";
 import useSWR from "swr";
 import Image from "next/image";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { usePrefetch } from "@/contexts/PrefetchContext";
 import { Play, Loader2, Music, TrendingUp, ListMusic, TrendingDown, Minus, Users } from "lucide-react";
 import { getChartConfig, hasChartSupport } from "@/lib/charts-constants";
 import { api } from "@/lib/api";
@@ -48,7 +47,6 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
-    const { getPlaylist } = usePrefetch();
 
     const config = getChartConfig(country.code);
     const isSupported = hasChartSupport(country.code);

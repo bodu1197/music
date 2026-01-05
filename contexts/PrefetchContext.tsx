@@ -27,7 +27,7 @@ interface PrefetchContextType {
 
 const PrefetchContext = createContext<PrefetchContextType | null>(null);
 
-export function PrefetchProvider({ children }: { children: React.ReactNode }) {
+export function PrefetchProvider({ children }: Readonly<{ children: React.ReactNode }>) {
     const cacheRef = useRef<PrefetchCache>({
         albums: new Map(),
         playlists: new Map(),
@@ -49,12 +49,10 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
 
     // 앨범 프리페치
     const prefetchAlbum = useCallback(async (browseId: string): Promise<AlbumData | null> => {
-        // 이미 캐시에 있으면 반환
         if (cacheRef.current.albums.has(browseId)) {
             return cacheRef.current.albums.get(browseId)!;
         }
 
-        // 이미 요청 중이면 스킵
         const key = `album:${browseId}`;
         if (pendingRef.current.has(key)) return null;
 
@@ -77,12 +75,10 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
 
     // 플레이리스트 프리페치
     const prefetchPlaylist = useCallback(async (playlistId: string): Promise<WatchPlaylist | null> => {
-        // 이미 캐시에 있으면 반환
         if (cacheRef.current.playlists.has(playlistId)) {
             return cacheRef.current.playlists.get(playlistId)!;
         }
 
-        // 이미 요청 중이면 스킵
         const key = `playlist:${playlistId}`;
         if (pendingRef.current.has(key)) return null;
 
@@ -103,6 +99,21 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    // Helper to process items
+    const processItem = useCallback((item: HomeSectionContent, promises: Promise<unknown>[]) => {
+        if (!item) return;
+
+        // 앨범 프리페치
+        if (item.browseId?.startsWith("MPREb")) {
+            promises.push(prefetchAlbum(item.browseId));
+        }
+
+        // 플레이리스트 프리페치
+        if (item.playlistId) {
+            promises.push(prefetchPlaylist(item.playlistId));
+        }
+    }, [prefetchAlbum, prefetchPlaylist]);
+
     // 홈 데이터에서 모든 앨범/플레이리스트 프리페치 (완료까지 대기)
     const prefetchFromHomeData = useCallback(async (homeData: HomeSection[]): Promise<void> => {
         if (!homeData || !Array.isArray(homeData)) return;
@@ -111,19 +122,9 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
         const promises: Promise<unknown>[] = [];
 
         for (const section of homeData) {
-            if (!section?.contents) continue;
-
-            for (const item of section.contents as HomeSectionContent[]) {
-                if (!item) continue;
-
-                // 앨범 프리페치
-                if (item.browseId && item.browseId.startsWith("MPREb")) {
-                    promises.push(prefetchAlbum(item.browseId));
-                }
-
-                // 플레이리스트 프리페치
-                if (item.playlistId) {
-                    promises.push(prefetchPlaylist(item.playlistId));
+            if (section?.contents) {
+                for (const item of section.contents) {
+                    processItem(item, promises);
                 }
             }
         }
@@ -135,21 +136,20 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
 
         console.log(`[Prefetch] ✅ All ${promises.length} items loaded! Ready for instant clicks.`);
         setIsReady(true);
-    }, [prefetchAlbum, prefetchPlaylist]);
+    }, [processItem]);
 
+    const value = React.useMemo(() => ({
+        getAlbum,
+        getPlaylist,
+        prefetchAlbum,
+        prefetchPlaylist,
+        prefetchFromHomeData,
+        isReady,
+        prefetchedCount,
+    }), [getAlbum, getPlaylist, prefetchAlbum, prefetchPlaylist, prefetchFromHomeData, isReady, prefetchedCount]);
 
     return (
-        <PrefetchContext.Provider
-            value={{
-                getAlbum,
-                getPlaylist,
-                prefetchAlbum,
-                prefetchPlaylist,
-                prefetchFromHomeData,
-                isReady,
-                prefetchedCount,
-            }}
-        >
+        <PrefetchContext.Provider value={value}>
             {children}
         </PrefetchContext.Provider>
     );

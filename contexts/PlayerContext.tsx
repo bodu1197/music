@@ -65,7 +65,7 @@ interface PlayerContextType {
     seekTo: (time: number) => void;
     toggleQueue: () => void;
     clearQueue: () => void;
-    playYouTubePlaylist: (playlistId: string) => void;  // YouTube iFrame API로 직접 재생
+    playYouTubePlaylist: (playlistId: string) => Promise<void>;  // YouTube iFrame API로 직접 재생
 
     // YouTube Player ref (for direct access)
     playerRef: RefObject<YT.Player | null>;

@@ -29,9 +29,8 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
-    const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
-    const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
-    const { getPlaylist, prefetchPlaylist } = usePrefetch();
+    const { toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
+    const { prefetchPlaylist } = usePrefetch();
 
     // 카테고리 목록 (AppPreloader에서 이미 프리로드됨)
     const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
@@ -111,13 +110,12 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         return (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {playlistsData.map((playlist: MoodPlaylist, i: number) => {
-                    const isLoading = loadingPlaylistId === playlist.playlistId;
                     return (
                         <button
                             key={playlist.playlistId || i}
                             type="button"
                             className="bg-zinc-900 rounded-lg overflow-hidden cursor-pointer hover:bg-zinc-800 transition-colors group text-left w-full border-none p-0 block"
-                            onClick={() => playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
+                            onClick={() => playlist.playlistId && handlePlaylistClick(playlist.playlistId)}
                         >
                             <div className="relative aspect-square">
                                 {playlist.thumbnails && playlist.thumbnails.length > 0 && (
@@ -130,11 +128,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                                     />
                                 )}
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    {isLoading ? (
-                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
-                                    ) : (
-                                        <Play className="w-8 h-8 text-white fill-current" />
-                                    )}
+                                    <Play className="w-8 h-8 text-white fill-current" />
                                 </div>
                             </div>
                             <div className="p-2">
