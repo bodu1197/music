@@ -5,14 +5,28 @@ import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
-import { usePrefetch } from "@/contexts/PrefetchContext";
-import { Play, Loader2, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
+import { Play, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
 import { Country } from "@/lib/constants";
-import type { WatchTrack, Artist, MoodCategory, MoodPlaylist } from "@/types/music";
+import type { WatchTrack, Artist } from "@/types/music";
 
 interface MoodsTabProps {
     country: Country;
 }
+
+interface MoodPlaylistFull {
+    playlistId: string;
+    title: string;
+    thumbnails: { url: string; width: number; height: number }[];
+    tracks: WatchTrack[];
+}
+
+interface MoodCategoryFull {
+    title: string;
+    params: string;
+    playlists: MoodPlaylistFull[];
+}
+
+type MoodsFullData = Record<string, MoodCategoryFull[]>;
 
 // playlist to Track
 function playlistTrackToTrack(track: WatchTrack): Track | null {
@@ -28,69 +42,31 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 }
 
 export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
-    const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
-    const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<MoodCategoryFull | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-    const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
-
-    // Fetch ALL moods data with playlists (server-cached, single request)
-    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
-        ["/moods/all", country.code, country.lang],
-        () => api.music.moodsAll(country.code, country.lang),
+    // Fetch FULL moods data with playlists AND tracks (single request, instant response)
+    const { data: moodsFullData, error: moodsError, isLoading: moodsLoading } = useSWR<MoodsFullData>(
+        ["/moods/full", country.code, country.lang],
+        () => api.music.moodsFull(country.code, country.lang),
         { revalidateOnFocus: false }
     );
-
-    // Fetch playlists for selected category (on-demand, only when category is selected)
-    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
-        selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
-        () => api.music.moodPlaylists(selectedCategory!.params, country.code, country.lang),
-        { revalidateOnFocus: false }
-    );
-
-    // 🔥 플레이리스트 로드되면 모두 프리페치
-    useEffect(() => {
-        if (playlistsData && Array.isArray(playlistsData)) {
-            playlistsData.forEach((playlist: MoodPlaylist) => {
-                if (playlist.playlistId) {
-                    prefetchPlaylist(playlist.playlistId);
-                }
-            });
-        }
-    }, [playlistsData, prefetchPlaylist]);
 
     // Reset selected category when country changes
     useEffect(() => {
         setSelectedCategory(null);
     }, [country.code]);
 
-
-    // Handle playlist click - 캐시 확인 후 API 호출
-    const handlePlaylistClick = async (playlistId: string) => {
-        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
-        let watchData = getPlaylist(playlistId);
-
-        if (watchData) {
-            console.log("[MoodsTab] ⚡ CACHE HIT - instant response!");
-        } else {
-            // 캐시에 없으면 API 호출
-            setLoadingPlaylistId(playlistId);
-            try {
-                watchData = await api.music.watch(undefined, playlistId);
-                console.log("[MoodsTab] API response");
-            } catch (e) {
-                console.error("[MoodsTab] Error:", e);
-                setLoadingPlaylistId(null);
-                return;
-            }
-            setLoadingPlaylistId(null);
-        }
-
-        if (!watchData?.tracks || watchData.tracks.length === 0) {
+    // Handle playlist click - tracks already in memory!
+    const handlePlaylistClick = (playlist: MoodPlaylistFull) => {
+        if (!playlist.tracks || playlist.tracks.length === 0) {
+            console.log("[MoodsTab] No tracks in playlist");
             return;
         }
 
-        const tracks: Track[] = watchData.tracks
+        console.log("[MoodsTab] Instant playback from memory!");
+
+        const tracks: Track[] = playlist.tracks
             .map((t: WatchTrack) => playlistTrackToTrack(t))
             .filter((t: Track | null): t is Track => t !== null);
 
@@ -100,28 +76,15 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         }
     };
 
+    // Handle category click - playlists already in memory!
+    const handleCategoryClick = (category: MoodCategoryFull) => {
+        console.log("[MoodsTab] Instant category switch from memory!");
+        setSelectedCategory(category);
+    };
 
-    // Render playlists content based on state
+    // Render playlists content (from memory, no loading state needed!)
     const renderPlaylistsContent = () => {
-        if (playlistsLoading) {
-            return (
-                <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
-                    <Loader2 className="w-8 h-8 animate-spin" />
-                    <p>Loading playlists...</p>
-                </div>
-            );
-        }
-
-        if (playlistsError) {
-            return (
-                <div className="text-center text-red-500 py-10 flex flex-col items-center gap-2">
-                    <AlertCircle className="w-8 h-8" />
-                    <p>Error: {playlistsError.message}</p>
-                </div>
-            );
-        }
-
-        if (!playlistsData || playlistsData.length === 0) {
+        if (!selectedCategory?.playlists || selectedCategory.playlists.length === 0) {
             return (
                 <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
                     <AlertCircle className="w-8 h-8" />
@@ -132,14 +95,13 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
 
         return (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {playlistsData.map((playlist: MoodPlaylist, i: number) => {
-                    const isLoading = loadingPlaylistId === playlist.playlistId;
+                {selectedCategory.playlists.map((playlist: MoodPlaylistFull, i: number) => {
                     return (
                         <button
                             key={playlist.playlistId || i}
                             type="button"
                             className="bg-zinc-900 rounded-lg overflow-hidden cursor-pointer hover:bg-zinc-800 transition-colors group text-left w-full border-none p-0 block"
-                            onClick={() => playlist.playlistId && !isLoading && handlePlaylistClick(playlist.playlistId)}
+                            onClick={() => handlePlaylistClick(playlist)}
                         >
                             <div className="relative aspect-square">
                                 {playlist.thumbnails && playlist.thumbnails.length > 0 && (
@@ -152,11 +114,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                                     />
                                 )}
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    {isLoading ? (
-                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
-                                    ) : (
-                                        <Play className="w-8 h-8 text-white fill-current" />
-                                    )}
+                                    <Play className="w-8 h-8 text-white fill-current" />
                                 </div>
                             </div>
                             <div className="p-2">
@@ -188,7 +146,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     return (
         <div className="space-y-6 px-4">
             {selectedCategory ? (
-                /* Playlists Section */
+                /* Playlists Section - Instant from memory! */
                 <div className="space-y-4">
                     {/* Back button */}
                     <button
@@ -208,14 +166,14 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
+                    {moodsFullData && Object.entries(moodsFullData).map(([sectionTitle, categories]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
+                                {(categories as MoodCategoryFull[]).map((cat: MoodCategoryFull, i: number) => (
                                     <button
                                         key={cat.params || i}
-                                        onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
+                                        onClick={() => handleCategoryClick(cat)}
                                         className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">

@@ -118,6 +118,14 @@ export const api = {
             return res.json();
         },
 
+        // Get FULL moods with playlists AND tracks (instant response)
+        moodsFull: async (country: string = 'US', language: string = 'en') => {
+            const params = new URLSearchParams({ country, language });
+            const res = await fetch(`${API_URL}/moods/full?${params}`);
+            if (!res.ok) throw new Error('Failed to fetch full moods');
+            return res.json();
+        },
+
         // Get home feed (server-cached)
         homeCached: async (limit: number = 100, country: string = 'US', language: string = 'en') => {
             const params = new URLSearchParams({
