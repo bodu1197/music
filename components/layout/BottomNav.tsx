@@ -16,28 +16,25 @@ export default function BottomNav() {
     ];
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 w-full bg-black border-t border-zinc-800 z-50 pb-safe">
-            <div className="flex justify-around items-center h-12">
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
+        <nav className="md:hidden fixed bottom-0 left-0 w-full h-[60px] bg-[#0c0c1a] border-t border-white/10 z-[1002] flex justify-around items-stretch">
+            {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
 
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className="flex items-center justify-center w-full h-full"
-                        >
-                            <Icon
-                                className={cn(
-                                    "w-6 h-6 transition-transform active:scale-95",
-                                    isActive ? "stroke-[3px] text-white" : "stroke-[2px] text-zinc-400"
-                                )}
-                            />
-                        </Link>
-                    );
-                })}
-            </div>
-        </div>
+                return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            "flex flex-col justify-center items-center flex-1 gap-1 text-[10px] font-medium transition-colors",
+                            isActive ? "text-white" : "text-white/60"
+                        )}
+                    >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                    </Link>
+                );
+            })}
+        </nav>
     );
 }

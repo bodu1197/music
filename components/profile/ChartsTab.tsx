@@ -62,7 +62,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
 
     const artists: ChartArtist[] = chartsData?.artists || [];
 
-    // 프리페치는 MoodsPreloader에서 페이지 접속 시 처리됨
+    // 프리페치는 AppPreloader에서 페이지 접속 시 처리됨
 
     // Build chart cards from hardcoded IDs
     const chartCards: ChartCard[] = [];

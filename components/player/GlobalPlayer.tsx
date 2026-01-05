@@ -32,7 +32,7 @@ export default function GlobalPlayer() {
     const thumbnail = currentTrack?.thumbnail || "/images/default-album.svg";
 
     return (
-        <div className="fixed bottom-[49px] md:bottom-0 left-0 w-full bg-black/90 border-t border-white/10 z-50 h-[90px] flex items-center px-4 md:pl-[245px]">
+        <div className="fixed bottom-[60px] md:bottom-0 left-0 w-full bg-black/90 border-t border-white/10 z-[1001] h-[80px] md:h-[90px] flex items-center px-4 md:pl-[245px]">
             {/* Left Section - Track Info */}
             <div className="flex items-center gap-3 w-[30%] min-w-0">
                 <div

@@ -4,7 +4,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import GlobalPlayer from "@/components/player/GlobalPlayer";
 import PlayerSidebar from "@/components/player/PlayerSidebar";
 import { PlayerProvider } from "@/contexts/PlayerContext";
-import { MoodsPreloader } from "@/components/preload/MoodsPreloader";
+import { AppPreloader } from "@/components/preload/AppPreloader";
 
 export default function MainLayout({
     children,
@@ -13,12 +13,12 @@ export default function MainLayout({
 }>) {
     return (
         <PlayerProvider>
-            <MoodsPreloader />
+            <AppPreloader />
             <div className="flex min-h-screen">
                 <aside>
                     <Sidebar />
                 </aside>
-                <main className="flex-1 md:ml-[245px] lg:pr-[340px] pb-[139px] md:pb-[90px] min-h-screen overflow-x-hidden">
+                <main className="flex-1 md:ml-[245px] lg:pr-[340px] pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden">
                     {children}
                 </main>
                 <aside className="hidden lg:block">

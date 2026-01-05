@@ -7,7 +7,7 @@ import { DEFAULT_COUNTRY } from "@/lib/constants";
 import { getChartConfig } from "@/lib/charts-constants";
 import type { MoodCategory } from "@/types/music";
 
-export function MoodsPreloader() {
+export function AppPreloader() {
     const hasPreloaded = useRef(false);
 
     useEffect(() => {

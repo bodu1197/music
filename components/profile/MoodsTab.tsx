@@ -33,14 +33,14 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
     const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
-    // 카테고리 목록 (MoodsPreloader에서 이미 프리로드됨)
+    // 카테고리 목록 (AppPreloader에서 이미 프리로드됨)
     const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
         ["/moods/all", country.code, country.lang],
         () => api.music.moodsAll(country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
-    // 선택된 카테고리의 플레이리스트 (MoodsPreloader에서 이미 프리로드됨)
+    // 선택된 카테고리의 플레이리스트 (AppPreloader에서 이미 프리로드됨)
     const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
         selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
         () => api.music.moodPlaylists(selectedCategory!.params, country.code, country.lang),

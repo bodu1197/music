@@ -83,7 +83,7 @@ export default function ProfilePage() {
         detect();
     }, []);
 
-    // Preloading is now handled by MoodsPreloader in the layout
+    // Preloading is now handled by AppPreloader in the layout
     // (runs on homepage access, server-cached, single request each)
 
 
