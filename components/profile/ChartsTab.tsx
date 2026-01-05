@@ -110,11 +110,11 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         if (playlistData) {
             console.log("[ChartsTab] ⚡ CACHE HIT - instant response!");
         } else {
-            // 캐시에 없으면 API 호출 - playlist API로 전체 트랙 가져오기
+            // 캐시에 없으면 API 호출
             setLoadingId(card.id);
             try {
-                playlistData = await api.music.playlist(card.playlistId, 200);
-                console.log("[ChartsTab] API response - tracks:", playlistData?.tracks?.length);
+                playlistData = await api.music.watch(undefined, card.playlistId);
+                console.log("[ChartsTab] API response");
             } catch (e) {
                 console.error("[ChartsTab] Error loading playlist:", e);
                 setLoadingId(null);
@@ -154,6 +154,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
             }
 
             const tracks: Track[] = artistData.songs.results
+                .slice(0, 20)
                 .map((song: { videoId?: string; title?: string; artists?: { name: string }[]; thumbnails?: { url: string }[] }) => ({
                     videoId: song.videoId,
                     title: song.title || "Unknown",
@@ -203,7 +204,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
 
         return (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {artists.map((artist) => {
+                {artists.slice(0, 40).map((artist) => {
                     const isArtistLoading = loadingId === artist.browseId;
                     const thumbnailUrl = artist.thumbnails?.at(-1)?.url || "/images/default-artist.svg";
 

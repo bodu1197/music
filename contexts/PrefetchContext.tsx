@@ -89,7 +89,7 @@ export function PrefetchProvider({ children }: { children: React.ReactNode }) {
         pendingRef.current.add(key);
 
         try {
-            const data = await api.music.playlist(playlistId, 200);
+            const data = await api.music.watch(undefined, playlistId);
             if (data) {
                 cacheRef.current.playlists.set(playlistId, data);
                 setPrefetchedCount(prev => prev + 1);
