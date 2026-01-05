@@ -31,6 +31,21 @@ async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<Resp
     throw lastError || new Error('Failed after retries');
 }
 
+interface MoodCategory {
+    title: string;
+    params: string;
+}
+
+interface MoodPlaylist {
+    playlistId: string;
+    title: string;
+    thumbnails: { url: string; width: number; height: number }[];
+}
+
+interface MoodCategoryWithPlaylists extends MoodCategory {
+    playlists: MoodPlaylist[];
+}
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     let country = searchParams.get('country') || 'US';
@@ -43,13 +58,45 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Fetch mood categories only (fast, ~0.1s)
+        // Step 1: Fetch mood categories (fast, ~0.1s)
         const moodsRes = await fetchWithRetry(
             `${API_URL}/moods?country=${country}&language=${language}`
         );
-        const moodsData = await moodsRes.json();
+        const moodsData: Record<string, MoodCategory[]> = await moodsRes.json();
 
-        return NextResponse.json(moodsData, {
+        // Step 2: For each category, fetch playlists in parallel (cached in backend)
+        const result: Record<string, MoodCategoryWithPlaylists[]> = {};
+
+        for (const [sectionName, categories] of Object.entries(moodsData)) {
+            if (!Array.isArray(categories)) continue;
+
+            // Fetch all playlists for this section in parallel
+            const categoriesWithPlaylists = await Promise.all(
+                categories.map(async (cat: MoodCategory) => {
+                    try {
+                        const playlistsRes = await fetchWithRetry(
+                            `${API_URL}/moods/playlists?params=${encodeURIComponent(cat.params)}&country=${country}&language=${language}`
+                        );
+                        const playlists: MoodPlaylist[] = await playlistsRes.json();
+
+                        return {
+                            ...cat,
+                            playlists: Array.isArray(playlists) ? playlists : [],
+                        };
+                    } catch (e) {
+                        console.error(`[API /moods/all] Failed to fetch playlists for ${cat.title}:`, e);
+                        return {
+                            ...cat,
+                            playlists: [],
+                        };
+                    }
+                })
+            );
+
+            result[sectionName] = categoriesWithPlaylists;
+        }
+
+        return NextResponse.json(result, {
             headers: {
                 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
             },
