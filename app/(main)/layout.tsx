@@ -2,6 +2,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import RightSidebar from "@/components/layout/RightSidebar";
 import GlobalPlayer from "@/components/player/GlobalPlayer";
+import MobilePlayer from "@/components/player/MobilePlayer";
 import PlayerSidebar from "@/components/player/PlayerSidebar";
 import { PlayerProvider } from "@/contexts/PlayerContext";
 import { AppPreloader } from "@/components/preload/AppPreloader";
@@ -26,6 +27,7 @@ export default function MainLayout({
                 </aside>
                 <PlayerSidebar />
                 <GlobalPlayer />
+                <MobilePlayer />
                 <BottomNav />
             </div>
         </PlayerProvider>
