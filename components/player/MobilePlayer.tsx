@@ -62,31 +62,32 @@ export default function MobilePlayer() {
                         {formatTime(currentTime)}
                     </span>
 
-                    {/* Progress Bar */}
-                    <div
-                        ref={progressRef}
-                        className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/20"
-                        onClick={handleProgressClick}
-                        onTouchStart={handleProgressClick}
-                        role="slider"
-                        tabIndex={0}
-                        aria-valuemin={0}
-                        aria-valuemax={duration}
-                        aria-valuenow={currentTime}
-                        aria-label="Seek progress"
-                        onKeyDown={(e) => {
-                            if (e.key === 'ArrowRight') seekTo(Math.min(duration, currentTime + 5));
-                            if (e.key === 'ArrowLeft') seekTo(Math.max(0, currentTime - 5));
-                        }}
-                    >
+                    {/* Progress Bar Container */}
+                    <div className="relative flex-1 h-4 flex items-center group">
+                        {/* Visual Track (Background) */}
+                        <div className="absolute inset-x-0 h-1 bg-white/10 rounded-full overflow-hidden pointer-events-none">
+                            <div
+                                className="h-full bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all duration-100"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+
+                        {/* Visual Thumb */}
                         <div
-                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all duration-100"
-                            style={{ width: `${progressPercent}%` }}
-                        />
-                        {/* Thumb */}
-                        <div
-                            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-lg transition-all duration-100"
+                            className="absolute w-2.5 h-2.5 bg-white rounded-full shadow-lg transition-all duration-100 pointer-events-none group-hover:scale-125"
                             style={{ left: `calc(${progressPercent}% - 5px)` }}
+                        />
+
+                        {/* Native Range Input (Invisible but interactive) */}
+                        <input
+                            type="range"
+                            min={0}
+                            max={duration || 100}
+                            value={currentTime}
+                            onChange={(e) => seekTo(Number(e.target.value))}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            aria-label="Seek progress"
+                            disabled={!currentTrack}
                         />
                     </div>
 
@@ -127,6 +128,12 @@ function MobileControls({ player }: { readonly player: ReturnType<typeof usePlay
         if (repeatMode === "one") return "1";
         if (repeatMode === "all") return "ALL";
         return null;
+    };
+
+    const getRepeatTitle = () => {
+        if (repeatMode === "one") return "Repeat One";
+        if (repeatMode === "all") return "Repeat All";
+        return "Repeat Off";
     };
 
     return (
@@ -190,7 +197,7 @@ function MobileControls({ player }: { readonly player: ReturnType<typeof usePlay
                     "w-10 h-10 flex items-center justify-center transition-all relative active:scale-90",
                     repeatMode === "none" ? "text-white/60 hover:text-white" : "text-[#667eea]"
                 )}
-                title={repeatMode === "one" ? "Repeat One" : repeatMode === "all" ? "Repeat All" : "Repeat Off"}
+                title={getRepeatTitle()}
             >
                 <Repeat className="w-5 h-5" />
                 {getRepeatLabel() && (

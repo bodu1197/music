@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useRef, useEffect, useState } from "react";
+import React, { createContext, useContext, useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { AlbumData, WatchPlaylist, HomeSectionContent, HomeSection } from "@/types/music";
 
