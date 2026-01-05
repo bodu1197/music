@@ -907,12 +907,53 @@ def warm_all_caches_sync():
                                 except Exception:
                                     pass
             
-            # Warm moods cache
+            # Warm moods cache + prefetch mood playlists
             cache_key = make_cache_key("moods", country, "en")
-            if cache_get(cache_key) is None:
-                result = yt.get_mood_categories()
-                cache_set(cache_key, result, TTL_MOODS)
+            moods_data = cache_get(cache_key)
+            if moods_data is None:
+                moods_data = yt.get_mood_categories()
+                cache_set(cache_key, moods_data, TTL_MOODS)
                 print(f"[CACHE WARMING] Moods cached for {country}")
+            
+            # Prefetch playlists for each mood category (limited to first 3 categories per section)
+            if moods_data and isinstance(moods_data, dict):
+                for section_name, categories in moods_data.items():
+                    if not isinstance(categories, list):
+                        continue
+                    # Only prefetch first 3 categories per section to limit API calls
+                    for cat in categories[:3]:
+                        if not isinstance(cat, dict):
+                            continue
+                        params = cat.get("params")
+                        if not params:
+                            continue
+                        
+                        # Get playlists for this category
+                        playlist_cache_key = make_cache_key("mood_playlists", params, country, "en")
+                        playlists = cache_get(playlist_cache_key)
+                        if playlists is None:
+                            try:
+                                playlists = yt.get_mood_playlists(params)
+                                cache_set(playlist_cache_key, playlists, TTL_MOOD_PLAYLISTS)
+                            except Exception:
+                                continue
+                        
+                        # Prefetch watch data for each playlist (limited to first 5)
+                        if playlists and isinstance(playlists, list):
+                            for playlist in playlists[:5]:
+                                if not isinstance(playlist, dict):
+                                    continue
+                                playlist_id = playlist.get("playlistId")
+                                if playlist_id:
+                                    watch_key = make_cache_key("watch", None, playlist_id)
+                                    if cache_get(watch_key) is None:
+                                        try:
+                                            watch_data = yt.get_watch_playlist(playlistId=playlist_id)
+                                            cache_set(watch_key, watch_data, CACHE_TTL)
+                                            prefetch_count += 1
+                                        except Exception:
+                                            pass
+
             
             success_count += 1
             
