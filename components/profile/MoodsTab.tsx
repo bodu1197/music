@@ -8,25 +8,11 @@ import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { usePrefetch } from "@/contexts/PrefetchContext";
 import { Play, Loader2, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
 import { Country } from "@/lib/constants";
-import type { WatchTrack, Artist } from "@/types/music";
+import type { WatchTrack, Artist, MoodCategory, MoodPlaylist } from "@/types/music";
 
 interface MoodsTabProps {
     country: Country;
 }
-
-interface MoodPlaylist {
-    playlistId: string;
-    title: string;
-    thumbnails: { url: string; width: number; height: number }[];
-}
-
-interface MoodCategoryWithPlaylists {
-    title: string;
-    params: string;
-    playlists: MoodPlaylist[];
-}
-
-type MoodsAllData = Record<string, MoodCategoryWithPlaylists[]>;
 
 // playlist to Track
 function playlistTrackToTrack(track: WatchTrack): Track | null {
@@ -42,40 +28,42 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 }
 
 export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
-    // 선택된 카테고리 (플레이리스트 포함!)
-    const [selectedCategory, setSelectedCategory] = useState<MoodCategoryWithPlaylists | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
     const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
-    // Fetch ALL moods data WITH playlists (single request)
-    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR<MoodsAllData>(
+
+    // Fetch ALL moods data with playlists (server-cached, single request)
+    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
         ["/moods/all", country.code, country.lang],
         () => api.music.moodsAll(country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
-    // 카테고리 선택 시 해당 플레이리스트들 프리페치
+    // Fetch playlists for selected category (on-demand, only when category is selected)
+    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
+        selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
+        () => api.music.moodPlaylists(selectedCategory!.params, country.code, country.lang),
+        { revalidateOnFocus: false }
+    );
+
+    // 🔥 플레이리스트 로드되면 모두 프리페치
     useEffect(() => {
-        if (selectedCategory?.playlists) {
-            selectedCategory.playlists.forEach((playlist: MoodPlaylist) => {
+        if (playlistsData && Array.isArray(playlistsData)) {
+            playlistsData.forEach((playlist: MoodPlaylist) => {
                 if (playlist.playlistId) {
                     prefetchPlaylist(playlist.playlistId);
                 }
             });
         }
-    }, [selectedCategory, prefetchPlaylist]);
+    }, [playlistsData, prefetchPlaylist]);
 
     // Reset selected category when country changes
     useEffect(() => {
         setSelectedCategory(null);
     }, [country.code]);
 
-    // Handle category click - playlists already in memory!
-    const handleCategoryClick = (category: MoodCategoryWithPlaylists) => {
-        console.log("[MoodsTab] ⚡ Instant category switch from memory!");
-        setSelectedCategory(category);
-    };
 
     // Handle playlist click - 캐시 확인 후 API 호출
     const handlePlaylistClick = async (playlistId: string) => {
@@ -112,9 +100,28 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         }
     };
 
-    // Render playlists content (from memory - instant!)
+
+    // Render playlists content based on state
     const renderPlaylistsContent = () => {
-        if (!selectedCategory?.playlists || selectedCategory.playlists.length === 0) {
+        if (playlistsLoading) {
+            return (
+                <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <p>Loading playlists...</p>
+                </div>
+            );
+        }
+
+        if (playlistsError) {
+            return (
+                <div className="text-center text-red-500 py-10 flex flex-col items-center gap-2">
+                    <AlertCircle className="w-8 h-8" />
+                    <p>Error: {playlistsError.message}</p>
+                </div>
+            );
+        }
+
+        if (!playlistsData || playlistsData.length === 0) {
             return (
                 <div className="text-center text-zinc-500 py-10 flex flex-col items-center gap-2">
                     <AlertCircle className="w-8 h-8" />
@@ -125,7 +132,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
 
         return (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {selectedCategory.playlists.map((playlist: MoodPlaylist, i: number) => {
+                {playlistsData.map((playlist: MoodPlaylist, i: number) => {
                     const isLoading = loadingPlaylistId === playlist.playlistId;
                     return (
                         <button
@@ -181,7 +188,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     return (
         <div className="space-y-6 px-4">
             {selectedCategory ? (
-                /* Playlists Section - Instant from memory! */
+                /* Playlists Section */
                 <div className="space-y-4">
                     {/* Back button */}
                     <button
@@ -205,10 +212,10 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {(categories as MoodCategoryWithPlaylists[]).map((cat: MoodCategoryWithPlaylists, i: number) => (
+                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
                                     <button
                                         key={cat.params || i}
-                                        onClick={() => handleCategoryClick(cat)}
+                                        onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
                                         className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">
