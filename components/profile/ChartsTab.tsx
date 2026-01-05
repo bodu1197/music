@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import Image from "next/image";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
@@ -48,7 +48,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-    const { getPlaylist, prefetchPlaylist } = usePrefetch();
+    const { getPlaylist } = usePrefetch();
 
     const config = getChartConfig(country.code);
     const isSupported = hasChartSupport(country.code);
@@ -62,14 +62,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
 
     const artists: ChartArtist[] = chartsData?.artists || [];
 
-    // 🔥 차트 카드 플레이리스트 미리 프리페치
-    useEffect(() => {
-        const playlistIds = [config.topSongs, config.topVideos, config.trending].filter(Boolean);
-        playlistIds.forEach(id => {
-            if (id) prefetchPlaylist(id);
-        });
-    }, [config, prefetchPlaylist]);
-
+    // 프리페치는 MoodsPreloader에서 페이지 접속 시 처리됨
 
     // Build chart cards from hardcoded IDs
     const chartCards: ChartCard[] = [];

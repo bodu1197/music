@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import useSWR, { preload } from "swr";
+import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { usePrefetch } from "@/contexts/PrefetchContext";
@@ -33,42 +33,21 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
     const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
-
-    // Fetch ALL moods data with playlists (server-cached, single request)
+    // 카테고리 목록 (MoodsPreloader에서 이미 프리로드됨)
     const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
         ["/moods/all", country.code, country.lang],
         () => api.music.moodsAll(country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
-    // Fetch playlists for selected category (on-demand, only when category is selected)
+    // 선택된 카테고리의 플레이리스트 (MoodsPreloader에서 이미 프리로드됨)
     const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
         selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
         () => api.music.moodPlaylists(selectedCategory!.params, country.code, country.lang),
         { revalidateOnFocus: false }
     );
 
-    // 🔥 페이지 접속 시 모든 카테고리의 플레이리스트 미리 로드!
-    useEffect(() => {
-        if (moodsAllData && typeof moodsAllData === 'object') {
-            Object.values(moodsAllData).forEach((categories) => {
-                if (Array.isArray(categories)) {
-                    (categories as MoodCategory[]).forEach((cat) => {
-                        if (cat.params) {
-                            // 모든 카테고리의 플레이리스트 미리 로드
-                            preload(
-                                ["/moods/playlists", cat.params, country.code, country.lang],
-                                () => api.music.moodPlaylists(cat.params, country.code, country.lang)
-                            );
-                        }
-                    });
-                }
-            });
-            console.log("[MoodsTab] 🚀 All category playlists preloaded on page load!");
-        }
-    }, [moodsAllData, country.code, country.lang]);
-
-    // 🔥 플레이리스트 로드되면 watch 데이터 프리페치
+    // 플레이리스트 로드되면 watch 데이터 프리페치 (배너 클릭 시 즉시 재생 위해)
     useEffect(() => {
         if (playlistsData && Array.isArray(playlistsData)) {
             playlistsData.forEach((playlist: MoodPlaylist) => {
@@ -84,27 +63,16 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         setSelectedCategory(null);
     }, [country.code]);
 
-    // 🔥 카테고리 hover 시 플레이리스트 미리 로드 (SWR preload)
-    const handleCategoryHover = useCallback((params: string) => {
-        preload(
-            ["/moods/playlists", params, country.code, country.lang],
-            () => api.music.moodPlaylists(params, country.code, country.lang)
-        );
-    }, [country.code, country.lang]);
-
     // Handle playlist click - 캐시 확인 후 API 호출
     const handlePlaylistClick = async (playlistId: string) => {
-        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
         let watchData = getPlaylist(playlistId);
 
         if (watchData) {
             console.log("[MoodsTab] ⚡ CACHE HIT - instant response!");
         } else {
-            // 캐시에 없으면 API 호출
             setLoadingPlaylistId(playlistId);
             try {
                 watchData = await api.music.watch(undefined, playlistId);
-                console.log("[MoodsTab] API response");
             } catch (e) {
                 console.error("[MoodsTab] Error:", e);
                 setLoadingPlaylistId(null);
@@ -127,8 +95,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         }
     };
 
-
-    // Render playlists content based on state
+    // Render playlists content
     const renderPlaylistsContent = () => {
         if (playlistsLoading) {
             return (
@@ -215,9 +182,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     return (
         <div className="space-y-6 px-4">
             {selectedCategory ? (
-                /* Playlists Section */
                 <div className="space-y-4">
-                    {/* Back button */}
                     <button
                         onClick={() => setSelectedCategory(null)}
                         className="text-zinc-400 hover:text-white flex items-center gap-1 transition-colors text-sm"
@@ -243,7 +208,6 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                                     <button
                                         key={cat.params || i}
                                         onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
-                                        onMouseEnter={() => handleCategoryHover(cat.params)}
                                         className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">
