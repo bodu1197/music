@@ -46,30 +46,84 @@ CACHE_WARMING_ENABLED = os.getenv("CACHE_WARMING_ENABLED", "true").lower() == "t
 CACHE_WARMING_INTERVAL_HOURS = 24
 
 # ============================================
-# Chart Playlist IDs (from charts-constants.ts)
+# Chart Playlist IDs (from charts-constants.ts) - ALL 73 Countries
 # ============================================
 CHART_CONFIGS = {
+    # Global
     "ZZ": {"topSongs": "PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i", "topVideos": "PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM"},
+    # Official 61 Countries
     "AR": {"topSongs": "PL4fGSI1pDJn4Kd7YEG9LbUqvt64PLs9Fo", "topVideos": "PL4fGSI1pDJn403fWAsjzCMsLEgBTOa25K"},
     "AU": {"topSongs": "PL4fGSI1pDJn7xvYy-bP6UFeG5tITQgScd", "topVideos": "PL4fGSI1pDJn44PMHPLYatj8rta8WYtZ8_"},
+    "AT": {"topSongs": "PL4fGSI1pDJn6fFTVP30alDfSDAkEtHaNr", "topVideos": "PL4fGSI1pDJn42I7USCyNUQSjm-OlttqQf"},
+    "BE": {"topSongs": "PL4fGSI1pDJn64Up8Ds5BXizLBFZ922jHj", "topVideos": "PL4fGSI1pDJn47l8EXIwa8SCWWjh79rgMq"},
+    "BO": {"topSongs": "PL4fGSI1pDJn5Vi4RJX33LnETbjMhmPc9V", "topVideos": "PL4fGSI1pDJn7ShAOJR2HPZrHb83DpSzV8"},
     "BR": {"topSongs": "PL4fGSI1pDJn7rGBE8kEC0CqTa1nMh9AKB", "topVideos": "PL4fGSI1pDJn4Gs2meaJRo9O8PNYvhjHIg"},
     "CA": {"topSongs": "PL4fGSI1pDJn57Q7WbODbmXjyjgXi0BTyD", "topVideos": "PL4fGSI1pDJn4IeWA7bBJYh__qgOCRMkIh"},
-    "DE": {"topSongs": "PL4fGSI1pDJn6KpOXlp0MH8qA9tngXaUJ-", "topVideos": "PL4fGSI1pDJn4X-OicSCOy-dChXWdTgziQ"},
+    "CL": {"topSongs": "PL4fGSI1pDJn777t00zYu_BKjXHUdhkXH9", "topVideos": "PL4fGSI1pDJn4M3llRxwSebRSrjFqeNN3x"},
+    "CO": {"topSongs": "PL4fGSI1pDJn6CW97F1vSZOkoU7k7VsYk9", "topVideos": "PL4fGSI1pDJn4ObZYxzctc1AM45GSWm2DC"},
+    "CR": {"topSongs": "PL4fGSI1pDJn6U9fUfBkfy3uyXE7Rtvo4b", "topVideos": "PL4fGSI1pDJn5DbEh-PXgn9ZInq-F3NSOZ"},
+    "CZ": {"topSongs": "PL4fGSI1pDJn5wV1AgglmIN_8okwTkz9WT", "topVideos": "PL4fGSI1pDJn4PsD5Tua9nTgnPsP0o9_0k"},
+    "DK": {"topSongs": "PL4fGSI1pDJn51jFsgXEIR7WdKBychJiMU", "topVideos": "PL4fGSI1pDJn4YoCXjBl6kg3DhYgUJTSfw"},
+    "DO": {"topSongs": "PL4fGSI1pDJn4C36SQoHh9fII-EXde2i3k", "topVideos": "PL4fGSI1pDJn5yRDIISesmCXjor-3lw2ET"},
+    "EC": {"topSongs": "PL4fGSI1pDJn7K4bdLZJ5GppzLDAihF58q", "topVideos": "PL4fGSI1pDJn4mwbdPq0EeOiD86MvMtkq0"},
+    "EG": {"topSongs": "PL4fGSI1pDJn510j-1L8bMgKTyeRwPrXWY", "topVideos": "PL4fGSI1pDJn4EhpZkSSpdyWUet73FalVU"},
+    "SV": {"topSongs": "PL4fGSI1pDJn6ALv-WRypOl0nGaLgtW6nC", "topVideos": "PL4fGSI1pDJn59f4Ef4W3OgMW7HivJCrCt"},
+    "EE": {"topSongs": "PL4fGSI1pDJn7uCBUO9GemJda1xfqmvV7_", "topVideos": "PL4fGSI1pDJn4fpNbyI8YHStVF-wyzHJtd"},
+    "FI": {"topSongs": "PL4fGSI1pDJn4T5TECl_90hfJsPUu1yi2y", "topVideos": "PL4fGSI1pDJn4ogogSnHUTIWMc_b7pHW9A"},
     "FR": {"topSongs": "PL4fGSI1pDJn7bK3y1Hx-qpHBqfr6cesNs", "topVideos": "PL4fGSI1pDJn50iCQRUVmgUjOrCggCQ9nR"},
-    "GB": {"topSongs": "PL4fGSI1pDJn6_f5P3MnzXg9l3GDfnSlXa", "topVideos": "PL4fGSI1pDJn688ebB8czINn0_nov50e3A"},
-    "ID": {"topSongs": "PL4fGSI1pDJn5ObxTlEPlkkornHXUiKX1z", "topVideos": "PL4fGSI1pDJn5QPpj0R4vVgRWk8sSq549G"},
+    "DE": {"topSongs": "PL4fGSI1pDJn6KpOXlp0MH8qA9tngXaUJ-", "topVideos": "PL4fGSI1pDJn4X-OicSCOy-dChXWdTgziQ"},
+    "GT": {"topSongs": "PL4fGSI1pDJn7NCQ_U0nwlhidgZ8E3uBQw", "topVideos": "PL4fGSI1pDJn4MxjoamEWxTh5J7lw1JZfA"},
+    "HN": {"topSongs": "PL4fGSI1pDJn5ZVtAKP9-OKnn09CJ-Znpt", "topVideos": "PL4fGSI1pDJn5ESsEdE2R0v1nrLPIeM4Xx"},
+    "HU": {"topSongs": "PL4fGSI1pDJn6K3QY1nHyhOGQqNCBGbMKi", "topVideos": "PL4fGSI1pDJn6-AkuEzkhgTBJq3Lm0Oolc"},
+    "IS": {"topSongs": "PL4fGSI1pDJn6pwJw_mb31TUqc9C_gpskG", "topVideos": "PL4fGSI1pDJn5AT1xUL_xmiBWNqDv33giB"},
     "IN": {"topSongs": "PL4fGSI1pDJn4pTWyM3t61lOyZ6_4jcNOw", "topVideos": "PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq"},
+    "ID": {"topSongs": "PL4fGSI1pDJn5ObxTlEPlkkornHXUiKX1z", "topVideos": "PL4fGSI1pDJn5QPpj0R4vVgRWk8sSq549G"},
+    "IE": {"topSongs": "PL4fGSI1pDJn5S_UFt83P-RlBC4CR3JYuo", "topVideos": "PL4fGSI1pDJn574980IA4DVKDl8PDskrCj"},
+    "IL": {"topSongs": "PL4fGSI1pDJn4ECcNLNscMAPND-Degbd5N", "topVideos": "PL4fGSI1pDJn5xFol0l4GwBnHHYtXXMaY82"},
     "IT": {"topSongs": "PL4fGSI1pDJn5JiDypHxveEplQrd7XQMlX", "topVideos": "PL4fGSI1pDJn5BPviUFX4a3IMnAgyknC68"},
     "JP": {"topSongs": "PL4fGSI1pDJn4-UIb6RKHdxam-oAUULIGB", "topVideos": "PL4fGSI1pDJn5FhDrWnRp2NLzJCoPliNgT"},
+    "KE": {"topSongs": "PL4fGSI1pDJn7z-3xqv1Ujjobcy2pjpZAA", "topVideos": "PL4fGSI1pDJn5OYRHJhIu_bu7NRnkZ56ds"},
     "KR": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},
+    "LU": {"topSongs": "PL4fGSI1pDJn4ie_xg2ndQYSEeZrFYvkQf", "topVideos": "PL4fGSI1pDJn5Zla7aGxRJkvIbikXpf3VR"},
     "MX": {"topSongs": "PL4fGSI1pDJn6fko1AmNa_pdGPZr5ROFvd", "topVideos": "PL4fGSI1pDJn5cDciLg1q9tabl7gzBZWOp"},
     "NL": {"topSongs": "PL4fGSI1pDJn7CXu1B1U0lYQ0qfPB9TVfa", "topVideos": "PL4fGSI1pDJn5i2QIxSEhPqSzhqsWhhrBJ"},
+    "NZ": {"topSongs": "PL4fGSI1pDJn6SZ8psSiS6j-QgUACJK4gC", "topVideos": "PL4fGSI1pDJn5yaX2-KEdvxQK0w938c-NX"},
+    "NI": {"topSongs": "PL4fGSI1pDJn7eCAxG3AuCuottnW_D5C5w", "topVideos": "PL4fGSI1pDJn49ZZQP_cqjJ6NvkJ-qf9sn"},
+    "NG": {"topSongs": "PL4fGSI1pDJn6Au0oeuQPsd1iFyiU8Br9I", "topVideos": "PL4fGSI1pDJn5dHScZlGIe6TEoGzFv_qZE"},
+    "NO": {"topSongs": "PL4fGSI1pDJn7ywehQhyuuPWo3ayrdSOHn", "topVideos": "PL4fGSI1pDJn5qlG8HM7Iq54JE8SROhAvM"},
+    "PA": {"topSongs": "PL4fGSI1pDJn4G4B-V4UTrxD7l5mE9cPS-", "topVideos": "PL4fGSI1pDJn5HtzpSBgS58MlBzOfKgqGw"},
+    "PY": {"topSongs": "PL4fGSI1pDJn5G0B8V2PSgs7O9EA4gF5m_", "topVideos": "PL4fGSI1pDJn5rl3PizG5yhj1R97Jl4vBq"},
+    "PE": {"topSongs": "PL4fGSI1pDJn4k5jOJjYpq8pluME-gNAnh", "topVideos": "PL4fGSI1pDJn61j743B9r2LNeLCUUZsRMV"},
     "PL": {"topSongs": "PL4fGSI1pDJn68fmsRw9f6g-NzU5UA45v1", "topVideos": "PL4fGSI1pDJn69d7Zwro65Q7ORLxFVqr_U"},
+    "PT": {"topSongs": "PL4fGSI1pDJn7H0X0bZN4C-I6YeldOvPku", "topVideos": "PL4fGSI1pDJn6G_VdIB6wxGYzuai0iA1hC"},
+    "RO": {"topSongs": "PL4fGSI1pDJn5G2T6hrqwSS7ajUA7y4S5l", "topVideos": "PL4fGSI1pDJn6L8lQpfbnXpXUR71uksmP2"},
     "RU": {"topSongs": "PL4fGSI1pDJn5C8dBiYt0BTREyCHbZ47qc", "topVideos": "PL4fGSI1pDJn6cLcPmcc9b_l8oM0aJtsqL"},
+    "RS": {"topSongs": "PL4fGSI1pDJn79dpGvfySMY9w43BluD4lI", "topVideos": "PL4fGSI1pDJn6WdZq272-vbCc5SJ1zxzbC"},
+    "SA": {"topSongs": "PL4fGSI1pDJn7xNK-XdqvCsqa7I8Nx3IyW", "topVideos": "PL4fGSI1pDJn7b8BNLVP8XUrJCQp_loKZT"},
+    "ZA": {"topSongs": "PL4fGSI1pDJn7xvqMZR_9OgljLcMQpuKXN", "topVideos": "PL4fGSI1pDJn79YvDK-Dq95SAW1V28wnns"},
     "ES": {"topSongs": "PL4fGSI1pDJn6sMPCoD7PdSlEgyUylgxuT", "topVideos": "PL4fGSI1pDJn4jhQB4kb9M36dvVmJQPt4T"},
+    "SE": {"topSongs": "PL4fGSI1pDJn7S_JFSuBHol2RH9WphaqzS", "topVideos": "PL4fGSI1pDJn6l_eirqF_T40p1B8eJg2Pz"},
+    "CH": {"topSongs": "PL4fGSI1pDJn6Nhmcqn4xr769wwoMmS3DI", "topVideos": "PL4fGSI1pDJn4KBb656ZmzFTCGK0eAv5bu"},
+    "TZ": {"topSongs": "PL4fGSI1pDJn4CI0qH2JZYs2qGXo1itpCG", "topVideos": "PL4fGSI1pDJn7-3qlPahSCN5PagP0L1p6r"},
     "TR": {"topSongs": "PL4fGSI1pDJn5tdVDtIAZArERm_vv4uFCR", "topVideos": "PL4fGSI1pDJn6rnJKpaAkK1XK8QUfa9KqP"},
+    "UG": {"topSongs": "PL4fGSI1pDJn56127QXqxGADbedOpL5z5R", "topVideos": "PL4fGSI1pDJn75xappx8QlV4-0nuyXlDAr"},
+    "UA": {"topSongs": "PL4fGSI1pDJn4E_HoW5HB-w5vFPkYfo3dB", "topVideos": "PL4fGSI1pDJn7524WZdmWAIRc6cQ3vUzZK"},
+    "AE": {"topSongs": "PL4fGSI1pDJn71VxNxT-PpECxHCVv8T-oX", "topVideos": "PL4fGSI1pDJn4CDqdXJ4xP78Hh7X72vIXM"},
+    "GB": {"topSongs": "PL4fGSI1pDJn6_f5P3MnzXg9l3GDfnSlXa", "topVideos": "PL4fGSI1pDJn688ebB8czINn0_nov50e3A"},
     "US": {"topSongs": "PL4fGSI1pDJn6O1LS0XSdF3RyO0Rq_LDeI", "topVideos": "PL4fGSI1pDJn69On1f-8NAvX_CYlx7QyZc"},
+    "UY": {"topSongs": "PL4fGSI1pDJn5caN5mlO8NWCPSyuHkQANg", "topVideos": "PL4fGSI1pDJn5giLQO3qUCqpp_MSDRmJNA"},
+    "ZW": {"topSongs": "PL4fGSI1pDJn7PWidyUayXX6-josrejRMG", "topVideos": "PL4fGSI1pDJn7HuQm191bZDx7ZMMgk9-Bp"},
+    # Smart Mapping Countries
+    "HK": {"topSongs": "PL4fGSI1pDJn4-UIb6RKHdxam-oAUULIGB", "topVideos": "PL4fGSI1pDJn5FhDrWnRp2NLzJCoPliNgT"},  # -> JP
+    "CN": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},  # -> KR
+    "TW": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},  # -> KR
+    "VN": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},  # -> KR
+    "TH": {"topSongs": "PL4fGSI1pDJn6jXS_Tv_N9B8Z0HTRVJE0m", "topVideos": "PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc"},  # -> KR
+    "MY": {"topSongs": "PL4fGSI1pDJn5ObxTlEPlkkornHXUiKX1z", "topVideos": "PL4fGSI1pDJn5QPpj0R4vVgRWk8sSq549G"},  # -> ID
+    "SG": {"topSongs": "PL4fGSI1pDJn5ObxTlEPlkkornHXUiKX1z", "topVideos": "PL4fGSI1pDJn5QPpj0R4vVgRWk8sSq549G"},  # -> ID
+    "PH": {"topSongs": "PL4fGSI1pDJn6O1LS0XSdF3RyO0Rq_LDeI", "topVideos": "PL4fGSI1pDJn69On1f-8NAvX_CYlx7QyZc"},  # -> US
 }
+
 
 def get_chart_playlist_ids(country: str):
     """Get chart playlist IDs for a country (fallback to ZZ/Global)"""
