@@ -30,7 +30,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
     const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
     // 카테고리 목록 (AppPreloader에서 이미 프리로드됨)
@@ -63,36 +63,20 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         setSelectedCategory(null);
     }, [country.code]);
 
-    // Handle playlist click - 캐시 확인 후 API 호출
-    const handlePlaylistClick = async (playlistId: string) => {
-        let watchData = getPlaylist(playlistId);
+    // Playlist click handler - YouTube iFrame API로 직접 재생!
+    const handlePlaylistClick = (playlistId: string) => {
+        console.log("[MoodsTab] 🎵 Playing playlist via YouTube iFrame API:", playlistId);
 
-        if (watchData) {
-            console.log("[MoodsTab] ⚡ CACHE HIT - instant response!");
+        // YouTube iFrame API로 직접 재생 + noembed.com으로 트랙 정보 가져와서 Queue에 표시
+        // 이를 통해 48곡 제한 없이 실제 플레이리스트 곡 수(5개든 1000개든)를 그대로 가져옴
+        // @ts-ignore - playYouTubePlaylist is added in PlayerContext but TS might complain
+        if (playYouTubePlaylist) {
+            playYouTubePlaylist(playlistId);
         } else {
-            setLoadingPlaylistId(playlistId);
-            try {
-                watchData = await api.music.watch(undefined, playlistId);
-            } catch (e) {
-                console.error("[MoodsTab] Error:", e);
-                setLoadingPlaylistId(null);
-                return;
-            }
-            setLoadingPlaylistId(null);
+            console.error("playYouTubePlaylist not available");
         }
 
-        if (!watchData?.tracks || watchData.tracks.length === 0) {
-            return;
-        }
-
-        const tracks: Track[] = watchData.tracks
-            .map((t: WatchTrack) => playlistTrackToTrack(t))
-            .filter((t: Track | null): t is Track => t !== null);
-
-        if (tracks.length > 0) {
-            setPlaylist(tracks, 0);
-            if (!isQueueOpen) toggleQueue();
-        }
+        if (!isQueueOpen) toggleQueue();
     };
 
     // Render playlists content

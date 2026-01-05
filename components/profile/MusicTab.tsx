@@ -51,7 +51,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 }
 
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
     const { getAlbum, getPlaylist, prefetchFromHomeData, isReady: isPrefetchReady, prefetchedCount } = usePrefetch();
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [isPrefetching, setIsPrefetching] = useState(false);
@@ -158,48 +158,17 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     };
 
-    // 케이스 3: playlistId 있음 → 캐시 확인 후 watch API 호출
+    // 케이스 3: playlistId 있음 → YouTube iFrame API로 직접 재생
     const handlePlaylistClick = async (playlistId: string) => {
         console.log("[MusicTab] Playlist clicked, playlistId:", playlistId);
 
-        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
-        let playlistData = getPlaylist(playlistId);
-
-        if (playlistData) {
-            console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
+        // YouTube iFrame API로 직접 재생 - 100% 원본 반영 (곡 수 제한 없음)
+        // @ts-ignore
+        if (playYouTubePlaylist) {
+            playYouTubePlaylist(playlistId);
         } else {
-            // 캐시에 없으면 직접 API 호출 (기존 방식)
-            setLoadingId(playlistId);
-            try {
-                playlistData = await api.music.watch(undefined, playlistId);
-                console.log("[MusicTab] API response:", playlistData);
-            } catch (e) {
-                console.error("[MusicTab] Error loading playlist:", e);
-                setLoadingId(null);
-                return;
-            }
-            setLoadingId(null);
+            console.error("playYouTubePlaylist not available");
         }
-
-        if (!playlistData?.tracks || playlistData.tracks.length === 0) {
-            console.log("[MusicTab] No tracks in playlist");
-            return;
-        }
-
-        // Convert playlist tracks to Track format
-        const tracks: Track[] = playlistData.tracks
-            .map((t: WatchTrack) => playlistTrackToTrack(t))
-            .filter((t: Track | null): t is Track => t !== null);
-
-        console.log("[MusicTab] Playlist tracks:", tracks.length, "items");
-
-        if (tracks.length === 0) {
-            console.log("[MusicTab] No playable tracks in playlist");
-            return;
-        }
-
-        // Set playlist starting from first track
-        setPlaylist(tracks, 0);
 
         // Open queue sidebar
         if (!isQueueOpen) {
