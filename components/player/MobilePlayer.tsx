@@ -12,7 +12,7 @@ import {
     ListMusic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRef, useCallback } from "react";
+
 
 // Format time (seconds) to mm:ss
 function formatTime(seconds: number): string {
@@ -25,28 +25,6 @@ function formatTime(seconds: number): string {
 export default function MobilePlayer() {
     const player = usePlayer();
     const { currentTrack, currentTime, duration, seekTo } = player;
-    const progressRef = useRef<HTMLDivElement>(null);
-
-    // Handle progress bar click/touch
-    const handleProgressClick = useCallback(
-        (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-            if (!progressRef.current || duration === 0) return;
-
-            const rect = progressRef.current.getBoundingClientRect();
-            let clientX: number;
-
-            if ('touches' in e) {
-                clientX = e.touches[0].clientX;
-            } else {
-                clientX = e.clientX;
-            }
-
-            const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            const newTime = percent * duration;
-            seekTo(newTime);
-        },
-        [duration, seekTo]
-    );
 
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
