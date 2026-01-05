@@ -897,11 +897,12 @@ def warm_all_caches_sync():
         try:
             yt = get_ytmusic(country=country, language="en")
             
-            # Warm charts cache
+            # Warm charts cache + get artists for prefetching
             cache_key = make_cache_key("charts", country, "en")
-            if cache_get(cache_key) is None:
-                result = yt.get_charts(country=country)
-                cache_set(cache_key, result, TTL_CHARTS)
+            charts_data = cache_get(cache_key)
+            if charts_data is None:
+                charts_data = yt.get_charts(country=country)
+                cache_set(cache_key, charts_data, TTL_CHARTS)
                 print(f"[CACHE WARMING] Charts cached for {country}")
             
             # Prefetch chart playlists (topSongs, topVideos, trending)
@@ -917,6 +918,23 @@ def warm_all_caches_sync():
                             prefetch_count += 1
                         except Exception:
                             pass
+            
+            # 🔥 Prefetch top 40 artists from charts (for instant artist click!)
+            if charts_data and isinstance(charts_data, dict):
+                artists = charts_data.get("artists", {}).get("results", [])
+                for artist in artists[:40]:  # Top 40 artists
+                    if not isinstance(artist, dict):
+                        continue
+                    artist_id = artist.get("browseId")
+                    if artist_id:
+                        artist_key = make_cache_key("artist", artist_id, country, "en")
+                        if cache_get(artist_key) is None:
+                            try:
+                                artist_data = yt.get_artist(artist_id)
+                                cache_set(artist_key, artist_data, TTL_ARTIST)
+                                prefetch_count += 1
+                            except Exception:
+                                pass
 
             
             # Warm home cache + prefetch albums/playlists
