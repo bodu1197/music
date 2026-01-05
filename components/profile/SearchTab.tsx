@@ -136,7 +136,7 @@ export function SearchTab() {
                 }
             } else if (item.resultType === "playlist" && item.browseId) {
                 // Playlist
-                const playlistData = await api.music.watch(undefined, item.browseId);
+                const playlistData = await api.music.playlist(item.browseId, 200);
                 if (playlistData?.tracks) {
                     tracks = playlistData.tracks
                         .map((t: WatchTrack) => t.videoId ? {

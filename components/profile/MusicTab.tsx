@@ -171,7 +171,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
             // 캐시에 없으면 직접 API 호출 (기존 방식)
             setLoadingId(playlistId);
             try {
-                playlistData = await api.music.watch(undefined, playlistId);
+                playlistData = await api.music.playlist(playlistId, 200);
                 console.log("[MusicTab] API response:", playlistData);
             } catch (e) {
                 console.error("[MusicTab] Error loading playlist:", e);

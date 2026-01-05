@@ -72,7 +72,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         } else {
             setLoadingPlaylistId(playlistId);
             try {
-                watchData = await api.music.watch(undefined, playlistId);
+                watchData = await api.music.playlist(playlistId, 200);
             } catch (e) {
                 console.error("[MoodsTab] Error:", e);
                 setLoadingPlaylistId(null);

@@ -38,8 +38,8 @@ export function AppPreloader() {
             chartPlaylists.forEach(playlistId => {
                 if (playlistId) {
                     preload(
-                        ["/watch", undefined, playlistId],
-                        () => api.music.watch(undefined, playlistId)
+                        ["/playlist", playlistId, 200],
+                        () => api.music.playlist(playlistId, 200)
                     );
                 }
             });
