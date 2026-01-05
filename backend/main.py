@@ -635,19 +635,19 @@ def get_lyrics(browse_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/watch")
-def get_watch_playlist(videoId: str = None, playlistId: str = None):
-    cache_key = make_cache_key("watch", videoId, playlistId)
+def get_watch_playlist(videoId: str = None, playlistId: str = None, limit: int = 200):
+    cache_key = make_cache_key("watch", videoId, playlistId, limit)
     
     # Check Redis cache first
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /watch videoId={videoId} playlistId={playlistId}")
+        print(f"[REDIS HIT] /watch videoId={videoId} playlistId={playlistId} limit={limit}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /watch videoId={videoId} playlistId={playlistId}")
+        print(f"[REDIS MISS] /watch videoId={videoId} playlistId={playlistId} limit={limit}")
         yt = get_ytmusic()
-        result = run_with_retry(yt.get_watch_playlist, videoId=videoId, playlistId=playlistId)
+        result = run_with_retry(yt.get_watch_playlist, videoId=videoId, playlistId=playlistId, limit=limit)
         
         # Store in Redis cache (24시간 TTL)
         cache_set(cache_key, result, CACHE_TTL)

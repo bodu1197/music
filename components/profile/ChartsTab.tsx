@@ -154,7 +154,6 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
             }
 
             const tracks: Track[] = artistData.songs.results
-                .slice(0, 20)
                 .map((song: { videoId?: string; title?: string; artists?: { name: string }[]; thumbnails?: { url: string }[] }) => ({
                     videoId: song.videoId,
                     title: song.title || "Unknown",
@@ -204,7 +203,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
 
         return (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {artists.slice(0, 40).map((artist) => {
+                {artists.map((artist) => {
                     const isArtistLoading = loadingId === artist.browseId;
                     const thumbnailUrl = artist.thumbnails?.at(-1)?.url || "/images/default-artist.svg";
 
