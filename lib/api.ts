@@ -79,11 +79,12 @@ export const api = {
             return res.json();
         },
 
-        // Get watch playlist
-        watch: async (videoId?: string, playlistId?: string) => {
+        // Get watch playlist (limit=200 to get ALL tracks, not just 50)
+        watch: async (videoId?: string, playlistId?: string, limit: number = 200) => {
             const params = new URLSearchParams();
             if (videoId) params.append('videoId', videoId);
             if (playlistId) params.append('playlistId', playlistId);
+            params.append('limit', String(limit));
 
             const res = await fetch(`${API_URL}/watch?${params}`);
             if (!res.ok) throw new Error('Failed to fetch watch playlist');
