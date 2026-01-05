@@ -104,8 +104,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const handleCardClick = (card: ChartCard) => {
         console.log("[ChartsTab] 🎵 Playing playlist via YouTube iFrame API:", card.playlistId);
 
-        // YouTube iFrame API로 직접 재생 - 백엔드 API 호출 없음!
-        // YouTube가 플레이리스트의 모든 곡을 직접 로드 (100곡이면 100곡 전부!)
+        // YouTube iFrame API로 직접 재생 + noembed.com으로 트랙 정보 가져와서 Queue에 표시
         playYouTubePlaylist(card.playlistId);
 
         // Queue 사이드바 열기

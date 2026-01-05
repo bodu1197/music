@@ -310,7 +310,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     }, []);
 
     // 🔥 YouTube iFrame API로 직접 playlist 재생 (백엔드 API 호출 없음!)
-    const playYouTubePlaylist = useCallback((playlistId: string) => {
+    const playYouTubePlaylist = useCallback(async (playlistId: string) => {
         if (!playerRef.current || !playerReady) {
             console.log("[PlayerContext] Player not ready for playlist");
             return;
@@ -328,10 +328,43 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
                 startSeconds: 0
             });
 
-            // 플레이리스트 모드이므로 내부 큐는 비움
-            setCurrentPlaylist([]);
-            setCurrentTrackIndex(-1);
             setIsPlaying(true);
+
+            // 플레이어가 플레이리스트를 로드할 시간을 줌
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // YouTube Player에서 플레이리스트의 videoId 목록 가져오기
+            const videoIds = playerRef.current.getPlaylist();
+            console.log("[PlayerContext] Playlist loaded, videoIds:", videoIds?.length);
+
+            if (videoIds && videoIds.length > 0) {
+                // noembed.com으로 각 videoId의 메타데이터 가져오기
+                const tracks: Track[] = await Promise.all(
+                    videoIds.map(async (videoId: string) => {
+                        try {
+                            const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+                            const data = await res.json();
+                            return {
+                                videoId,
+                                title: data.title || "Unknown",
+                                artist: data.author_name || "Unknown Artist",
+                                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                            };
+                        } catch {
+                            return {
+                                videoId,
+                                title: "Unknown",
+                                artist: "Unknown Artist",
+                                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                            };
+                        }
+                    })
+                );
+
+                console.log("[PlayerContext] Tracks loaded:", tracks.length);
+                setCurrentPlaylist(tracks);
+                setCurrentTrackIndex(0);
+            }
         } catch (e) {
             console.error("[PlayerContext] Error loading playlist:", e);
         }
