@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import Image from "next/image";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
+import { usePrefetch } from "@/contexts/PrefetchContext";
 import { Play, Loader2, Music, TrendingUp, ListMusic, TrendingDown, Minus, Users } from "lucide-react";
 import { getChartConfig, hasChartSupport } from "@/lib/charts-constants";
 import { api } from "@/lib/api";
@@ -47,6 +48,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const { getPlaylist, prefetchPlaylist } = usePrefetch();
 
     const config = getChartConfig(country.code);
     const isSupported = hasChartSupport(country.code);
@@ -59,6 +61,15 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     );
 
     const artists: ChartArtist[] = chartsData?.artists || [];
+
+    // 🔥 차트 카드 플레이리스트 미리 프리페치
+    useEffect(() => {
+        const playlistIds = [config.topSongs, config.topVideos, config.trending].filter(Boolean);
+        playlistIds.forEach(id => {
+            if (id) prefetchPlaylist(id);
+        });
+    }, [config, prefetchPlaylist]);
+
 
     // Build chart cards from hardcoded IDs
     const chartCards: ChartCard[] = [];
@@ -96,34 +107,44 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         });
     }
 
-    // Playlist click handler
+    // Playlist click handler - 캐시 확인 후 API 호출
     const handleCardClick = async (card: ChartCard) => {
         if (loadingId) return;
 
-        setLoadingId(card.id);
+        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
+        let playlistData = getPlaylist(card.playlistId);
 
-        try {
-            const playlistData = await api.music.watch(undefined, card.playlistId);
-
-            if (!playlistData?.tracks || playlistData.tracks.length === 0) {
-                console.log("[ChartsTab] No tracks found");
+        if (playlistData) {
+            console.log("[ChartsTab] ⚡ CACHE HIT - instant response!");
+        } else {
+            // 캐시에 없으면 API 호출
+            setLoadingId(card.id);
+            try {
+                playlistData = await api.music.watch(undefined, card.playlistId);
+                console.log("[ChartsTab] API response");
+            } catch (e) {
+                console.error("[ChartsTab] Error loading playlist:", e);
+                setLoadingId(null);
                 return;
             }
-
-            const tracks: Track[] = playlistData.tracks
-                .map((t: WatchTrack) => playlistTrackToTrack(t))
-                .filter((t: Track | null): t is Track => t !== null);
-
-            if (tracks.length > 0) {
-                setPlaylist(tracks, 0);
-                if (!isQueueOpen) toggleQueue();
-            }
-        } catch (e) {
-            console.error("[ChartsTab] Error loading playlist:", e);
-        } finally {
             setLoadingId(null);
         }
+
+        if (!playlistData?.tracks || playlistData.tracks.length === 0) {
+            console.log("[ChartsTab] No tracks found");
+            return;
+        }
+
+        const tracks: Track[] = playlistData.tracks
+            .map((t: WatchTrack) => playlistTrackToTrack(t))
+            .filter((t: Track | null): t is Track => t !== null);
+
+        if (tracks.length > 0) {
+            setPlaylist(tracks, 0);
+            if (!isQueueOpen) toggleQueue();
+        }
     };
+
 
     // Artist click handler - play artist's top songs
     const handleArtistClick = async (artist: ChartArtist) => {

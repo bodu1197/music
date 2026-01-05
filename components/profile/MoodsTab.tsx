@@ -5,6 +5,7 @@ import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
+import { usePrefetch } from "@/contexts/PrefetchContext";
 import { Play, Loader2, ChevronRight, Music, ChevronLeft, AlertCircle } from "lucide-react";
 import { Country } from "@/lib/constants";
 import type { WatchTrack, Artist, MoodCategory, MoodPlaylist } from "@/types/music";
@@ -30,6 +31,8 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const { getPlaylist, prefetchPlaylist } = usePrefetch();
+
 
     // Fetch ALL moods data with playlists (server-cached, single request)
     const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
@@ -45,36 +48,58 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         { revalidateOnFocus: false }
     );
 
+    // 🔥 플레이리스트 로드되면 모두 프리페치
+    useEffect(() => {
+        if (playlistsData && Array.isArray(playlistsData)) {
+            playlistsData.forEach((playlist: MoodPlaylist) => {
+                if (playlist.playlistId) {
+                    prefetchPlaylist(playlist.playlistId);
+                }
+            });
+        }
+    }, [playlistsData, prefetchPlaylist]);
+
     // Reset selected category when country changes
     useEffect(() => {
         setSelectedCategory(null);
     }, [country.code]);
 
-    // Handle playlist click - load tracks and play
+
+    // Handle playlist click - 캐시 확인 후 API 호출
     const handlePlaylistClick = async (playlistId: string) => {
-        setLoadingPlaylistId(playlistId);
+        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
+        let watchData = getPlaylist(playlistId);
 
-        try {
-            const watchData = await api.music.watch(undefined, playlistId);
-
-            if (!watchData?.tracks || watchData.tracks.length === 0) {
+        if (watchData) {
+            console.log("[MoodsTab] ⚡ CACHE HIT - instant response!");
+        } else {
+            // 캐시에 없으면 API 호출
+            setLoadingPlaylistId(playlistId);
+            try {
+                watchData = await api.music.watch(undefined, playlistId);
+                console.log("[MoodsTab] API response");
+            } catch (e) {
+                console.error("[MoodsTab] Error:", e);
+                setLoadingPlaylistId(null);
                 return;
             }
-
-            const tracks: Track[] = watchData.tracks
-                .map((t: WatchTrack) => playlistTrackToTrack(t))
-                .filter((t: Track | null): t is Track => t !== null);
-
-            if (tracks.length > 0) {
-                setPlaylist(tracks, 0);
-                if (!isQueueOpen) toggleQueue();
-            }
-        } catch (e) {
-            console.error("[MoodsTab] Error:", e);
-        } finally {
             setLoadingPlaylistId(null);
         }
+
+        if (!watchData?.tracks || watchData.tracks.length === 0) {
+            return;
+        }
+
+        const tracks: Track[] = watchData.tracks
+            .map((t: WatchTrack) => playlistTrackToTrack(t))
+            .filter((t: Track | null): t is Track => t !== null);
+
+        if (tracks.length > 0) {
+            setPlaylist(tracks, 0);
+            if (!isQueueOpen) toggleQueue();
+        }
     };
+
 
     // Render playlists content based on state
     const renderPlaylistsContent = () => {
