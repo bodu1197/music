@@ -47,7 +47,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+    const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
     const { getPlaylist } = usePrefetch();
 
     const config = getChartConfig(country.code);
@@ -100,42 +100,16 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         });
     }
 
-    // Playlist click handler - 캐시 확인 후 API 호출
-    const handleCardClick = async (card: ChartCard) => {
-        if (loadingId) return;
+    // 🔥 Playlist click handler - YouTube iFrame API로 직접 재생!
+    const handleCardClick = (card: ChartCard) => {
+        console.log("[ChartsTab] 🎵 Playing playlist via YouTube iFrame API:", card.playlistId);
 
-        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
-        let playlistData = getPlaylist(card.playlistId);
+        // YouTube iFrame API로 직접 재생 - 백엔드 API 호출 없음!
+        // YouTube가 플레이리스트의 모든 곡을 직접 로드 (100곡이면 100곡 전부!)
+        playYouTubePlaylist(card.playlistId);
 
-        if (playlistData) {
-            console.log("[ChartsTab] ⚡ CACHE HIT - instant response!");
-        } else {
-            // 캐시에 없으면 API 호출
-            setLoadingId(card.id);
-            try {
-                playlistData = await api.music.watch(undefined, card.playlistId);
-                console.log("[ChartsTab] API response");
-            } catch (e) {
-                console.error("[ChartsTab] Error loading playlist:", e);
-                setLoadingId(null);
-                return;
-            }
-            setLoadingId(null);
-        }
-
-        if (!playlistData?.tracks || playlistData.tracks.length === 0) {
-            console.log("[ChartsTab] No tracks found");
-            return;
-        }
-
-        const tracks: Track[] = playlistData.tracks
-            .map((t: WatchTrack) => playlistTrackToTrack(t))
-            .filter((t: Track | null): t is Track => t !== null);
-
-        if (tracks.length > 0) {
-            setPlaylist(tracks, 0);
-            if (!isQueueOpen) toggleQueue();
-        }
+        // Queue 사이드바 열기
+        if (!isQueueOpen) toggleQueue();
     };
 
 

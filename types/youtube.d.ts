@@ -113,6 +113,29 @@ declare namespace YT {
         setSize(width: number, height: number): void;
         getIframe(): HTMLIFrameElement;
 
+        // Playlist functions
+        loadPlaylist(options: {
+            list: string;
+            listType?: 'playlist' | 'search' | 'user_uploads';
+            index?: number;
+            startSeconds?: number;
+        }): void;
+        loadPlaylist(playlist: string | string[], index?: number, startSeconds?: number): void;
+        cuePlaylist(options: {
+            list: string;
+            listType?: 'playlist' | 'search' | 'user_uploads';
+            index?: number;
+            startSeconds?: number;
+        }): void;
+        cuePlaylist(playlist: string | string[], index?: number, startSeconds?: number): void;
+        nextVideo(): void;
+        previousVideo(): void;
+        playVideoAt(index: number): void;
+        getPlaylist(): string[];
+        getPlaylistIndex(): number;
+        setLoop(loopPlaylists: boolean): void;
+        setShuffle(shufflePlaylist: boolean): void;
+
         // Destroy
         destroy(): void;
     }

@@ -65,6 +65,7 @@ interface PlayerContextType {
     seekTo: (time: number) => void;
     toggleQueue: () => void;
     clearQueue: () => void;
+    playYouTubePlaylist: (playlistId: string) => void;  // YouTube iFrame API로 직접 재생
 
     // YouTube Player ref (for direct access)
     playerRef: RefObject<YT.Player | null>;
@@ -308,6 +309,33 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         setIsPlaying(false);
     }, []);
 
+    // 🔥 YouTube iFrame API로 직접 playlist 재생 (백엔드 API 호출 없음!)
+    const playYouTubePlaylist = useCallback((playlistId: string) => {
+        if (!playerRef.current || !playerReady) {
+            console.log("[PlayerContext] Player not ready for playlist");
+            return;
+        }
+
+        console.log("[PlayerContext] 🎵 Loading YouTube playlist directly:", playlistId);
+
+        try {
+            // YouTube iFrame API - loadPlaylist
+            // YouTube가 플레이리스트의 모든 곡을 직접 로드 (100곡이면 100곡 전부!)
+            playerRef.current.loadPlaylist({
+                list: playlistId,
+                listType: 'playlist',
+                index: 0,
+                startSeconds: 0
+            });
+
+            // 플레이리스트 모드이므로 내부 큐는 비움
+            setCurrentPlaylist([]);
+            setCurrentTrackIndex(-1);
+            setIsPlaying(true);
+        } catch (e) {
+            console.error("[PlayerContext] Error loading playlist:", e);
+        }
+    }, [playerReady]);
 
 
     // Note: Video loading is handled by YouTubePlayer component
@@ -343,6 +371,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         seekTo,
         toggleQueue,
         clearQueue,
+        playYouTubePlaylist,
 
         // Refs and setters for YouTube component
         playerRef,
@@ -377,6 +406,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         seekTo,
         toggleQueue,
         clearQueue,
+        playYouTubePlaylist,
         // Refs (stable)
         // Setters (stable from useState)
     ]);
