@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { usePrefetch } from "@/contexts/PrefetchContext";
@@ -64,6 +64,13 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         setSelectedCategory(null);
     }, [country.code]);
 
+    // 🔥 카테고리 hover 시 플레이리스트 미리 로드 (SWR preload)
+    const handleCategoryHover = useCallback((params: string) => {
+        preload(
+            ["/moods/playlists", params, country.code, country.lang],
+            () => api.music.moodPlaylists(params, country.code, country.lang)
+        );
+    }, [country.code, country.lang]);
 
     // Handle playlist click - 캐시 확인 후 API 호출
     const handlePlaylistClick = async (playlistId: string) => {
@@ -216,6 +223,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                                     <button
                                         key={cat.params || i}
                                         onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
+                                        onMouseEnter={() => handleCategoryHover(cat.params)}
                                         className="bg-gradient-to-br from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 rounded-lg p-3 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">

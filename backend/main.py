@@ -987,13 +987,13 @@ def warm_all_caches_sync():
                 cache_set(cache_key, moods_data, TTL_MOODS)
                 print(f"[CACHE WARMING] Moods cached for {country}")
             
-            # Prefetch playlists for each mood category (limited to first 3 categories per section)
+            # Prefetch playlists for ALL mood categories (instant response)
             if moods_data and isinstance(moods_data, dict):
                 for section_name, categories in moods_data.items():
                     if not isinstance(categories, list):
                         continue
-                    # Only prefetch first 3 categories per section to limit API calls
-                    for cat in categories[:3]:
+                    # Prefetch ALL categories for instant response
+                    for cat in categories:
                         if not isinstance(cat, dict):
                             continue
                         params = cat.get("params")
