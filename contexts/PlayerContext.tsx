@@ -85,6 +85,7 @@ interface PlayerContextType {
     setCurrentTime: (time: number) => void;
     setDuration: (duration: number) => void;
     setIsPlaylistMode: (mode: boolean) => void;
+    setCurrentTrackIndex: (index: number) => void;  // 플레이리스트 인덱스 동기화용
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -415,7 +416,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
             });
 
             setIsPlaylistMode(true);
-            setIsPlaying(true);
+            // setIsPlaying은 YouTubePlayer의 onStateChange에서 PLAYING 상태가 되면 자동 설정
             return; // 즉시 완료!
         }
 
@@ -438,7 +439,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         });
 
         setIsPlaylistMode(true);
-        setIsPlaying(true);
+        // setIsPlaying은 YouTubePlayer의 onStateChange에서 PLAYING 상태가 되면 자동 설정
 
         // 🔥 Polling: YouTube가 플레이리스트를 로드할 때까지 대기 (최대 5초)
         const waitForPlaylist = async (): Promise<string[] | null> => {
@@ -621,6 +622,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         setCurrentTime,
         setDuration,
         setIsPlaylistMode,
+        setCurrentTrackIndex,
     }), [
         currentPlaylist,
         currentTrackIndex,

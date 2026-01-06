@@ -32,6 +32,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         setIsPlaying,
         setCurrentTime,
         setDuration,
+        setCurrentTrackIndex,
         playNext,
         repeatMode,
         volume,
@@ -43,6 +44,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
     const callbacksRef = useRef({
         setIsPlaying,
         setPlayerReady,
+        setCurrentTrackIndex,
         playNext,
         repeatMode,
         volume,
@@ -54,6 +56,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         callbacksRef.current = {
             setIsPlaying,
             setPlayerReady,
+            setCurrentTrackIndex,
             playNext,
             repeatMode,
             volume,
@@ -133,9 +136,25 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                         onStateChange: (event: YT.OnStateChangeEvent) => {
                             const state = event.data;
                             const cb = callbacksRef.current;
-                            if (state === PlayerState.PLAYING) cb.setIsPlaying(true);
-                            else if (state === PlayerState.PAUSED) cb.setIsPlaying(false);
-                            else if (state === PlayerState.ENDED) {
+
+                            if (state === PlayerState.PLAYING) {
+                                cb.setIsPlaying(true);
+
+                                // 🔥 플레이리스트 모드: 현재 인덱스 동기화
+                                if (cb.isPlaylistMode) {
+                                    try {
+                                        const playlistIndex = event.target.getPlaylistIndex();
+                                        if (playlistIndex >= 0) {
+                                            cb.setCurrentTrackIndex(playlistIndex);
+                                            console.log("[YouTubePlayer] 🎯 Playlist index synced:", playlistIndex);
+                                        }
+                                    } catch (e) {
+                                        console.debug("[YouTubePlayer] Error getting playlist index:", e);
+                                    }
+                                }
+                            } else if (state === PlayerState.PAUSED) {
+                                cb.setIsPlaying(false);
+                            } else if (state === PlayerState.ENDED) {
                                 cb.setIsPlaying(false);
                                 // 🔥 플레이리스트 모드에서는 playNext 스킵 - YouTube가 자동으로 다음 곡 관리
                                 if (cb.isPlaylistMode) {
