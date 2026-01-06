@@ -365,7 +365,10 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         console.log("[PlayerContext] 🎵 Loading YouTube playlist directly:", playlistId);
 
         try {
-            // 🔥 기존 상태 초기화 (새 플레이리스트 로드 시 혼란 방지)
+            // 🔥 현재 재생 완전 중단 (새 플레이리스트 로드 전)
+            playerRef.current.stopVideo();
+
+            // 기존 상태 초기화 (새 플레이리스트 로드 시 혼란 방지)
             setCurrentPlaylist([]);
             setCurrentTrackIndex(-1);
 
