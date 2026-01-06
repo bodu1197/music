@@ -257,6 +257,127 @@ def run_with_retry(func, *args, **kwargs):
 def health_check():
     return {"status": "ok", "service": "sori-music-api"}
 
+
+# ============================================
+# YouTube Playlist Tracks Endpoint (Optimized for instant playback)
+# ============================================
+import requests
+import concurrent.futures
+
+TTL_PLAYLIST_TRACKS = 24 * 3600  # 24시간 캐싱
+
+def extract_video_ids_from_youtube(playlist_id: str) -> list[str]:
+    """
+    Extract video IDs from a YouTube playlist page.
+    Uses YouTube's embed page which is simpler to parse.
+    """
+    try:
+        # Method 1: Try YouTube's oembed/playlist info
+        url = f"https://www.youtube.com/playlist?list={playlist_id}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return []
+
+        # Extract video IDs from the page content
+        # YouTube embeds video IDs in the format "videoId":"XXXXXXXXXXX"
+        import re
+        video_ids = re.findall(r'"videoId":"([a-zA-Z0-9_-]{11})"', response.text)
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_ids = []
+        for vid in video_ids:
+            if vid not in seen:
+                seen.add(vid)
+                unique_ids.append(vid)
+
+        return unique_ids[:100]  # Limit to 100 videos
+
+    except Exception as e:
+        print(f"Error extracting video IDs: {e}")
+        return []
+
+
+def fetch_video_metadata(video_id: str) -> dict:
+    """Fetch video metadata from noembed.com"""
+    try:
+        res = requests.get(
+            f"https://noembed.com/embed?url=https://www.youtube.com/watch?v={video_id}",
+            timeout=5
+        )
+        if res.status_code == 200:
+            data = res.json()
+            return {
+                "videoId": video_id,
+                "title": data.get("title", "Unknown"),
+                "artist": data.get("author_name", "Unknown Artist"),
+                "thumbnail": f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+            }
+    except Exception:
+        pass
+
+    return {
+        "videoId": video_id,
+        "title": "Unknown",
+        "artist": "Unknown Artist",
+        "thumbnail": f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+    }
+
+
+@app.get("/playlist/tracks")
+def get_playlist_tracks(playlistId: str = Query(..., description="YouTube playlist ID (PLxxx)")):
+    """
+    Get tracks for a YouTube playlist with metadata.
+    Optimized for frontend instant playback preloading.
+    Cached for 24 hours in Supabase.
+    """
+    cache_key = make_cache_key("playlist_tracks", playlistId)
+
+    # Check cache
+    cached = cache_get(cache_key)
+    if cached is not None:
+        print(f"[CACHE HIT] /playlist/tracks playlistId={playlistId[:20]}...")
+        return cached
+
+    print(f"[CACHE MISS] /playlist/tracks playlistId={playlistId[:20]}...")
+
+    # Extract video IDs from YouTube playlist
+    video_ids = extract_video_ids_from_youtube(playlistId)
+
+    if not video_ids:
+        return {"playlistId": playlistId, "tracks": [], "error": "Failed to extract video IDs"}
+
+    # Fetch metadata in parallel (10 workers)
+    tracks = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_vid = {executor.submit(fetch_video_metadata, vid): vid for vid in video_ids}
+        for future in concurrent.futures.as_completed(future_to_vid):
+            try:
+                track = future.result()
+                tracks.append(track)
+            except Exception:
+                pass
+
+    # Sort tracks by original order
+    vid_to_track = {t["videoId"]: t for t in tracks}
+    ordered_tracks = [vid_to_track[vid] for vid in video_ids if vid in vid_to_track]
+
+    result = {
+        "playlistId": playlistId,
+        "tracks": ordered_tracks,
+        "count": len(ordered_tracks)
+    }
+
+    # Cache result
+    cache_set(cache_key, result, TTL_PLAYLIST_TRACKS)
+    print(f"[CACHED] /playlist/tracks playlistId={playlistId[:20]}... ({len(ordered_tracks)} tracks)")
+
+    return result
+
 @app.get("/cache/status")
 def cache_status():
     """Get current cache statistics from Supabase"""

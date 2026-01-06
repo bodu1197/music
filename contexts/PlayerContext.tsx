@@ -495,30 +495,42 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         }
     }, [playerReady, preparePlaylist]);
 
-    // 🔥 YouTube 플레이리스트 미리 로드 (재생 없이 캐시만)
+    // 🔥 YouTube 플레이리스트 미리 로드 (백엔드 API 우선, YouTube 의존성 제거)
     const preloadYouTubePlaylist = useCallback(async (playlistId: string) => {
         // 이미 준비되어 있으면 스킵
         if (preparedPlaylistsRef.current.has(playlistId)) {
-            console.log(`[PlayerContext] Playlist already prepared: ${playlistId}`);
             return;
         }
-
-        if (!playerRef.current || !playerReady) {
-            console.log("[PlayerContext] Player not ready for preload");
-            return;
-        }
-
-        console.log(`[PlayerContext] 🔄 Preloading playlist: ${playlistId}`);
 
         try {
-            // cuePlaylist: 로드하지만 재생하지 않음
+            // 🚀 백엔드 API 사용 (캐시됨, 빠름)
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-322455104824.us-central1.run.app';
+            const res = await fetch(`${API_URL}/playlist/tracks?playlistId=${playlistId}`);
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.tracks && data.tracks.length > 0) {
+                    preparePlaylist(playlistId, data.tracks);
+                    console.log(`[PlayerContext] ⚡ Playlist preloaded via API: ${playlistId} (${data.tracks.length} tracks)`);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log(`[PlayerContext] API preload failed, trying YouTube fallback: ${playlistId}`);
+        }
+
+        // Fallback: YouTube iFrame API (느림, 플레이어 필요)
+        if (!playerRef.current || !playerReady) {
+            return;
+        }
+
+        try {
             playerRef.current.cuePlaylist({
                 list: playlistId,
                 listType: 'playlist',
                 index: 0,
             });
 
-            // YouTube가 플레이리스트를 로드할 때까지 대기
             const waitForPlaylist = async (): Promise<string[] | null> => {
                 for (let i = 0; i < 10; i++) {
                     await new Promise(r => setTimeout(r, 500));
@@ -531,12 +543,8 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
             };
 
             const videoIds = await waitForPlaylist();
-            if (!videoIds) {
-                console.log(`[PlayerContext] Failed to preload playlist: ${playlistId}`);
-                return;
-            }
+            if (!videoIds) return;
 
-            // noembed.com으로 메타데이터 로드
             const tracks = await Promise.all(
                 videoIds.map(async (videoId: string) => {
                     try {
@@ -559,9 +567,8 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
                 })
             );
 
-            // 캐시에 저장
             preparePlaylist(playlistId, tracks);
-            console.log(`[PlayerContext] ✅ Playlist preloaded: ${playlistId} (${tracks.length} tracks)`);
+            console.log(`[PlayerContext] ✅ Playlist preloaded via YouTube: ${playlistId} (${tracks.length} tracks)`);
         } catch (e) {
             console.error(`[PlayerContext] Error preloading playlist ${playlistId}:`, e);
         }

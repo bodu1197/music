@@ -143,6 +143,24 @@ export const api = {
             const res = await fetch(`${API_URL}/playlist/${playlistId}?limit=${limit}`);
             if (!res.ok) throw new Error('Failed to fetch playlist');
             return res.json();
+        },
+
+        // 🔥 Get YouTube playlist tracks (optimized for instant playback)
+        // Uses backend to extract video IDs + metadata, cached for 24h
+        playlistTracks: async (playlistId: string): Promise<{
+            playlistId: string;
+            tracks: Array<{
+                videoId: string;
+                title: string;
+                artist: string;
+                thumbnail: string;
+            }>;
+            count: number;
+            error?: string;
+        }> => {
+            const res = await fetch(`${API_URL}/playlist/tracks?playlistId=${playlistId}`);
+            if (!res.ok) throw new Error('Failed to fetch playlist tracks');
+            return res.json();
         }
     }
 };

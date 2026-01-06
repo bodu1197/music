@@ -11,7 +11,7 @@ import type { MoodCategory, HomeSection } from "@/types/music";
 export function AppPreloader() {
     const hasPreloaded = useRef(false);
     const hasPreloadedPlaylists = useRef(false);
-    const { playerReady, preloadYouTubePlaylist, preparedPlaylistCount } = usePlayer();
+    const { preloadYouTubePlaylist, preparedPlaylistCount } = usePlayer();
 
     // 1. 일반 데이터 프리로드 (즉시)
     useEffect(() => {
@@ -30,9 +30,9 @@ export function AppPreloader() {
         console.log("[Preloader] ✅ All tabs data preloaded!");
     }, []);
 
-    // 2. 🔥 모든 탭 플레이리스트 미리 로드 (플레이어 준비 후)
+    // 2. 🔥 모든 탭 플레이리스트 미리 로드 (백엔드 API 사용으로 즉시 시작)
     useEffect(() => {
-        if (!playerReady || hasPreloadedPlaylists.current) return;
+        if (hasPreloadedPlaylists.current) return;
         hasPreloadedPlaylists.current = true;
 
         const countryCode = localStorage.getItem("user_country_code") || DEFAULT_COUNTRY.code;
@@ -40,8 +40,9 @@ export function AppPreloader() {
 
         console.log(`[Preloader] ⚡ Preloading ALL playlists for instant playback...`);
 
+        // 백엔드 API 우선 사용으로 플레이어 준비 불필요
         preloadAllPlaylists(countryCode, countryLang, preloadYouTubePlaylist);
-    }, [playerReady, preloadYouTubePlaylist]);
+    }, [preloadYouTubePlaylist]);
 
     // 3. 프리로드 완료 상태 로깅
     useEffect(() => {
@@ -54,7 +55,7 @@ export function AppPreloader() {
     return null;
 }
 
-// 🔥 모든 탭의 플레이리스트 미리 로드
+// 🔥 모든 탭의 플레이리스트 미리 로드 (병렬 처리로 최적화)
 async function preloadAllPlaylists(
     countryCode: string,
     countryLang: string,
@@ -62,9 +63,10 @@ async function preloadAllPlaylists(
 ) {
     const allPlaylistIds: string[] = [];
 
-    // 1. Chart 탭: 하드코딩된 플레이리스트 ID
+    // 1. Chart 탭: 하드코딩된 플레이리스트 ID (우선순위 높음)
     const chartConfig = getChartConfig(countryCode);
-    allPlaylistIds.push(chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending);
+    const chartPlaylists = [chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending];
+    allPlaylistIds.push(...chartPlaylists);
     console.log(`[Preloader] 📋 Chart playlists: 3`);
 
     // 2. Music 탭: Home 데이터에서 playlistId 추출
@@ -79,7 +81,7 @@ async function preloadAllPlaylists(
                 });
             });
         }
-        console.log(`[Preloader] 📋 Music tab playlists found: ${allPlaylistIds.length - 3}`);
+        console.log(`[Preloader] 📋 Music tab playlists: ${allPlaylistIds.length - 3}`);
     } catch (e) {
         console.error("[Preloader] Music home data error:", e);
     }
@@ -110,14 +112,18 @@ async function preloadAllPlaylists(
         console.error("[Preloader] Moods data error:", e);
     }
 
-    // 4. 모든 플레이리스트 순차 프리로드 (YouTube API 제한 방지)
-    console.log(`[Preloader] 🔄 Starting playlist preload (${allPlaylistIds.length} playlists)...`);
+    // 4. 🚀 병렬 처리: 10개씩 동시 프리로드 (백엔드 API 사용으로 YouTube 의존성 없음)
+    console.log(`[Preloader] 🔄 Starting PARALLEL playlist preload (${allPlaylistIds.length} playlists, 10 concurrent)...`);
+    const startTime = Date.now();
 
-    for (const playlistId of allPlaylistIds) {
-        await preloadYouTubePlaylist(playlistId);
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < allPlaylistIds.length; i += BATCH_SIZE) {
+        const batch = allPlaylistIds.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(playlistId => preloadYouTubePlaylist(playlistId)));
     }
 
-    console.log(`[Preloader] ✅ ALL ${allPlaylistIds.length} playlists preloaded! Instant playback ready.`);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[Preloader] ✅ ALL ${allPlaylistIds.length} playlists preloaded in ${elapsed}s! Instant playback ready.`);
 }
 
 // 1. Preload Music Tab
