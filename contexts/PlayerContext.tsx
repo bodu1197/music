@@ -109,6 +109,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     const [isQueueOpen, setIsQueueOpen] = useState(false);
     const [isPlaylistMode, setIsPlaylistMode] = useState(false);  // YouTube 플레이리스트 모드
     const [preparedPlaylistCount, setPreparedPlaylistCount] = useState(0);
+    const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);  // 중복 로딩 방지
 
     // YouTube Player ref
     const playerRef = useRef<YT.Player | null>(null);
@@ -395,6 +396,12 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
             return;
         }
 
+        // 🚀 중복 로딩 방지 - 같은 플레이리스트가 이미 로딩 중이면 무시
+        if (loadingPlaylistId === playlistId) {
+            console.log("[PlayerContext] ⏳ Already loading this playlist, ignoring duplicate click");
+            return;
+        }
+
         // 🚀 준비된 플레이리스트가 있으면 즉시 재생 (0.00초)
         const prepared = preparedPlaylistsRef.current.get(playlistId);
         if (prepared) {
@@ -422,6 +429,9 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
 
         // 준비되지 않은 경우: 기존 로직 (느린 경로)
         console.log("[PlayerContext] 🎵 Loading YouTube playlist (not prepared):", playlistId);
+
+        // 🔒 로딩 시작 마커
+        setLoadingPlaylistId(playlistId);
 
         // 현재 재생 완전 중단
         playerRef.current.stopVideo();
@@ -457,7 +467,10 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         try {
             const videoIds = await waitForPlaylist();
             if (!videoIds) {
-                console.log("[PlayerContext] Failed to get playlist after 5s");
+                console.log("[PlayerContext] ❌ Failed to get playlist after 5s - may be region-restricted or unavailable");
+                // 🔓 로딩 완료 (실패)
+                setLoadingPlaylistId(null);
+                setIsPlaylistMode(false);  // 다시 시도할 수 있게 모드 해제
                 return;
             }
 
@@ -491,10 +504,14 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
 
             // 🔥 다음 번을 위해 캐시에 저장
             preparePlaylist(playlistId, detailedTracks);
+
+            // 🔓 로딩 완료 (성공)
+            setLoadingPlaylistId(null);
         } catch (e) {
             console.error("[PlayerContext] Error loading track details:", e);
+            setLoadingPlaylistId(null);
         }
-    }, [playerReady, preparePlaylist]);
+    }, [playerReady, preparePlaylist, loadingPlaylistId]);
 
     // 🔥 YouTube 플레이리스트 미리 로드 (백엔드 API 우선, YouTube 의존성 제거)
     const preloadYouTubePlaylist = useCallback(async (playlistId: string) => {
