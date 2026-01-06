@@ -323,6 +323,10 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         console.log("[PlayerContext] 🎵 Loading YouTube playlist directly:", playlistId);
 
         try {
+            // 🔥 기존 상태 초기화 (새 플레이리스트 로드 시 혼란 방지)
+            setCurrentPlaylist([]);
+            setCurrentTrackIndex(-1);
+
             // YouTube iFrame API - loadPlaylist
             // YouTube가 플레이리스트의 모든 곡을 직접 로드 (100곡이면 100곡 전부!)
             playerRef.current.loadPlaylist({
