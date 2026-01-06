@@ -61,12 +61,13 @@ async function preloadChartPlaylists(
     preloadYouTubePlaylist: (playlistId: string) => Promise<void>
 ) {
     const chartConfig = getChartConfig(countryCode);
-    const chartPlaylists = [chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending];
+    // Filter out undefined (trending is optional for Global)
+    const chartPlaylists = [chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending].filter((id): id is string => !!id);
 
     console.log(`[Preloader] 📋 Preloading ${chartPlaylists.length} chart playlists...`);
     const startTime = Date.now();
 
-    // 3개뿐이므로 병렬로 즉시 처리
+    // 병렬로 즉시 처리
     await Promise.all(chartPlaylists.map(playlistId => preloadYouTubePlaylist(playlistId)));
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
