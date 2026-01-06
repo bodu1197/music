@@ -48,9 +48,9 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         repeatMode,
         volume,
         isMuted,
+        isPlaylistMode,
     });
 
-    // Update callbacks ref on each render using useEffect
     useEffect(() => {
         callbacksRef.current = {
             setIsPlaying,
@@ -59,6 +59,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
             repeatMode,
             volume,
             isMuted,
+            isPlaylistMode,
         };
     });
 
@@ -137,6 +138,11 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                             else if (state === PlayerState.PAUSED) cb.setIsPlaying(false);
                             else if (state === PlayerState.ENDED) {
                                 cb.setIsPlaying(false);
+                                // 🔥 플레이리스트 모드에서는 playNext 스킵 - YouTube가 자동으로 다음 곡 관리
+                                if (cb.isPlaylistMode) {
+                                    console.log("[YouTubePlayer] Playlist mode - skipping playNext");
+                                    return;
+                                }
                                 if (cb.repeatMode === "one") {
                                     event.target.seekTo(0, true);
                                     event.target.playVideo();

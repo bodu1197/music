@@ -127,24 +127,36 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         setCurrentPlaylist((prev) => [...prev, track]);
     }, []);
 
-    // Play track by index
+    // Play track by index - YouTube API playVideoAt() 사용
     const playTrackByIndex = useCallback(
         (index: number) => {
             if (index < 0 || index >= currentPlaylist.length) {
                 return;
             }
+
+            console.log("[PlayerContext] playTrackByIndex:", index);
             setCurrentTrackIndex(index);
 
-            const track = currentPlaylist[index];
-            if (playerRef.current && playerReady && track.videoId) {
+            // 🔥 YouTube API playVideoAt() 사용 - 플레이리스트 내 특정 인덱스 재생
+            if (playerRef.current && playerReady && isPlaylistMode) {
                 try {
-                    playerRef.current.loadVideoById(track.videoId, 0);
+                    playerRef.current.playVideoAt(index);
                 } catch (e) {
-                    console.error("Error loading video:", e);
+                    console.error("Error playing video at index:", e);
+                }
+            } else if (playerRef.current && playerReady) {
+                // 일반 모드 (fallback)
+                const track = currentPlaylist[index];
+                if (track?.videoId) {
+                    try {
+                        playerRef.current.loadVideoById(track.videoId, 0);
+                    } catch (e) {
+                        console.error("Error loading video:", e);
+                    }
                 }
             }
         },
-        [currentPlaylist, playerReady]
+        [currentPlaylist, playerReady, isPlaylistMode]
     );
 
     // Play a specific track (finds or adds to playlist)
@@ -193,8 +205,23 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         }
     }, [playerReady]);
 
-    // Play next track
+    // Play next track - YouTube API nextVideo() 사용
     const playNext = useCallback(() => {
+        if (!playerRef.current || !playerReady) return;
+
+        console.log("[PlayerContext] playNext, isPlaylistMode:", isPlaylistMode);
+
+        // 🔥 플레이리스트 모드: YouTube API nextVideo() 사용
+        if (isPlaylistMode) {
+            try {
+                playerRef.current.nextVideo();
+            } catch (e) {
+                console.error("Error calling nextVideo:", e);
+            }
+            return;
+        }
+
+        // 일반 모드: 기존 로직 유지
         if (currentPlaylist.length === 0) return;
 
         const nextIndex = calculateNextIndex(currentTrackIndex, currentPlaylist.length, isShuffling, repeatMode);
@@ -205,24 +232,39 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         } else {
             playTrackByIndex(nextIndex);
         }
-    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex]);
+    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex, isPlaylistMode, playerReady]);
 
-    // Play previous track
+    // Play previous track - YouTube API previousVideo() 사용
     const playPrevious = useCallback(() => {
-        if (currentPlaylist.length === 0 || !playerRef.current || !playerReady) return;
+        if (!playerRef.current || !playerReady) return;
+
+        console.log("[PlayerContext] playPrevious, isPlaylistMode:", isPlaylistMode);
 
         // Restart current track if played more than 3 sec
-        if (playerRef.current.getCurrentTime() > 3 && currentTrackIndex !== -1) {
+        if (playerRef.current.getCurrentTime() > 3) {
             playerRef.current.seekTo(0, true);
             return;
         }
+
+        // 🔥 플레이리스트 모드: YouTube API previousVideo() 사용
+        if (isPlaylistMode) {
+            try {
+                playerRef.current.previousVideo();
+            } catch (e) {
+                console.error("Error calling previousVideo:", e);
+            }
+            return;
+        }
+
+        // 일반 모드: 기존 로직 유지
+        if (currentPlaylist.length === 0) return;
 
         const prevIndex = calculatePrevIndex(currentTrackIndex, currentPlaylist.length, isShuffling, repeatMode);
 
         if (prevIndex !== -1) {
             playTrackByIndex(prevIndex);
         }
-    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex, playerReady]);
+    }, [currentPlaylist.length, currentTrackIndex, isShuffling, repeatMode, playTrackByIndex, playerReady, isPlaylistMode]);
 
     // Toggle shuffle
     const toggleShuffle = useCallback(() => {
