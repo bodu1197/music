@@ -658,7 +658,9 @@ def get_watch_playlist(videoId: str = None, playlistId: str = None):
 
 @app.get("/playlist/{playlist_id}")
 def get_playlist(playlist_id: str, limit: int = 100):
-    """Get full playlist with all tracks (up to limit)"""
+    """Get full playlist with all tracks (up to limit)
+    Automatically detects album IDs (OLAK5uy_) and uses get_album() instead
+    """
     cache_key = make_cache_key("playlist", playlist_id, limit)
     
     # Check Redis cache first
@@ -670,7 +672,15 @@ def get_playlist(playlist_id: str, limit: int = 100):
     try:
         print(f"[REDIS MISS] /playlist/{playlist_id}")
         yt = get_ytmusic()
-        result = run_with_retry(yt.get_playlist, playlist_id, limit=limit)
+        
+        # Detect ID type and use appropriate API
+        if playlist_id.startswith("OLAK5uy_"):
+            # This is an Album ID - use get_album()
+            print(f"[/playlist] Detected Album ID, using get_album()")
+            result = run_with_retry(yt.get_album, playlist_id)
+        else:
+            # Regular playlist ID - use get_playlist()
+            result = run_with_retry(yt.get_playlist, playlist_id, limit=limit)
         
         # Store in Redis cache (48시간 TTL)
         cache_set(cache_key, result, TTL_MOOD_PLAYLISTS)

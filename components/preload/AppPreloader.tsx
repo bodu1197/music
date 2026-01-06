@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { preload } from "swr";
 import { api } from "@/lib/api";
 import { DEFAULT_COUNTRY } from "@/lib/constants";
-import { getChartConfig } from "@/lib/charts-constants";
 import type { MoodCategory } from "@/types/music";
 
 export function AppPreloader() {
@@ -38,21 +37,10 @@ function preloadMusicData(countryCode: string, countryLang: string) {
     );
 }
 
-// 2. Preload Charts Tab
+// 2. Preload Charts Tab (artists only - playlists are loaded directly via YouTube iFrame API)
 function preloadChartsData(countryCode: string) {
-    const chartConfig = getChartConfig(countryCode);
-    const chartPlaylists = [chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending].filter(Boolean);
-
-    chartPlaylists.forEach(playlistId => {
-        if (playlistId) {
-            preload(
-                ["/watch", undefined, playlistId],
-                // @ts-ignore
-                () => api.music.playlist(playlistId, 200)
-            );
-        }
-    });
-
+    // Charts playlists are played directly via YouTube iFrame API (playYouTubePlaylist)
+    // so we only need to preload the artists data
     preload(
         ["/api/charts", countryCode],
         () => api.music.chartsCached(countryCode)
