@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { getCachedAlbum, getCachedAlbums } from "@/lib/supabase";
 import type { AlbumData, WatchPlaylist, HomeSectionContent, HomeSection } from "@/types/music";
 
 // 프리페치된 데이터 캐시
@@ -47,8 +48,9 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
         return cacheRef.current.playlists.get(playlistId);
     }, []);
 
-    // 앨범 프리페치
+    // 앨범 프리페치 (🔥 Supabase 직접 읽기 우선!)
     const prefetchAlbum = useCallback(async (browseId: string): Promise<AlbumData | null> => {
+        // 1. 메모리 캐시 확인
         if (cacheRef.current.albums.has(browseId)) {
             return cacheRef.current.albums.get(browseId)!;
         }
@@ -59,6 +61,18 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
         pendingRef.current.add(key);
 
         try {
+            // 🚀 2. Supabase 캐시 직접 읽기 (Cloud Run 거치지 않음!)
+            const cached = await getCachedAlbum(browseId);
+            if (cached) {
+                console.log(`[Prefetch] ⚡ SUPABASE HIT: ${browseId}`);
+                const albumData = cached as AlbumData;
+                cacheRef.current.albums.set(browseId, albumData);
+                setPrefetchedCount(prev => prev + 1);
+                return albumData;
+            }
+
+            // 3. 캐시 미스 시에만 Cloud Run API 호출
+            console.log(`[Prefetch] 📡 Cache miss, calling API: ${browseId}`);
             const data = await api.music.album(browseId);
             if (data) {
                 cacheRef.current.albums.set(browseId, data);
@@ -114,29 +128,66 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
         }
     }, [prefetchAlbum, prefetchPlaylist]);
 
-    // 홈 데이터에서 모든 앨범/플레이리스트 프리페치 (완료까지 대기)
+    // 홈 데이터에서 앨범 프리페치
+    // 🔥 새로운 흐름: Supabase 배치 읽기 → 캐시 미스만 Cloud Run API 호출
     const prefetchFromHomeData = useCallback(async (homeData: HomeSection[]): Promise<void> => {
         if (!homeData || !Array.isArray(homeData)) return;
 
-        console.log("[Prefetch] 🔥 Starting aggressive prefetch from home data...");
-        const promises: Promise<unknown>[] = [];
+        console.log("[Prefetch] 🔥 Starting optimized prefetch (Supabase first!)...");
 
+        // 앨범 ID만 수집
+        const albumIds: string[] = [];
         for (const section of homeData) {
             if (section?.contents) {
                 for (const item of section.contents) {
-                    processItem(item, promises);
+                    if (item?.browseId?.startsWith("MPREb") && !cacheRef.current.albums.has(item.browseId)) {
+                        albumIds.push(item.browseId);
+                    }
                 }
             }
         }
 
-        console.log(`[Prefetch] ⏳ Waiting for ${promises.length} items to load...`);
+        if (albumIds.length === 0) {
+            console.log("[Prefetch] ✅ All albums already cached!");
+            setIsReady(true);
+            return;
+        }
 
-        // 모든 프리페치 완료 대기
-        await Promise.allSettled(promises);
+        console.log(`[Prefetch] ⏳ Checking ${albumIds.length} albums in Supabase...`);
 
-        console.log(`[Prefetch] ✅ All ${promises.length} items loaded! Ready for instant clicks.`);
+        // 🚀 1단계: Supabase에서 모든 앨범 캐시 한 번에 읽기
+        const cachedAlbums = await getCachedAlbums(albumIds);
+
+        // 캐시된 앨범 메모리에 저장
+        let hitCount = 0;
+        for (const [browseId, data] of cachedAlbums) {
+            cacheRef.current.albums.set(browseId, data as AlbumData);
+            hitCount++;
+        }
+        setPrefetchedCount(prev => prev + hitCount);
+        console.log(`[Prefetch] ⚡ SUPABASE HIT: ${hitCount}/${albumIds.length} albums`);
+
+        // 캐시 미스된 앨범 ID 찾기
+        const missedIds = albumIds.filter(id => !cachedAlbums.has(id));
+
+        if (missedIds.length === 0) {
+            console.log("[Prefetch] ✅ All albums loaded from Supabase!");
+            setIsReady(true);
+            return;
+        }
+
+        console.log(`[Prefetch] 📡 ${missedIds.length} cache misses, calling Cloud Run API...`);
+
+        // 🔒 2단계: 캐시 미스만 Cloud Run API 호출 (5개씩 배치)
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < missedIds.length; i += BATCH_SIZE) {
+            const batch = missedIds.slice(i, i + BATCH_SIZE);
+            await Promise.allSettled(batch.map(id => prefetchAlbum(id)));
+        }
+
+        console.log(`[Prefetch] ✅ All ${albumIds.length} albums loaded! Ready for instant clicks.`);
         setIsReady(true);
-    }, [processItem]);
+    }, [prefetchAlbum]);
 
     const value = React.useMemo(() => ({
         getAlbum,
