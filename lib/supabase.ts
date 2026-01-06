@@ -80,3 +80,118 @@ export async function getCachedPlaylist(playlistId: string): Promise<unknown | n
         return null;
     }
 }
+
+/**
+ * 캐시된 홈 데이터 직접 읽기
+ * key = "100_US_en" (limit_country_language)
+ */
+export async function getCachedHome(limit: number = 100, country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+    try {
+        const key = `${limit}_${country}_${language}`;
+        const { data, error } = await supabase
+            .from('cache')
+            .select('data')
+            .eq('type', 'home')
+            .eq('key', key)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) return null;
+        console.log(`[Supabase] ⚡ Home cache HIT: ${key}`);
+        return data.data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 캐시된 차트 데이터 직접 읽기
+ * key = "US_en" (country_language)
+ */
+export async function getCachedCharts(country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+    try {
+        const key = `${country}_${language}`;
+        const { data, error } = await supabase
+            .from('cache')
+            .select('data')
+            .eq('type', 'charts')
+            .eq('key', key)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) return null;
+        console.log(`[Supabase] ⚡ Charts cache HIT: ${key}`);
+        return data.data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 캐시된 무드 카테고리 데이터 직접 읽기
+ * key = "US_en" (country_language)
+ */
+export async function getCachedMoods(country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+    try {
+        const key = `${country}_${language}`;
+        const { data, error } = await supabase
+            .from('cache')
+            .select('data')
+            .eq('type', 'moods')
+            .eq('key', key)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) return null;
+        console.log(`[Supabase] ⚡ Moods cache HIT: ${key}`);
+        return data.data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 캐시된 무드 플레이리스트 데이터 직접 읽기
+ * key = "params_country_language"
+ */
+export async function getCachedMoodPlaylists(params: string, country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+    try {
+        const key = `${params}_${country}_${language}`;
+        const { data, error } = await supabase
+            .from('cache')
+            .select('data')
+            .eq('type', 'mood_playlists')
+            .eq('key', key)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) return null;
+        console.log(`[Supabase] ⚡ Mood playlists cache HIT`);
+        return data.data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 캐시된 watch playlist 직접 읽기
+ * key = "None_playlistId" 또는 "videoId_None"
+ */
+export async function getCachedWatch(videoId?: string, playlistId?: string): Promise<unknown | null> {
+    try {
+        const key = `${videoId || 'None'}_${playlistId || 'None'}`;
+        const { data, error } = await supabase
+            .from('cache')
+            .select('data')
+            .eq('type', 'watch')
+            .eq('key', key)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) return null;
+        console.log(`[Supabase] ⚡ Watch cache HIT: ${key}`);
+        return data.data;
+    } catch {
+        return null;
+    }
+}

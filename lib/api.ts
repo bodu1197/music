@@ -1,7 +1,9 @@
 // ============================================
 // VibeStation API Client
 // ============================================
-// Clean API client for Cloud Run backend
+// Clean API client with Supabase cache priority
+
+import { getCachedHome, getCachedCharts, getCachedMoods, getCachedMoodPlaylists, getCachedWatch } from './supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-322455104824.us-central1.run.app';
 
@@ -17,8 +19,13 @@ export const api = {
             return res.json();
         },
 
-        // Get rich home feed (Pure get_home)
+        // Get rich home feed (🔥 Supabase cache priority)
         home: async (limit: number = 100, country: string = 'US', language: string = 'en') => {
+            // 1. Supabase 캐시 확인 (Cloud Run 거치지 않음!)
+            const cached = await getCachedHome(limit, country, language);
+            if (cached) return cached;
+
+            // 2. 캐시 미스 시 Cloud Run API 호출
             const params = new URLSearchParams({
                 limit: String(limit),
                 country: country,
@@ -29,8 +36,13 @@ export const api = {
             return res.json();
         },
 
-        // Get charts for a country
+        // Get charts for a country (🔥 Supabase cache priority)
         charts: async (country: string = 'US') => {
+            // 1. Supabase 캐시 확인
+            const cached = await getCachedCharts(country);
+            if (cached) return cached;
+
+            // 2. 캐시 미스 시 Cloud Run API 호출
             const res = await fetch(`${API_URL}/charts?country=${country}`);
             if (!res.ok) throw new Error('Failed to fetch charts');
             return res.json();
@@ -94,8 +106,13 @@ export const api = {
             return res.json();
         },
 
-        // Get watch playlist (limit=200 to get ALL tracks, not just 50)
+        // Get watch playlist (🔥 Supabase cache priority)
         watch: async (videoId?: string, playlistId?: string, limit: number = 200) => {
+            // 1. Supabase 캐시 확인
+            const cached = await getCachedWatch(videoId, playlistId);
+            if (cached) return cached;
+
+            // 2. 캐시 미스 시 Cloud Run API 호출
             const params = new URLSearchParams();
             if (videoId) params.append('videoId', videoId);
             if (playlistId) params.append('playlistId', playlistId);
@@ -106,18 +123,28 @@ export const api = {
             return res.json();
         },
 
-        // Get mood/genre categories
+        // Get mood/genre categories (🔥 Supabase cache priority)
         moods: async (country: string = 'US', language: string = 'en') => {
+            // 1. Supabase 캐시 확인
+            const cached = await getCachedMoods(country, language);
+            if (cached) return cached;
+
+            // 2. 캐시 미스 시 Cloud Run API 호출
             const params = new URLSearchParams({ country, language });
             const res = await fetch(`${API_URL}/moods?${params}`);
             if (!res.ok) throw new Error('Failed to fetch moods');
             return res.json();
         },
 
-        // Get playlists for a mood/genre
-        moodPlaylists: async (params: string, country: string = 'US', language: string = 'en') => {
+        // Get playlists for a mood/genre (🔥 Supabase cache priority)
+        moodPlaylists: async (moodParams: string, country: string = 'US', language: string = 'en') => {
+            // 1. Supabase 캐시 확인
+            const cached = await getCachedMoodPlaylists(moodParams, country, language);
+            if (cached) return cached;
+
+            // 2. 캐시 미스 시 Cloud Run API 호출
             const urlParams = new URLSearchParams({
-                params,
+                params: moodParams,
                 country,
                 language
             });
