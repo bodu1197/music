@@ -6,12 +6,12 @@ import { api } from "@/lib/api";
 import { DEFAULT_COUNTRY } from "@/lib/constants";
 import { getChartConfig } from "@/lib/charts-constants";
 import { usePlayer } from "@/contexts/PlayerContext";
-import type { MoodCategory } from "@/types/music";
+import type { MoodCategory, HomeSection } from "@/types/music";
 
 export function AppPreloader() {
     const hasPreloaded = useRef(false);
-    const hasPreloadedChartPlaylists = useRef(false);
-    const { playerReady, preloadYouTubePlaylist } = usePlayer();
+    const hasPreloadedPlaylists = useRef(false);
+    const { playerReady, preloadYouTubePlaylist, preparedPlaylistCount } = usePlayer();
 
     // 1. 일반 데이터 프리로드 (즉시)
     useEffect(() => {
@@ -27,33 +27,97 @@ export function AppPreloader() {
         preloadChartsData(countryCode);
         preloadMoodsData(countryCode, countryLang);
 
-        console.log("[Preloader] ✅ All tabs preloaded!");
+        console.log("[Preloader] ✅ All tabs data preloaded!");
     }, []);
 
-    // 2. 🔥 Chart 플레이리스트 미리 로드 (플레이어 준비 후)
+    // 2. 🔥 모든 탭 플레이리스트 미리 로드 (플레이어 준비 후)
     useEffect(() => {
-        if (!playerReady || hasPreloadedChartPlaylists.current) return;
-        hasPreloadedChartPlaylists.current = true;
+        if (!playerReady || hasPreloadedPlaylists.current) return;
+        hasPreloadedPlaylists.current = true;
 
         const countryCode = localStorage.getItem("user_country_code") || DEFAULT_COUNTRY.code;
-        const chartConfig = getChartConfig(countryCode);
+        const countryLang = localStorage.getItem("user_country_lang") || DEFAULT_COUNTRY.lang;
 
-        console.log(`[Preloader] ⚡ Preloading chart playlists for ${countryCode}...`);
+        console.log(`[Preloader] ⚡ Preloading ALL playlists for instant playback...`);
 
-        // 사용자 국가의 3개 차트 플레이리스트 미리 로드
-        const preloadChartPlaylists = async () => {
-            // 순차적으로 로드 (YouTube API 제한 방지)
-            await preloadYouTubePlaylist(chartConfig.topSongs);
-            await preloadYouTubePlaylist(chartConfig.topVideos);
-            await preloadYouTubePlaylist(chartConfig.trending);
-            console.log("[Preloader] ✅ Chart playlists preloaded! Instant playback ready.");
-        };
-
-        preloadChartPlaylists();
+        preloadAllPlaylists(countryCode, countryLang, preloadYouTubePlaylist);
     }, [playerReady, preloadYouTubePlaylist]);
+
+    // 3. 프리로드 완료 상태 로깅
+    useEffect(() => {
+        if (preparedPlaylistCount > 0) {
+            console.log(`[Preloader] 📊 Prepared playlists: ${preparedPlaylistCount}`);
+        }
+    }, [preparedPlaylistCount]);
 
     // This component renders nothing
     return null;
+}
+
+// 🔥 모든 탭의 플레이리스트 미리 로드
+async function preloadAllPlaylists(
+    countryCode: string,
+    countryLang: string,
+    preloadYouTubePlaylist: (playlistId: string) => Promise<void>
+) {
+    const allPlaylistIds: string[] = [];
+
+    // 1. Chart 탭: 하드코딩된 플레이리스트 ID
+    const chartConfig = getChartConfig(countryCode);
+    allPlaylistIds.push(chartConfig.topSongs, chartConfig.topVideos, chartConfig.trending);
+    console.log(`[Preloader] 📋 Chart playlists: 3`);
+
+    // 2. Music 탭: Home 데이터에서 playlistId 추출
+    try {
+        const homeData = await api.music.homeCached(100, countryCode, countryLang);
+        if (homeData && Array.isArray(homeData)) {
+            (homeData as HomeSection[]).forEach(section => {
+                section.contents?.forEach(item => {
+                    if (item.playlistId && !allPlaylistIds.includes(item.playlistId)) {
+                        allPlaylistIds.push(item.playlistId);
+                    }
+                });
+            });
+        }
+        console.log(`[Preloader] 📋 Music tab playlists found: ${allPlaylistIds.length - 3}`);
+    } catch (e) {
+        console.error("[Preloader] Music home data error:", e);
+    }
+
+    // 3. Moods 탭: Mood 플레이리스트에서 playlistId 추출
+    try {
+        const moodsData = await api.music.moodsAll(countryCode, countryLang);
+        if (moodsData && typeof moodsData === 'object') {
+            for (const categories of Object.values(moodsData)) {
+                if (Array.isArray(categories)) {
+                    for (const cat of categories as MoodCategory[]) {
+                        if (cat.params) {
+                            const playlists = await api.music.moodPlaylists(cat.params, countryCode, countryLang);
+                            if (playlists && Array.isArray(playlists)) {
+                                playlists.forEach((pl: { playlistId?: string }) => {
+                                    if (pl.playlistId && !allPlaylistIds.includes(pl.playlistId)) {
+                                        allPlaylistIds.push(pl.playlistId);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        console.log(`[Preloader] 📋 Total playlists to preload: ${allPlaylistIds.length}`);
+    } catch (e) {
+        console.error("[Preloader] Moods data error:", e);
+    }
+
+    // 4. 모든 플레이리스트 순차 프리로드 (YouTube API 제한 방지)
+    console.log(`[Preloader] 🔄 Starting playlist preload (${allPlaylistIds.length} playlists)...`);
+
+    for (const playlistId of allPlaylistIds) {
+        await preloadYouTubePlaylist(playlistId);
+    }
+
+    console.log(`[Preloader] ✅ ALL ${allPlaylistIds.length} playlists preloaded! Instant playback ready.`);
 }
 
 // 1. Preload Music Tab
