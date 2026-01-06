@@ -211,16 +211,6 @@ def get_ytmusic(country: str = "US", language: str = "en"):
     if country in ("ZZ", "WW"):
         return YTMusic(language="en")
 
-    proxies = None
-    if PROXY_URL_TEMPLATE:
-        try:
-            # Replace {country} with the requested country code (e.g., US, JP, KR)
-            proxy_url = PROXY_URL_TEMPLATE.format(country=country)
-            proxies = {"http": proxy_url, "https": proxy_url}
-            # print(f"Using proxy for {country}") # Debug only
-        except Exception as e:
-            print(f"Error formatting proxy URL: {e}")
-
     # Supported languages by ytmusicapi (based on recent error message)
     # ko, hi, it, de, tr, en, pt, cs, zh_CN, ja, es, ru, fr, nl, ar, ur, zh_TW
     SUPPORTED_LANGUAGES = [
@@ -230,11 +220,10 @@ def get_ytmusic(country: str = "US", language: str = "en"):
 
     # Fallback to English if language is not supported (e.g. 'id', 'th', 'vi')
     if language not in SUPPORTED_LANGUAGES:
-        # print(f"Language '{language}' not supported by ytmusicapi, falling back to 'en'")
         language = "en"
 
-    # Initialize YTMusic with proxies and language
-    return YTMusic(proxies=proxies, language=language, location=country)
+    # Initialize YTMusic with language and location for correct regional data
+    return YTMusic(language=language, location=country)
 
 # Retry Decorator/Helper
 import time
@@ -834,6 +823,17 @@ def get_home(limit: int = 100, country: str = "US", language: str = "en"):
         cache_set(cache_key, result, TTL_HOME)
         return result
     except Exception as e:
+        # Fallback to US if the requested country fails
+        if country != "US":
+            print(f"[FALLBACK] /home country={country} failed, trying US...")
+            try:
+                yt_fallback = get_ytmusic(country="US", language="en")
+                result = run_with_retry(yt_fallback.get_home, limit=limit)
+                # Cache with original key so next request is fast
+                cache_set(cache_key, result, TTL_HOME)
+                return result
+            except Exception as fallback_error:
+                print(f"[FALLBACK FAILED] US also failed: {fallback_error}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/charts")
@@ -877,6 +877,16 @@ def get_mood_categories(country: str = "US", language: str = "en"):
         cache_set(cache_key, result, TTL_MOODS)
         return result
     except Exception as e:
+        # Fallback to US if the requested country fails
+        if country != "US":
+            print(f"[FALLBACK] /moods country={country} failed, trying US...")
+            try:
+                yt_fallback = get_ytmusic(country="US", language="en")
+                result = run_with_retry(yt_fallback.get_mood_categories)
+                cache_set(cache_key, result, TTL_MOODS)
+                return result
+            except Exception as fallback_error:
+                print(f"[FALLBACK FAILED] US also failed: {fallback_error}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -993,6 +1003,23 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
         return final_result
 
     except Exception as e:
+        # Fallback to US if the requested country fails
+        if country != "US":
+            print(f"[FALLBACK] /moods/playlists country={country} failed, trying US...")
+            try:
+                yt_fallback = get_ytmusic(country="US", language="en")
+                result = None
+                try:
+                    result = run_with_retry(yt_fallback.get_mood_playlists, params)
+                except KeyError:
+                    pass
+                if not result:
+                    result = parse_genre_playlists(yt_fallback, params)
+                final_result = result if result else []
+                cache_set(cache_key, final_result, TTL_MOOD_PLAYLISTS)
+                return final_result
+            except Exception as fallback_error:
+                print(f"[FALLBACK FAILED] US also failed: {fallback_error}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
