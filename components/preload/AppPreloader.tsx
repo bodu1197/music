@@ -23,7 +23,7 @@ export function AppPreloader() {
         const countryCode = localStorage.getItem("user_country_code") || DEFAULT_COUNTRY.code;
         const countryLang = localStorage.getItem("user_country_lang") || DEFAULT_COUNTRY.lang;
 
-        console.log("[Preloader] 🚀 Starting aggressive data preload...");
+        console.log("[Preloader] 🚀 Starting throttled data preload...");
 
         // SWR 캐시 채우기
         preloadMusicData(countryCode, countryLang);
@@ -41,9 +41,9 @@ export function AppPreloader() {
             })
             .catch(err => console.error("[Preloader] Home prefetch error:", err));
 
-        // 🔥 2) Moods의 모든 플레이리스트 프리페치 (Supabase 캐시 사용)
-        console.log("[Preloader] ⚡ Fetching moods data for playlist prefetch...");
-        fetchMoodsAndPrefetchPlaylists(countryCode, countryLang, prefetchPlaylist);
+        // 🔥 2) Moods의 모든 플레이리스트 프리페치 (스로틀링 적용)
+        console.log("[Preloader] ⚡ Fetching moods data for playlist prefetch (Safe Mode)...");
+        safeFetchMoodsAndPrefetchPlaylists(countryCode, countryLang, prefetchPlaylist);
 
     }, [prefetchFromHomeData, prefetchPlaylist]);
 
@@ -68,55 +68,106 @@ export function AppPreloader() {
     return null;
 }
 
-// 🔥 Moods 탭의 모든 플레이리스트 데이터 미리 다운로드
-async function fetchMoodsAndPrefetchPlaylists(
+// 🔥 Moods 탭의 모든 플레이리스트 데이터 미리 다운로드 (Safe Mode: Concurrency Limited)
+async function safeFetchMoodsAndPrefetchPlaylists(
     countryCode: string,
     countryLang: string,
     prefetchPlaylist: (id: string) => Promise<any>
 ) {
     try {
-        // Mood Categories 호출 (Supabase 캐시 사용)
         const moodsData = await api.music.moods(countryCode, countryLang);
-
         if (!moodsData || typeof moodsData !== 'object') return;
 
-        const playlistIds = new Set<string>();
-
-        // 모든 카테고리 순회하며 playlistId 수집
-        // 현재 moodsData 구조: { "Moods & Moments": [...], "Genres": [...] }
+        // 1. 모든 카테고리 파라미터 수집
+        const categoriesToFetch: { title: string, params: string }[] = [];
         Object.values(moodsData).forEach((categories) => {
             if (Array.isArray(categories)) {
                 (categories as MoodCategory[]).forEach((cat) => {
-                    // 각 카테고리의 플레이리스트 목록을 가져오기엔 너무 많으므로(API 호출 필요),
-                    // 여기서는 '목록' API 호출은 SWR preload로 하고 (위에서 함),
-                    // 만약 카테고리 안에 이미 플레이리스트 정보가 있다면 수집.
-                    // *API 구조상 moods()는 카테고리만 줌. moodPlaylists()를 호출해야 함.*
-
                     if (cat.params) {
-                        // 각 카테고리의 플레이리스트 목록을 비동기로 가져와서 내부 트랙까지 프리페치
-                        api.music.moodPlaylists(cat.params, countryCode, countryLang)
-                            .then((playlists) => {
-                                if (Array.isArray(playlists)) {
-                                    console.log(`[Preloader] Found ${playlists.length} playlists in mood category: ${cat.title}`);
-                                    playlists.forEach((pl: MoodPlaylist) => {
-                                        if (pl.playlistId) {
-                                            // 🔥 각 플레이리스트의 상세 정보(트랙 포함) 프리페치
-                                            prefetchPlaylist(pl.playlistId);
-                                        }
-                                    });
-                                }
-                            })
-                            .catch(e => console.warn(`Failed to load mood playlists for ${cat.title}`));
+                        categoriesToFetch.push({ title: cat.title, params: cat.params });
                     }
                 });
             }
         });
+
+        console.log(`[Preloader] Found ${categoriesToFetch.length} mood categories. Fetching playlists sequentially...`);
+
+        // 2. 카테고리별로 플레이리스트 목록 가져오기 (동시성 제한: 2개씩)
+        const CONCURRENCY_LIMIT = 2;
+
+        for (let i = 0; i < categoriesToFetch.length; i += CONCURRENCY_LIMIT) {
+            const batch = categoriesToFetch.slice(i, i + CONCURRENCY_LIMIT);
+
+            await Promise.allSettled(batch.map(async (cat) => {
+                try {
+                    const playlists = await api.music.moodPlaylists(cat.params, countryCode, countryLang);
+                    if (Array.isArray(playlists)) {
+                        // 3. 플레이리스트 상세 프리페치 (순차 처리하여 백엔드 보호)
+                        for (const pl of playlists) {
+                            if (pl?.playlistId) {
+                                await prefetchPlaylist(pl.playlistId);
+                                await new Promise(r => setTimeout(r, 50)); // 50ms 딜레이
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[Preloader] Failed to load playlists for ${cat.title}`);
+                }
+            }));
+
+            await new Promise(r => setTimeout(r, 200)); // 배치 간 200ms 딜레이
+        }
+
+        console.log(`[Preloader] ✅ All mood playlists prefetch queue finished.`);
+
     } catch (e) {
         console.error("[Preloader] Moods prefetch error:", e);
     }
 }
 
-// ... (나머지 함수들은 그대로)
+// 1. Preload Music Tab
+function preloadMusicData(countryCode: string, countryLang: string) {
+    preload(
+        ["/music/home/cached", countryCode, countryLang],
+        () => api.music.homeCached(100, countryCode, countryLang)
+    );
+}
+
+// 2. Preload Charts Tab
+function preloadChartsData(countryCode: string) {
+    // 차트는 ID가 하드코딩되어 있어 별도 프리로드 불필요하지만,
+    // 아티스트 데이터를 위해 미리 호출해둠 (SWR 캐시)
+    preload(
+        ["/api/charts", countryCode],
+        () => api.music.chartsCached(countryCode)
+    );
+}
+
+// 3. Preload Moods Tab
+async function preloadMoodsData(countryCode: string, countryLang: string) {
+    try {
+        // Mood Categories 호출 (Supabase 캐시 사용)
+        const moodsData = await api.music.moods(countryCode, countryLang);
+
+        if (moodsData && typeof moodsData === 'object') {
+            Object.values(moodsData).forEach((categories) => {
+                if (Array.isArray(categories)) {
+                    (categories as MoodCategory[]).forEach((cat) => {
+                        if (cat.params) {
+                            // 각 무드별 플레이리스트 미리 로드 (SWR 캐시)
+                            preload(
+                                ["/moods/playlists", cat.params, countryCode, countryLang],
+                                () => api.music.moodPlaylists(cat.params, countryCode, countryLang)
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    } catch (e) {
+        console.error("[Preloader] Moods preload error:", e);
+    }
+}
 
 // 🔥 Chart 플레이리스트만 미리 로드 (3개)
 async function preloadChartPlaylists(
@@ -134,42 +185,3 @@ async function preloadChartPlaylists(
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[Preloader] ✅ Charts ready in ${elapsed}s!`);
 }
-
-// ... (하단 헬퍼 함수들은 그대로 유지)
-function preloadMusicData(countryCode: string, countryLang: string) {
-    preload(
-        ["/music/home/cached", countryCode, countryLang],
-        () => api.music.homeCached(100, countryCode, countryLang)
-    );
-}
-
-function preloadChartsData(countryCode: string) {
-    preload(
-        ["/api/charts", countryCode],
-        () => api.music.chartsCached(countryCode)
-    );
-}
-
-async function preloadMoodsData(countryCode: string, countryLang: string) {
-    try {
-        const moodsData = await api.music.moods(countryCode, countryLang);
-        if (moodsData && typeof moodsData === 'object') {
-            Object.values(moodsData).forEach((categories) => {
-                if (Array.isArray(categories)) {
-                    (categories as MoodCategory[]).forEach((cat) => {
-                        if (cat.params) {
-                            preload(
-                                ["/moods/playlists", cat.params, countryCode, countryLang],
-                                () => api.music.moodPlaylists(cat.params, countryCode, countryLang)
-                            );
-                        }
-                    });
-                }
-            });
-        }
-    } catch (e) {
-        console.error("[Preloader] Moods preload error:", e);
-    }
-}
-
-
