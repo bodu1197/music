@@ -26,7 +26,7 @@ export async function getCachedAlbum(browseId: string): Promise<unknown | null> 
             .eq('type', 'album')
             .eq('key', browseId)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle(); // 🔥 single() 대신 maybeSingle() 사용 (406 에러 방지)
 
         if (error || !data) return null;
         return data.data;
@@ -72,7 +72,7 @@ export async function getCachedPlaylist(playlistId: string): Promise<unknown | n
             .eq('type', 'playlist')
             .eq('key', playlistId)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         return data.data;
@@ -94,7 +94,7 @@ export async function getCachedHome(limit: number = 100, country: string = 'US',
             .eq('type', 'home')
             .eq('key', key)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         console.log(`[Supabase] ⚡ Home cache HIT: ${key}`);
@@ -117,7 +117,7 @@ export async function getCachedCharts(country: string = 'US', language: string =
             .eq('type', 'charts')
             .eq('key', key)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         console.log(`[Supabase] ⚡ Charts cache HIT: ${key}`);
@@ -140,7 +140,7 @@ export async function getCachedMoods(country: string = 'US', language: string = 
             .eq('type', 'moods')
             .eq('key', key)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         console.log(`[Supabase] ⚡ Moods cache HIT: ${key}`);
@@ -163,7 +163,7 @@ export async function getCachedMoodPlaylists(params: string, country: string = '
             .eq('type', 'mood_playlists')
             .eq('key', key)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         console.log(`[Supabase] ⚡ Mood playlists cache HIT`);
@@ -186,7 +186,7 @@ export async function getCachedWatch(videoId?: string, playlistId?: string): Pro
             .eq('type', 'watch')
             .eq('key', key)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         console.log(`[Supabase] ⚡ Watch cache HIT: ${key}`);
