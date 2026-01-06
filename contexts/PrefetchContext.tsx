@@ -119,7 +119,9 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
             }
             return data;
         } catch (e) {
-            console.error(`[Prefetch] Playlist error: ${playlistId}`, e);
+            // 일부 플레이리스트(RDCLAK...)는 YouTube 측에서 만료되거나 접근이 안 될 수 있음.
+            // 이는 자연스러운 현상이므로 Error 대신 Warn으로 로그를 남김.
+            console.warn(`[Prefetch] Skipping unavailable playlist: ${playlistId} (API Error)`);
             return null;
         } finally {
             pendingRef.current.delete(key);
@@ -191,8 +193,8 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
 
         console.log(`[Prefetch] 📡 ${missedIds.length} cache misses, calling Cloud Run API...`);
 
-        // 🔒 2단계: 캐시 미스만 Cloud Run API 호출 (5개씩 배치)
-        const BATCH_SIZE = 5;
+        // 🔒 2단계: 캐시 미스만 Cloud Run API 호출 (8개씩 병렬 처리 - 속도 향상)
+        const BATCH_SIZE = 8;
         for (let i = 0; i < missedIds.length; i += BATCH_SIZE) {
             const batch = missedIds.slice(i, i + BATCH_SIZE);
             await Promise.allSettled(batch.map(id => prefetchAlbum(id)));

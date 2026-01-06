@@ -771,7 +771,9 @@ def get_watch_playlist(videoId: str = None, playlistId: str = None):
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[Error] /watch failed for videoId={videoId} playlistId={playlistId}: {e}")
+        # 500 (Server Error) 대신 404 (Not Found) 반환하여 클라이언트가 재시도하지 않게 함
+        raise HTTPException(status_code=404, detail=f"Playlist not found or unavailable: {str(e)}")
 
 @app.get("/playlist/{playlist_id}")
 def get_playlist(playlist_id: str, limit: int = 100):
@@ -804,7 +806,8 @@ def get_playlist(playlist_id: str, limit: int = 100):
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[Error] /playlist failed for {playlist_id}: {e}")
+        raise HTTPException(status_code=404, detail=f"Playlist not found: {str(e)}")
 
 @app.get("/home")
 def get_home(limit: int = 100, country: str = "US", language: str = "en"):

@@ -23,7 +23,7 @@ export function AppPreloader() {
         const countryCode = localStorage.getItem("user_country_code") || DEFAULT_COUNTRY.code;
         const countryLang = localStorage.getItem("user_country_lang") || DEFAULT_COUNTRY.lang;
 
-        console.log("[Preloader] 🚀 Starting throttled data preload...");
+        console.log("[Preloader] 🚀 Starting fast data preload...");
 
         // SWR 캐시 채우기
         preloadMusicData(countryCode, countryLang);
@@ -41,8 +41,8 @@ export function AppPreloader() {
             })
             .catch(err => console.error("[Preloader] Home prefetch error:", err));
 
-        // 🔥 2) Moods의 모든 플레이리스트 프리페치 (스로틀링 적용)
-        console.log("[Preloader] ⚡ Fetching moods data for playlist prefetch (Safe Mode)...");
+        // 🔥 2) Moods의 모든 플레이리스트 프리페치 (고속 처리)
+        console.log("[Preloader] ⚡ Fetching moods data for playlist prefetch...");
         safeFetchMoodsAndPrefetchPlaylists(countryCode, countryLang, prefetchPlaylist);
 
     }, [prefetchFromHomeData, prefetchPlaylist]);
@@ -68,7 +68,7 @@ export function AppPreloader() {
     return null;
 }
 
-// 🔥 Moods 탭의 모든 플레이리스트 데이터 미리 다운로드 (Safe Mode: Concurrency Limited)
+// 🔥 Moods 탭의 모든 플레이리스트 데이터 미리 다운로드 (Optimized Concurrency)
 async function safeFetchMoodsAndPrefetchPlaylists(
     countryCode: string,
     countryLang: string,
@@ -90,10 +90,10 @@ async function safeFetchMoodsAndPrefetchPlaylists(
             }
         });
 
-        console.log(`[Preloader] Found ${categoriesToFetch.length} mood categories. Fetching playlists sequentially...`);
+        console.log(`[Preloader] Found ${categoriesToFetch.length} mood categories. Fetching playlists...`);
 
-        // 2. 카테고리별로 플레이리스트 목록 가져오기 (동시성 제한: 2개씩)
-        const CONCURRENCY_LIMIT = 2;
+        // 2. 카테고리별로 플레이리스트 목록 가져오기 (동시성 제한: 6개씩)
+        const CONCURRENCY_LIMIT = 6;
 
         for (let i = 0; i < categoriesToFetch.length; i += CONCURRENCY_LIMIT) {
             const batch = categoriesToFetch.slice(i, i + CONCURRENCY_LIMIT);
@@ -102,11 +102,11 @@ async function safeFetchMoodsAndPrefetchPlaylists(
                 try {
                     const playlists = await api.music.moodPlaylists(cat.params, countryCode, countryLang);
                     if (Array.isArray(playlists)) {
-                        // 3. 플레이리스트 상세 프리페치 (순차 처리하여 백엔드 보호)
+                        // 3. 플레이리스트 상세 프리페치 (내부 아이템 순차 처리로 안전 확보)
                         for (const pl of playlists) {
                             if (pl?.playlistId) {
                                 await prefetchPlaylist(pl.playlistId);
-                                await new Promise(r => setTimeout(r, 50)); // 50ms 딜레이
+                                // 딜레이 제거
                             }
                         }
                     }
@@ -115,7 +115,7 @@ async function safeFetchMoodsAndPrefetchPlaylists(
                 }
             }));
 
-            await new Promise(r => setTimeout(r, 200)); // 배치 간 200ms 딜레이
+            // 딜레이 제거
         }
 
         console.log(`[Preloader] ✅ All mood playlists prefetch queue finished.`);
