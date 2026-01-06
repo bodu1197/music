@@ -114,7 +114,8 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                         iv_load_policy: 3,
                         modestbranding: 1,
                         rel: 0,
-                        origin: globalThis.location.origin,
+                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://music-tawny-eta.vercel.app',
+                        enablejsapi: 1,
                     },
                     events: {
                         onReady: (event: YT.PlayerEvent) => {
