@@ -404,17 +404,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
 
             console.log("[PlayerContext] Got videoIds from YouTube:", videoIds.length);
 
-            // 1단계: 기본 정보로 즉시 Queue 표시 (썸네일만)
-            const basicTracks: Track[] = videoIds.map((videoId: string) => ({
-                videoId,
-                title: "Loading...",
-                artist: "",
-                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-            }));
-            setCurrentPlaylist(basicTracks);
-            setCurrentTrackIndex(0);
-
-            // 2단계: noembed.com으로 상세 정보 병렬 로드
+            // noembed.com으로 상세 정보 병렬 로드 후 Queue 표시
             const detailedTracks = await Promise.all(
                 videoIds.map(async (videoId: string) => {
                     try {
