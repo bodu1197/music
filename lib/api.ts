@@ -58,11 +58,26 @@ export const api = {
             return res.json();
         },
 
-        // Get album details
+        // Get album details (with retry for cold start)
         album: async (albumId: string) => {
-            const res = await fetch(`${API_URL}/album/${albumId}`);
-            if (!res.ok) throw new Error('Failed to fetch album');
-            return res.json();
+            const maxRetries = 3;
+            let lastError: Error | null = null;
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const res = await fetch(`${API_URL}/album/${albumId}`);
+                    if (!res.ok) throw new Error('Failed to fetch album');
+                    return res.json();
+                } catch (e) {
+                    lastError = e as Error;
+                    console.log(`[API] Album fetch attempt ${attempt + 1} failed, retrying...`);
+                    // Wait before retry (exponential backoff)
+                    if (attempt < maxRetries - 1) {
+                        await new Promise(r => setTimeout(r, (attempt + 1) * 500));
+                    }
+                }
+            }
+            throw lastError || new Error('Failed to fetch album after retries');
         },
 
         // Get song details

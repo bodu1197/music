@@ -124,11 +124,23 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                 return;
             }
         } else {
-            // 캐시에 없으면 직접 API 호출
+            // 캐시에 없으면 직접 API 호출 (재시도 포함)
             setLoadingId(browseId);
             try {
+                // 1차: prefetchAlbum 시도
                 const result = await prefetchAlbum(browseId);
                 albumData = result ?? undefined;
+
+                // 2차: prefetchAlbum 실패 시 직접 api.music.album 호출
+                if (!albumData) {
+                    console.log("[MusicTab] Prefetch failed, trying direct API call...");
+                    try {
+                        albumData = await api.music.album(browseId);
+                    } catch (directError) {
+                        console.error("[MusicTab] Direct API call also failed:", directError);
+                    }
+                }
+
                 console.log("[MusicTab] API response:", albumData);
 
                 // 🚀 로드 후 audioPlaylistId 있으면 즉시 iFrame 재생
@@ -141,14 +153,19 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                 }
             } catch (e) {
                 console.error("[MusicTab] Error loading album:", e);
-                setLoadingId(null);
-                return;
             }
             setLoadingId(null);
         }
 
+        // 폴백: API 완전 실패 시에도 browseId로 시도 (MPREb_ -> OLAK5uy_ 변환 불가능하므로 트랙 재생)
         if (!albumData?.tracks || albumData.tracks.length === 0) {
-            console.log("[MusicTab] No tracks in album");
+            console.log("[MusicTab] No tracks in album, trying alternative...");
+
+            // audioPlaylistId가 있으면 그것으로 시도
+            if (albumData?.audioPlaylistId && playYouTubePlaylist) {
+                playYouTubePlaylist(albumData.audioPlaylistId);
+                if (!isQueueOpen) toggleQueue();
+            }
             return;
         }
 
