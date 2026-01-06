@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.venv
+*.egg-info
+.eggs
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Secrets & Environment
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Logs
+*.log
+
+# Tests
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache
+
+# Documentation
+README.md
+docs/

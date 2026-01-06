@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-322455104824.us-central1.run.app';
 
-// Cache for 1 hour, stale-while-revalidate for 24 hours
-export const revalidate = 3600;
+// Cache for 24 hours
+export const revalidate = 86400;
 
 // Fetch with retry logic
 async function fetchWithRetry(url: string, maxRetries: number = 3): Promise<Response> {
