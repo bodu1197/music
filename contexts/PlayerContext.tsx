@@ -34,6 +34,12 @@ export const PlayerState = {
     CUED: 5,
 } as const;
 
+// Prepared playlist cache
+interface PreparedPlaylist {
+    tracks: Track[];
+    preparedAt: number;
+}
+
 // Player context type
 interface PlayerContextType {
     // State
@@ -50,6 +56,7 @@ interface PlayerContextType {
     duration: number;
     isQueueOpen: boolean;
     isPlaylistMode: boolean;  // YouTube 플레이리스트 모드 (loadVideoById 호출 방지)
+    preparedPlaylistCount: number;  // 준비된 플레이리스트 수
 
     // Actions
     setPlaylist: (tracks: Track[], startIndex?: number) => void;
@@ -67,6 +74,9 @@ interface PlayerContextType {
     toggleQueue: () => void;
     clearQueue: () => void;
     playYouTubePlaylist: (playlistId: string) => Promise<void>;  // YouTube iFrame API로 직접 재생
+    preloadYouTubePlaylist: (playlistId: string) => Promise<void>;  // 재생 없이 플레이리스트 미리 로드
+    preparePlaylist: (playlistId: string, tracks: Track[]) => void;  // 재생 없이 플레이리스트 준비
+    isPlaylistPrepared: (playlistId: string) => boolean;  // 플레이리스트 준비 여부 확인
 
     // YouTube Player ref (for direct access)
     playerRef: RefObject<YT.Player | null>;
@@ -97,9 +107,13 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     const [duration, setDuration] = useState(0);
     const [isQueueOpen, setIsQueueOpen] = useState(false);
     const [isPlaylistMode, setIsPlaylistMode] = useState(false);  // YouTube 플레이리스트 모드
+    const [preparedPlaylistCount, setPreparedPlaylistCount] = useState(0);
 
     // YouTube Player ref
     const playerRef = useRef<YT.Player | null>(null);
+
+    // 🔥 준비된 플레이리스트 캐시 (재생 없이 미리 로드)
+    const preparedPlaylistsRef = useRef<Map<string, PreparedPlaylist>>(new Map());
 
     // Current track derived state
     const currentTrack =
@@ -355,6 +369,24 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         setIsPlaying(false);
     }, []);
 
+    // 🔥 플레이리스트 미리 준비 (재생 없이 큐에 저장)
+    const preparePlaylist = useCallback((playlistId: string, tracks: Track[]) => {
+        if (preparedPlaylistsRef.current.has(playlistId)) {
+            return; // 이미 준비됨
+        }
+        preparedPlaylistsRef.current.set(playlistId, {
+            tracks,
+            preparedAt: Date.now(),
+        });
+        setPreparedPlaylistCount(preparedPlaylistsRef.current.size);
+        console.log(`[PlayerContext] ⚡ Playlist prepared: ${playlistId} (${tracks.length} tracks)`);
+    }, []);
+
+    // 플레이리스트 준비 여부 확인
+    const isPlaylistPrepared = useCallback((playlistId: string): boolean => {
+        return preparedPlaylistsRef.current.has(playlistId);
+    }, []);
+
     // 🔥 YouTube iFrame API로 직접 playlist 재생
     const playYouTubePlaylist = useCallback(async (playlistId: string) => {
         if (!playerRef.current || !playerReady) {
@@ -362,7 +394,33 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
             return;
         }
 
-        console.log("[PlayerContext] 🎵 Loading YouTube playlist directly:", playlistId);
+        // 🚀 준비된 플레이리스트가 있으면 즉시 재생 (0.00초)
+        const prepared = preparedPlaylistsRef.current.get(playlistId);
+        if (prepared) {
+            console.log(`[PlayerContext] ⚡ INSTANT PLAY: Using prepared playlist ${playlistId} (${prepared.tracks.length} tracks)`);
+
+            // 현재 재생 중단
+            playerRef.current.stopVideo();
+
+            // 준비된 트랙으로 즉시 큐 설정
+            setCurrentPlaylist(prepared.tracks);
+            setCurrentTrackIndex(0);
+
+            // YouTube 플레이리스트 로드 및 재생
+            playerRef.current.loadPlaylist({
+                list: playlistId,
+                listType: 'playlist',
+                index: 0,
+                startSeconds: 0
+            });
+
+            setIsPlaylistMode(true);
+            setIsPlaying(true);
+            return; // 즉시 완료!
+        }
+
+        // 준비되지 않은 경우: 기존 로직 (느린 경로)
+        console.log("[PlayerContext] 🎵 Loading YouTube playlist (not prepared):", playlistId);
 
         // 현재 재생 완전 중단
         playerRef.current.stopVideo();
@@ -429,11 +487,85 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
 
             console.log("[PlayerContext] Detailed tracks loaded:", detailedTracks.length);
             setCurrentPlaylist(detailedTracks);
+
+            // 🔥 다음 번을 위해 캐시에 저장
+            preparePlaylist(playlistId, detailedTracks);
         } catch (e) {
             console.error("[PlayerContext] Error loading track details:", e);
         }
-    }, [playerReady]);
+    }, [playerReady, preparePlaylist]);
 
+    // 🔥 YouTube 플레이리스트 미리 로드 (재생 없이 캐시만)
+    const preloadYouTubePlaylist = useCallback(async (playlistId: string) => {
+        // 이미 준비되어 있으면 스킵
+        if (preparedPlaylistsRef.current.has(playlistId)) {
+            console.log(`[PlayerContext] Playlist already prepared: ${playlistId}`);
+            return;
+        }
+
+        if (!playerRef.current || !playerReady) {
+            console.log("[PlayerContext] Player not ready for preload");
+            return;
+        }
+
+        console.log(`[PlayerContext] 🔄 Preloading playlist: ${playlistId}`);
+
+        try {
+            // cuePlaylist: 로드하지만 재생하지 않음
+            playerRef.current.cuePlaylist({
+                list: playlistId,
+                listType: 'playlist',
+                index: 0,
+            });
+
+            // YouTube가 플레이리스트를 로드할 때까지 대기
+            const waitForPlaylist = async (): Promise<string[] | null> => {
+                for (let i = 0; i < 10; i++) {
+                    await new Promise(r => setTimeout(r, 500));
+                    const ids = playerRef.current?.getPlaylist();
+                    if (ids && ids.length > 0) {
+                        return ids;
+                    }
+                }
+                return null;
+            };
+
+            const videoIds = await waitForPlaylist();
+            if (!videoIds) {
+                console.log(`[PlayerContext] Failed to preload playlist: ${playlistId}`);
+                return;
+            }
+
+            // noembed.com으로 메타데이터 로드
+            const tracks = await Promise.all(
+                videoIds.map(async (videoId: string) => {
+                    try {
+                        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+                        const data = await res.json();
+                        return {
+                            videoId,
+                            title: data.title || "Unknown",
+                            artist: data.author_name || "Unknown Artist",
+                            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                        };
+                    } catch {
+                        return {
+                            videoId,
+                            title: "Unknown",
+                            artist: "Unknown Artist",
+                            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                        };
+                    }
+                })
+            );
+
+            // 캐시에 저장
+            preparePlaylist(playlistId, tracks);
+            console.log(`[PlayerContext] ✅ Playlist preloaded: ${playlistId} (${tracks.length} tracks)`);
+        } catch (e) {
+            console.error(`[PlayerContext] Error preloading playlist ${playlistId}:`, e);
+        }
+    }, [playerReady, preparePlaylist]);
 
     // Note: Video loading is handled by YouTubePlayer component
     // which watches currentTrack changes and uses lastVideoIdRef to prevent duplicate loads
@@ -453,6 +585,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         duration,
         isQueueOpen,
         isPlaylistMode,
+        preparedPlaylistCount,
 
         // Actions
         setPlaylist,
@@ -470,6 +603,9 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         toggleQueue,
         clearQueue,
         playYouTubePlaylist,
+        preloadYouTubePlaylist,
+        preparePlaylist,
+        isPlaylistPrepared,
 
         // Refs and setters for YouTube component
         playerRef,
@@ -492,6 +628,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         duration,
         isQueueOpen,
         isPlaylistMode,
+        preparedPlaylistCount,
         setPlaylist,
         addToQueue,
         playTrackByIndex,
@@ -507,6 +644,9 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         toggleQueue,
         clearQueue,
         playYouTubePlaylist,
+        preloadYouTubePlaylist,
+        preparePlaylist,
+        isPlaylistPrepared,
         // Refs (stable)
         // Setters (stable from useState)
     ]);

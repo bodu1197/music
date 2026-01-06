@@ -4,16 +4,18 @@ from ytmusicapi import YTMusic
 import os
 import json
 import hashlib
+from datetime import datetime, timezone, timedelta
 
 app = FastAPI(title="Sori Music API")
 
 # ============================================
-# Redis Cache Configuration
+# Supabase Cache Configuration
 # ============================================
-# Uses Upstash Redis for persistent, shared caching
-# Falls back to in-memory cache if Redis is unavailable
+# Uses Supabase PostgreSQL for persistent caching
+# 24-hour TTL for home, charts, moods (excluding search)
 
-REDIS_URL = os.getenv("REDIS_URL")  # e.g. "rediss://default:xxx@xxx.upstash.io:6379"
+SUPABASE_URL = os.getenv("SUPABASE_URL")  # e.g. "https://xxx.supabase.co"
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")  # service_role key for server-side
 
 # Endpoint-specific TTL (Time To Live) in seconds
 TTL_HOME = 24 * 3600           # 24시간 - 홈 피드
@@ -133,49 +135,60 @@ def get_chart_playlist_ids(country: str):
 
 
 
-# Redis client (initialized lazily)
-redis_client = None
-
-def get_redis():
-    """Get Redis client, initialize if needed"""
-    global redis_client
-    if redis_client is None and REDIS_URL:
-        try:
-            import redis
-            redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-            # Test connection
-            redis_client.ping()
-            print("Redis connected successfully!")
-        except Exception as e:
-            print(f"Redis connection failed: {e}")
-            redis_client = None
-    return redis_client
-
-def cache_get(key: str):
-    """Get value from cache (Redis or fallback)"""
-    r = get_redis()
-    if r:
-        try:
-            data = r.get(key)
-            if data:
-                return json.loads(data)
-        except Exception as e:
-            print(f"Redis get error: {e}")
-    return None
-
-def cache_set(key: str, value, ttl: int = CACHE_TTL):
-    """Set value in cache (Redis or fallback)"""
-    r = get_redis()
-    if r:
-        try:
-            r.setex(key, ttl, json.dumps(value))
-        except Exception as e:
-            print(f"Redis set error: {e}")
-
 def make_cache_key(*args) -> str:
     """Create a hash key from arguments"""
     key_str = ":".join(str(arg) for arg in args)
     return hashlib.md5(key_str.encode()).hexdigest()
+
+
+# ============================================
+# Supabase Cache Functions
+# ============================================
+supabase_client = None
+
+def get_supabase():
+    """Get Supabase client, initialize if needed"""
+    global supabase_client
+    if supabase_client is None and SUPABASE_URL and SUPABASE_KEY:
+        try:
+            from supabase import create_client
+            supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            print("Supabase connected successfully!")
+        except Exception as e:
+            print(f"Supabase connection failed: {e}")
+            supabase_client = None
+    return supabase_client
+
+def cache_get(key: str):
+    """Get value from Supabase cache"""
+    sb = get_supabase()
+    if sb:
+        try:
+            result = sb.table("api_cache").select("data, expires_at").eq("key", key).single().execute()
+            if result.data:
+                expires_at = datetime.fromisoformat(result.data["expires_at"].replace("Z", "+00:00"))
+                if expires_at > datetime.now(timezone.utc):
+                    return result.data["data"]
+                # Expired - delete it
+                sb.table("api_cache").delete().eq("key", key).execute()
+        except Exception as e:
+            # No data found or error
+            pass
+    return None
+
+def cache_set(key: str, value, ttl: int = CACHE_TTL):
+    """Set value in Supabase cache"""
+    sb = get_supabase()
+    if sb:
+        try:
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl)
+            sb.table("api_cache").upsert({
+                "key": key,
+                "data": value,
+                "expires_at": expires_at.isoformat()
+            }).execute()
+        except Exception as e:
+            print(f"Supabase set error: {e}")
 
 
 # CORS middleware to allow requests from any origin
@@ -246,26 +259,20 @@ def health_check():
 
 @app.get("/cache/status")
 def cache_status():
-    """Get current cache statistics from Redis"""
-    r = get_redis()
-    if r:
+    """Get current cache statistics from Supabase"""
+    sb = get_supabase()
+    if sb:
         try:
-            info = r.info("memory")
-            dbsize = r.dbsize()
+            count_result = sb.table("api_cache").select("key", count="exact").execute()
             return {
-                "type": "redis",
+                "type": "supabase",
                 "connected": True,
-                "keys": dbsize,
-                "memory_used": info.get("used_memory_human", "unknown"),
+                "keys": count_result.count if count_result.count else 0,
                 "ttl": CACHE_TTL
             }
         except Exception as e:
-            return {"type": "redis", "connected": False, "error": str(e)}
-    return {
-        "type": "none",
-        "connected": False,
-        "message": "Redis not configured (REDIS_URL not set)"
-    }
+            return {"type": "supabase", "connected": False, "error": str(e)}
+    return {"type": "supabase", "connected": False, "message": "Supabase not configured"}
 
 
 @app.post("/cache/warm")
@@ -350,18 +357,18 @@ def get_search_suggestions(q: str):
 def get_artist(artist_id: str, country: str = "US", language: str = "en"):
     cache_key = make_cache_key("artist", artist_id, country, language)
     
-    # Check Redis cache first
+    # Check cache
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /artist/{artist_id}")
+        print(f"[CACHE HIT] /artist/{artist_id}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /artist/{artist_id}")
+        print(f"[CACHE MISS] /artist/{artist_id}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_artist, artist_id)
         
-        # Store in Redis cache (24시간 TTL)
+        # Store in cache (24시간 TTL)
         cache_set(cache_key, result, TTL_ARTIST)
         
         return result
@@ -586,18 +593,18 @@ def get_artist_all_albums(artist_id: str, type: str = "albums"):
 def get_album(browse_id: str):
     cache_key = make_cache_key("album", browse_id)
     
-    # Check Redis cache first
+    # Check cache
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /album/{browse_id}")
+        print(f"[CACHE HIT] /album/{browse_id}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /album/{browse_id}")
+        print(f"[CACHE MISS] /album/{browse_id}")
         yt = get_ytmusic()
         result = run_with_retry(yt.get_album, browse_id)
         
-        # Store in Redis cache (72시간 TTL)
+        # Store in cache (72시간 TTL)
         cache_set(cache_key, result, TTL_ALBUM)
         
         return result
@@ -608,18 +615,18 @@ def get_album(browse_id: str):
 def get_song(video_id: str):
     cache_key = make_cache_key("song", video_id)
     
-    # Check Redis cache first
+    # Check cache
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /song/{video_id}")
+        print(f"[CACHE HIT] /song/{video_id}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /song/{video_id}")
+        print(f"[CACHE MISS] /song/{video_id}")
         yt = get_ytmusic()
         result = run_with_retry(yt.get_song, video_id)
         
-        # Store in Redis cache (72시간 TTL)
+        # Store in cache (72시간 TTL)
         cache_set(cache_key, result, TTL_SONG)
         
         return result
@@ -638,18 +645,18 @@ def get_lyrics(browse_id: str):
 def get_watch_playlist(videoId: str = None, playlistId: str = None):
     cache_key = make_cache_key("watch", videoId, playlistId)
     
-    # Check Redis cache first
+    # Check cache
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /watch videoId={videoId} playlistId={playlistId}")
+        print(f"[CACHE HIT] /watch videoId={videoId} playlistId={playlistId}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /watch videoId={videoId} playlistId={playlistId}")
+        print(f"[CACHE MISS] /watch videoId={videoId} playlistId={playlistId}")
         yt = get_ytmusic()
         result = run_with_retry(yt.get_watch_playlist, videoId=videoId, playlistId=playlistId)
         
-        # Store in Redis cache (24시간 TTL)
+        # Store in cache (24시간 TTL)
         cache_set(cache_key, result, CACHE_TTL)
         
         return result
@@ -663,14 +670,14 @@ def get_playlist(playlist_id: str, limit: int = 100):
     """
     cache_key = make_cache_key("playlist", playlist_id, limit)
     
-    # Check Redis cache first
+    # Check cache
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /playlist/{playlist_id}")
+        print(f"[CACHE HIT] /playlist/{playlist_id}")
         return cached
     
     try:
-        print(f"[REDIS MISS] /playlist/{playlist_id}")
+        print(f"[CACHE MISS] /playlist/{playlist_id}")
         yt = get_ytmusic()
         
         # Detect ID type and use appropriate API
@@ -682,7 +689,7 @@ def get_playlist(playlist_id: str, limit: int = 100):
             # Regular playlist ID - use get_playlist()
             result = run_with_retry(yt.get_playlist, playlist_id, limit=limit)
         
-        # Store in Redis cache (48시간 TTL)
+        # Store in cache (48시간 TTL)
         cache_set(cache_key, result, TTL_MOOD_PLAYLISTS)
         
         return result
@@ -693,20 +700,17 @@ def get_playlist(playlist_id: str, limit: int = 100):
 def get_home(limit: int = 100, country: str = "US", language: str = "en"):
     cache_key = make_cache_key("home", limit, country, language)
 
-    # Check Redis cache first
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /home country={country} lang={language}")
+        print(f"[CACHE HIT] /home country={country} lang={language}")
         return cached
 
     try:
-        print(f"[REDIS MISS] /home country={country} lang={language}")
+        print(f"[CACHE MISS] /home country={country} lang={language}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_home, limit=limit)
 
-        # Store in Redis cache (24시간 TTL)
         cache_set(cache_key, result, TTL_HOME)
-
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -715,20 +719,17 @@ def get_home(limit: int = 100, country: str = "US", language: str = "en"):
 def get_charts(country: str = "US", language: str = "en"):
     cache_key = make_cache_key("charts", country, language)
 
-    # Check Redis cache first
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /charts country={country}")
+        print(f"[CACHE HIT] /charts country={country}")
         return cached
 
     try:
-        print(f"[REDIS MISS] /charts country={country}")
+        print(f"[CACHE MISS] /charts country={country}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_charts, country=country)
 
-        # Store in Redis cache (24시간 TTL)
         cache_set(cache_key, result, TTL_CHARTS)
-
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -742,20 +743,17 @@ def get_mood_categories(country: str = "US", language: str = "en"):
     """
     cache_key = make_cache_key("moods", country, language)
 
-    # Check Redis cache first
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /moods country={country} lang={language}")
+        print(f"[CACHE HIT] /moods country={country} lang={language}")
         return cached
 
     try:
-        print(f"[REDIS MISS] /moods country={country} lang={language}")
+        print(f"[CACHE MISS] /moods country={country} lang={language}")
         yt = get_ytmusic(country=country, language=language)
         result = run_with_retry(yt.get_mood_categories)
 
-        # Store in Redis cache (72시간 TTL)
         cache_set(cache_key, result, TTL_MOODS)
-
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -848,14 +846,13 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
     """
     cache_key = make_cache_key("mood_playlists", params, country, language)
 
-    # Check Redis cache first
     cached = cache_get(cache_key)
     if cached is not None:
-        print(f"[REDIS HIT] /moods/playlists params={params[:20]}... country={country}")
+        print(f"[CACHE HIT] /moods/playlists params={params[:20]}... country={country}")
         return cached
 
     try:
-        print(f"[REDIS MISS] /moods/playlists params={params[:20]}... country={country}")
+        print(f"[CACHE MISS] /moods/playlists params={params[:20]}... country={country}")
         yt = get_ytmusic(country=country, language=language)
 
         # Try ytmusicapi's built-in parser first (works for Moods)
@@ -871,9 +868,7 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
 
         final_result = result if result else []
 
-        # Store in Redis cache (48시간 TTL)
         cache_set(cache_key, final_result, TTL_MOOD_PLAYLISTS)
-
         return final_result
 
     except Exception as e:
@@ -1065,7 +1060,7 @@ def start_cache_warming_scheduler():
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown events"""
     # Startup: warm caches in background thread
-    if CACHE_WARMING_ENABLED and REDIS_URL:
+    if CACHE_WARMING_ENABLED and SUPABASE_URL:
         print("[STARTUP] Starting cache warming in background...")
         warming_thread = threading.Thread(target=warm_all_caches_sync, daemon=True)
         warming_thread.start()
@@ -1099,26 +1094,33 @@ async def warm_all_caches_endpoint():
 @app.get("/cache/countries")
 def get_cached_countries():
     """Get list of all countries and their cache status"""
-    r = get_redis()
-    if not r:
-        return {"error": "Redis not connected"}
-    
-    status = {}
-    for country in ALL_COUNTRIES:
-        charts_key = make_cache_key("charts", country, "en")
-        home_key = make_cache_key("home", 100, country, "en")
-        moods_key = make_cache_key("moods", country, "en")
-        
-        status[country] = {
-            "charts": r.exists(charts_key) == 1,
-            "home": r.exists(home_key) == 1,
-            "moods": r.exists(moods_key) == 1
+    sb = get_supabase()
+    if not sb:
+        return {"error": "Supabase not connected"}
+
+    try:
+        # Get all cached keys
+        result = sb.table("api_cache").select("key").execute()
+        cached_keys = set(row["key"] for row in result.data) if result.data else set()
+
+        status = {}
+        for country in ALL_COUNTRIES:
+            charts_key = make_cache_key("charts", country, "en")
+            home_key = make_cache_key("home", 100, country, "en")
+            moods_key = make_cache_key("moods", country, "en")
+
+            status[country] = {
+                "charts": charts_key in cached_keys,
+                "home": home_key in cached_keys,
+                "moods": moods_key in cached_keys
+            }
+
+        cached_count = sum(1 for s in status.values() if all(s.values()))
+
+        return {
+            "total_countries": len(ALL_COUNTRIES),
+            "fully_cached": cached_count,
+            "countries": status
         }
-    
-    cached_count = sum(1 for s in status.values() if all(s.values()))
-    
-    return {
-        "total_countries": len(ALL_COUNTRIES),
-        "fully_cached": cached_count,
-        "countries": status
-    }
+    except Exception as e:
+        return {"error": str(e)}
