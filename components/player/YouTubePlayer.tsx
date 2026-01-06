@@ -106,6 +106,8 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                     // ... (rest of config)
                     height: "100%",
                     width: "100%",
+                    // @ts-ignore
+                    host: 'https://www.youtube.com',
                     playerVars: {
                         playsinline: 1,
                         controls: 0,
@@ -114,8 +116,9 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                         iv_load_policy: 3,
                         modestbranding: 1,
                         rel: 0,
-                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://music-tawny-eta.vercel.app',
+                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://www.youtube.com',
                         enablejsapi: 1,
+                        widget_referrer: typeof window !== 'undefined' ? window.location.origin : undefined,
                     },
                     events: {
                         onReady: (event: YT.PlayerEvent) => {
