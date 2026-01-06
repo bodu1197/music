@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { Play, Loader2 } from "lucide-react";
-import { getHome, getAlbum, extractTracksFromAlbum } from "@/lib/data";
+import { getHome, getAlbum } from "@/lib/data";
 import type { HomeSectionContent, HomeSection, Artist, AlbumTrack, AlbumData } from "@/types/music";
 
 interface MusicTabProps {
@@ -50,6 +50,32 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     );
 
+    // 🔥 앨범 데이터 백그라운드 프리페치 (Albums for you 등)
+    // 홈 데이터가 로드되면 "Albums for you" 같은 섹션의 앨범 상세 정보를 미리 가져옴
+    useEffect(() => {
+        if (!data || !Array.isArray(data)) return;
+
+        // browseId가 있는 항목(앨범)만 추출
+        const albumsToPrefetch = data
+            .flatMap((shelf: HomeSection) => shelf.contents || [])
+            .filter((item: HomeSectionContent) => item && item.browseId)
+            .slice(0, 20); // 과부하 방지: 상위 20개만
+
+        if (albumsToPrefetch.length > 0) {
+            console.log(`[MusicTab] 🚀 Prefetching ${albumsToPrefetch.length} albums...`);
+
+            // 병렬로 프리페치 실행
+            albumsToPrefetch.forEach((item) => {
+                if (item.browseId) {
+                    // getAlbum 호출 시 내부적으로 Supabase/API 호출 및 캐싱이 수행됨
+                    getAlbum(item.browseId).catch(err =>
+                        console.debug(`[MusicTab] Prefetch failed for ${item.browseId}`, err)
+                    );
+                }
+            });
+        }
+    }, [data]);
+
     // 케이스 1: videoId 있음 → 섹션 전체가 플레이리스트
     const handleTrackClick = (sectionContents: HomeSectionContent[], clickedIndex: number) => {
         console.log("[MusicTab] Track clicked, index:", clickedIndex);
@@ -74,6 +100,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
 
         try {
             // 🔥 통합 함수: Supabase 캐시 → API fallback
+            // 이미 프리페치되어 있을 가능성 높음!
             const albumData = await getAlbum(browseId);
 
             if (!albumData) {
