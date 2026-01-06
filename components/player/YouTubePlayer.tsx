@@ -36,6 +36,8 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         repeatMode,
         volume,
         isMuted,
+        isPlaylistMode,
+        setIsPlaylistMode,
     } = usePlayer();
 
     // Store callbacks in refs to avoid stale closures
@@ -183,6 +185,12 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
             return;
         }
 
+        // Skip if in playlist mode (YouTube already managing playback)
+        if (isPlaylistMode) {
+            console.log("[YouTubePlayer] Playlist mode active, skipping loadVideoById");
+            return;
+        }
+
         console.log("[YouTubePlayer] Track changed:", currentTrack.videoId, currentTrack.title);
 
         // If player is ready, load immediately
@@ -198,7 +206,7 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
             console.log("[YouTubePlayer] Player not ready, storing pending video");
             globalPendingVideoId = currentTrack.videoId;
         }
-    }, [currentTrack?.videoId, currentTrack?.title]);
+    }, [currentTrack?.videoId, currentTrack?.title, isPlaylistMode]);
 
     // Progress updater
     useEffect(() => {

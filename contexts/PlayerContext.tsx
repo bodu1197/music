@@ -49,6 +49,7 @@ interface PlayerContextType {
     currentTime: number;
     duration: number;
     isQueueOpen: boolean;
+    isPlaylistMode: boolean;  // YouTube 플레이리스트 모드 (loadVideoById 호출 방지)
 
     // Actions
     setPlaylist: (tracks: Track[], startIndex?: number) => void;
@@ -73,6 +74,7 @@ interface PlayerContextType {
     setIsPlaying: (playing: boolean) => void;
     setCurrentTime: (time: number) => void;
     setDuration: (duration: number) => void;
+    setIsPlaylistMode: (mode: boolean) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -94,6 +96,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isQueueOpen, setIsQueueOpen] = useState(false);
+    const [isPlaylistMode, setIsPlaylistMode] = useState(false);  // YouTube 플레이리스트 모드
 
     // YouTube Player ref
     const playerRef = useRef<YT.Player | null>(null);
@@ -110,6 +113,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         if (tracks.length > 0 && tracks[startIndex]) {
             console.log("[PlayerContext] Starting with track:", tracks[startIndex].videoId, tracks[startIndex].title);
         }
+        setIsPlaylistMode(false);  // 일반 재생 모드로 전환
         setCurrentPlaylist(tracks);
         if (tracks.length > 0 && startIndex >= 0 && startIndex < tracks.length) {
             setCurrentTrackIndex(startIndex);
@@ -328,6 +332,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
                 startSeconds: 0
             });
 
+            setIsPlaylistMode(true);  // YouTube 플레이리스트 모드 활성화 - loadVideoById 호출 방지
             setIsPlaying(true);
 
             // 플레이어가 플레이리스트를 로드할 시간을 줌
@@ -388,6 +393,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         currentTime,
         duration,
         isQueueOpen,
+        isPlaylistMode,
 
         // Actions
         setPlaylist,
@@ -412,6 +418,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         setIsPlaying,
         setCurrentTime,
         setDuration,
+        setIsPlaylistMode,
     }), [
         currentPlaylist,
         currentTrackIndex,
@@ -425,6 +432,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
         currentTime,
         duration,
         isQueueOpen,
+        isPlaylistMode,
         setPlaylist,
         addToQueue,
         playTrackByIndex,
