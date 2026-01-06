@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
@@ -52,7 +52,7 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
-    const { getAlbum } = usePrefetch();
+    const { getAlbum, prefetchFromHomeData, prefetchAlbum } = usePrefetch();
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const { data, error, isLoading } = useSWR(
@@ -65,7 +65,13 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     );
 
-    // 프리페치 제거 - 온디맨드 로드로 변경 (클릭 시 로드)
+    // 🔥 홈 데이터 로드 시 앨범 프리페치 활성화 - 클릭 시 즉시 응답!
+    useEffect(() => {
+        if (data && Array.isArray(data) && data.length > 0) {
+            console.log("[MusicTab] 🚀 Starting prefetch for", data.length, "sections");
+            prefetchFromHomeData(data);
+        }
+    }, [data, prefetchFromHomeData]);
 
 
 
@@ -100,21 +106,39 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     };
 
-    // 케이스 2: browseId 있음 (앨범/싱글) → 캐시 확인 후 API 호출
+    // 케이스 2: browseId 있음 (앨범/싱글) → 캐시 확인 후 즉시 재생 또는 API 호출
     const handleAlbumClick = async (browseId: string) => {
         console.log("[MusicTab] Album clicked, browseId:", browseId);
 
-        // 🔥 캐시에서 먼저 확인 (즉시 응답!)
+        // 🔥 캐시에서 먼저 확인
         let albumData = getAlbum(browseId);
 
         if (albumData) {
             console.log("[MusicTab] ⚡ CACHE HIT - instant response!");
+
+            // 🚀 audioPlaylistId가 있으면 YouTube iFrame으로 즉시 재생! (가장 빠름)
+            if (albumData.audioPlaylistId && playYouTubePlaylist) {
+                console.log("[MusicTab] ⚡ Using YouTube iFrame for instant playback:", albumData.audioPlaylistId);
+                playYouTubePlaylist(albumData.audioPlaylistId);
+                if (!isQueueOpen) toggleQueue();
+                return;
+            }
         } else {
-            // 캐시에 없으면 직접 API 호출 (기존 방식)
+            // 캐시에 없으면 직접 API 호출
             setLoadingId(browseId);
             try {
-                albumData = await api.music.album(browseId);
+                const result = await prefetchAlbum(browseId);
+                albumData = result ?? undefined;
                 console.log("[MusicTab] API response:", albumData);
+
+                // 🚀 로드 후 audioPlaylistId 있으면 즉시 iFrame 재생
+                if (albumData?.audioPlaylistId && playYouTubePlaylist) {
+                    console.log("[MusicTab] ⚡ Using YouTube iFrame after load:", albumData.audioPlaylistId);
+                    playYouTubePlaylist(albumData.audioPlaylistId);
+                    setLoadingId(null);
+                    if (!isQueueOpen) toggleQueue();
+                    return;
+                }
             } catch (e) {
                 console.error("[MusicTab] Error loading album:", e);
                 setLoadingId(null);
