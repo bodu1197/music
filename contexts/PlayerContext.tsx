@@ -10,7 +10,6 @@ import React, {
     ReactNode,
     RefObject,
 } from "react";
-import { api } from "@/lib/api";
 
 // Track interface
 export interface Track {
