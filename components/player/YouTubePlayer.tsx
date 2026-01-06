@@ -37,7 +37,6 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
         volume,
         isMuted,
         isPlaylistMode,
-        setIsPlaylistMode,
     } = usePlayer();
 
     // Store callbacks in refs to avoid stale closures
