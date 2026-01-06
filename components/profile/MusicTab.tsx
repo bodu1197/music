@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+// import Image from "next/image"; // 사용 안함
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { usePrefetch } from "@/contexts/PrefetchContext";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { Play, Loader2 } from "lucide-react";
 import type { HomeSectionContent, HomeSection, Artist, AlbumData, AlbumTrack, WatchTrack } from "@/types/music";
 
@@ -291,12 +292,13 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                                     >
                                         {/* Image with play overlay */}
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
-                                            <Image
+                                            <ImageWithFallback
                                                 src={image}
                                                 alt={title}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                unoptimized
+                                                sizes="(max-width: 768px) 140px, 160px"
+                                                fallbackSrc="/images/default-album.svg"
                                             />
                                             {/* Play overlay on hover */}
                                             {isPlayable && (
