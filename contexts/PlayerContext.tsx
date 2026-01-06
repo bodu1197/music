@@ -10,6 +10,7 @@ import React, {
     ReactNode,
     RefObject,
 } from "react";
+import { api } from "@/lib/api";
 
 // Track interface
 export interface Track {
@@ -368,12 +369,11 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
             // 🔥 현재 재생 완전 중단 (새 플레이리스트 로드 전)
             playerRef.current.stopVideo();
 
-            // 기존 상태 초기화 (새 플레이리스트 로드 시 혼란 방지)
+            // 기존 상태 초기화
             setCurrentPlaylist([]);
             setCurrentTrackIndex(-1);
 
-            // YouTube iFrame API - loadPlaylist
-            // YouTube가 플레이리스트의 모든 곡을 직접 로드 (100곡이면 100곡 전부!)
+            // 1. YouTube 재생 시작 (비동기)
             playerRef.current.loadPlaylist({
                 list: playlistId,
                 listType: 'playlist',
@@ -381,44 +381,29 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
                 startSeconds: 0
             });
 
-            setIsPlaylistMode(true);  // YouTube 플레이리스트 모드 활성화 - loadVideoById 호출 방지
+            setIsPlaylistMode(true);
             setIsPlaying(true);
 
-            // 플레이어가 플레이리스트를 로드할 시간을 줌
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // 2. 백엔드에서 트랙 정보 가져오기 (비동기 병렬 처리 for Fast UI)
+            // noembed.com 개별 호출 대신 백엔드에서 한 번에 가져옴
+            const playlistData = await api.music.playlist(playlistId, 100);
 
-            // YouTube Player에서 플레이리스트의 videoId 목록 가져오기
-            const videoIds = playerRef.current.getPlaylist();
-            console.log("[PlayerContext] Playlist loaded, videoIds:", videoIds?.length);
+            if (playlistData && playlistData.tracks) {
+                const tracks: Track[] = playlistData.tracks
+                    .filter((t: any) => t.videoId) // videoId가 있는 것만
+                    .map((t: any) => ({
+                        videoId: t.videoId,
+                        title: t.title,
+                        artist: Array.isArray(t.artists) ? t.artists.map((a: any) => a.name).join(", ") : "Unknown Artist",
+                        thumbnail: Array.isArray(t.thumbnails) ? t.thumbnails.at(-1)?.url : `https://img.youtube.com/vi/${t.videoId}/mqdefault.jpg`,
+                        album: t.album?.name
+                    }));
 
-            if (videoIds && videoIds.length > 0) {
-                // noembed.com으로 각 videoId의 메타데이터 가져오기
-                const tracks: Track[] = await Promise.all(
-                    videoIds.map(async (videoId: string) => {
-                        try {
-                            const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-                            const data = await res.json();
-                            return {
-                                videoId,
-                                title: data.title || "Unknown",
-                                artist: data.author_name || "Unknown Artist",
-                                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-                            };
-                        } catch {
-                            return {
-                                videoId,
-                                title: "Unknown",
-                                artist: "Unknown Artist",
-                                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-                            };
-                        }
-                    })
-                );
-
-                console.log("[PlayerContext] Tracks loaded:", tracks.length);
+                console.log("[PlayerContext] UI Tracks loaded from Backend:", tracks.length);
                 setCurrentPlaylist(tracks);
-                setCurrentTrackIndex(0);
+                setCurrentTrackIndex(0); // UI 상의 인덱스 동기화
             }
+
         } catch (e) {
             console.error("[PlayerContext] Error loading playlist:", e);
         }
