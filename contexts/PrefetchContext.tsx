@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { getCachedAlbum, getCachedAlbums } from "@/lib/supabase";
+import { getCachedAlbum, getCachedAlbums, getCachedPlaylist } from "@/lib/supabase"; // getCachedPlaylist 추가
 import type { AlbumData, WatchPlaylist, HomeSectionContent, HomeSection } from "@/types/music";
 
 // 프리페치된 데이터 캐시
@@ -87,8 +87,9 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
         }
     }, []);
 
-    // 플레이리스트 프리페치
+    // 플레이리스트 프리페치 (🔥 Supabase 직접 읽기 우선!)
     const prefetchPlaylist = useCallback(async (playlistId: string): Promise<WatchPlaylist | null> => {
+        // 1. 메모리 캐시 확인
         if (cacheRef.current.playlists.has(playlistId)) {
             return cacheRef.current.playlists.get(playlistId)!;
         }
@@ -99,6 +100,18 @@ export function PrefetchProvider({ children }: Readonly<{ children: React.ReactN
         pendingRef.current.add(key);
 
         try {
+            // 🚀 2. Supabase 캐시 직접 읽기
+            const cached = await getCachedPlaylist(playlistId);
+            if (cached) {
+                console.log(`[Prefetch] ⚡ SUPABASE HIT: playlist ${playlistId}`);
+                const playlistData = cached as WatchPlaylist;
+                cacheRef.current.playlists.set(playlistId, playlistData);
+                setPrefetchedCount(prev => prev + 1);
+                return playlistData;
+            }
+
+            // 3. 캐시 미스 시 API 호출
+            console.log(`[Prefetch] 📡 Cache miss, calling API: playlist ${playlistId}`);
             const data = await api.music.watch(undefined, playlistId);
             if (data) {
                 cacheRef.current.playlists.set(playlistId, data);
