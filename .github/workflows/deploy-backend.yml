@@ -44,7 +44,7 @@ jobs:
             --max-instances 100 \
             --memory 2Gi \
             --cpu 2 \
-            --set-env-vars "REDIS_URL=${{ secrets.REDIS_URL }},PROXY_URL_TEMPLATE=${{ secrets.PROXY_URL_TEMPLATE }}"
+            --set-env-vars "SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}"
 
 
       - name: Show deployed URL

@@ -7,7 +7,7 @@
 export interface ChartConfig {
     topSongs: string;     // Top Songs playlist ID
     topVideos: string;    // Top Music Videos playlist ID
-    trending: string;     // Trending playlist ID
+    trending?: string;    // Trending playlist ID (optional - not available for Global)
 }
 
 /**
@@ -15,8 +15,8 @@ export interface ChartConfig {
  * These IDs are stable and rarely change
  */
 export const CHART_CONFIGS: Record<string, ChartConfig> = {
-    // === Global ===
-    ZZ: { topVideos: "PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM", topSongs: "PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i", trending: "OLAK5uy_muK2yY5g0CcA7wgArx2JlcfwgQwPPM72g" },
+    // === Global (No Trending available) ===
+    ZZ: { topVideos: "PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM", topSongs: "PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i" },
 
     // === 61 Official Chart Countries ===
     AR: { topVideos: "PL4fGSI1pDJn403fWAsjzCMsLEgBTOa25K", topSongs: "PL4fGSI1pDJn4Kd7YEG9LbUqvt64PLs9Fo", trending: "OLAK5uy_k5szwinemuiW7TfjD_5bUM4N13sNDw8-g" },
