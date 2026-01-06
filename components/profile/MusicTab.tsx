@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { api } from "@/lib/api";
@@ -52,9 +52,8 @@ function playlistTrackToTrack(track: WatchTrack): Track | null {
 
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
-    const { getAlbum, prefetchFromHomeData, isReady: isPrefetchReady } = usePrefetch();
+    const { getAlbum } = usePrefetch();
     const [loadingId, setLoadingId] = useState<string | null>(null);
-    const [isPrefetching, setIsPrefetching] = useState(false);
 
     const { data, error, isLoading } = useSWR(
         ["/music/home/cached", country.code, country.lang],
@@ -66,15 +65,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         }
     );
 
-    // 🔥 홈 데이터 로드되면 모든 앨범/플레이리스트 프리페치 (완료까지 대기)
-    useEffect(() => {
-        if (data && Array.isArray(data) && !isPrefetching && !isPrefetchReady) {
-            setIsPrefetching(true);
-            prefetchFromHomeData(data).finally(() => {
-                setIsPrefetching(false);
-            });
-        }
-    }, [data, prefetchFromHomeData, isPrefetching, isPrefetchReady]);
+    // 프리페치 제거 - 온디맨드 로드로 변경 (클릭 시 로드)
 
 
 
