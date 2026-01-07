@@ -165,9 +165,9 @@ export default function SearchPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#0c0c1a] via-[#080812] to-black">
+        <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)]">
             {/* Tab Navigation */}
-            <nav className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-zinc-800">
+            <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border">
                 <div className="w-full px-4 md:px-8">
                     <div className="flex gap-1 py-2">
                         {MAIN_TABS.map((tab) => {
@@ -181,8 +181,8 @@ export default function SearchPage() {
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all",
                                         isActive
-                                            ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25"
-                                            : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                            ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-[#667eea]/25"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                     )}
                                 >
                                     <Icon className="w-4 h-4" />
@@ -201,15 +201,15 @@ export default function SearchPage() {
                     <div className="min-h-screen">
                         {/* Hero */}
                         <div className="px-4 py-8 md:py-16 text-center">
-                            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500 text-transparent bg-clip-text">
+                            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-transparent bg-clip-text">
                                 Discover Music with AI
                             </h1>
-                            <p className="text-zinc-400 text-sm sm:text-base md:text-lg mb-6 md:mb-8">Global music big data - explore without limits</p>
+                            <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-6 md:mb-8">Global music big data - explore without limits</p>
 
                             {/* Search Form */}
                             <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
                                 <div className="relative flex items-center">
-                                    <Brain className="absolute left-4 w-5 h-5 text-white z-10" />
+                                    <Brain className="absolute left-4 w-5 h-5 text-[#667eea] z-10" />
                                     <input
                                         ref={inputRef}
                                         type="text"
@@ -218,18 +218,18 @@ export default function SearchPage() {
                                         onFocus={() => setShowSuggestions(true)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSearch(query, null)}
                                         placeholder="Search for songs, artists, albums..."
-                                        className="w-full py-4 pl-12 pr-14 bg-zinc-900/80 border border-zinc-700 rounded-full text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="w-full py-4 pl-12 pr-14 bg-[rgba(255,255,255,0.08)] border-2 border-[rgba(255,255,255,0.1)] rounded-[24px] text-white placeholder:text-white/50 focus:outline-none focus:border-[#667eea] focus:bg-[rgba(255,255,255,0.12)] transition-all"
                                     />
-                                    <button type="button" onClick={() => handleSearch(query, null)} disabled={isLoading || !query.trim()} className="absolute right-2 p-2.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full transition-all hover:scale-105 disabled:opacity-50">
+                                    <button type="button" onClick={() => handleSearch(query, null)} disabled={isLoading || !query.trim()} className="absolute right-2 w-10 h-10 flex items-center justify-center bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50 border-none cursor-pointer">
                                         {isLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <ArrowRight className="w-5 h-5 text-white" />}
                                     </button>
                                 </div>
 
                                 {/* Suggestions */}
                                 {showSuggestions && query.length >= 2 && (
-                                    <div className="absolute w-full mt-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                                    <div className="absolute w-full mt-2 bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden">
                                         {isSuggestionsLoading && (
-                                            <div className="p-4 text-center text-zinc-500">
+                                            <div className="p-4 text-center text-muted-foreground">
                                                 <Loader2 className="w-5 h-5 animate-spin inline" />
                                             </div>
                                         )}
@@ -239,17 +239,17 @@ export default function SearchPage() {
                                                     <li key={s}>
                                                         <button
                                                             type="button"
-                                                            className="w-full px-4 py-3 text-left text-white hover:bg-zinc-800 flex items-center gap-3"
+                                                            className="w-full px-4 py-3 text-left text-foreground hover:bg-accent flex items-center gap-3"
                                                             onClick={() => { setQuery(s); handleSearch(s, null); }}
                                                         >
-                                                            <Search className="w-4 h-4 text-zinc-400" />{s}
+                                                            <Search className="w-4 h-4 text-muted-foreground" />{s}
                                                         </button>
                                                     </li>
                                                 ))}
                                             </ul>
                                         )}
                                         {!isSuggestionsLoading && suggestions.length === 0 && (
-                                            <div className="p-4 text-center text-zinc-500">No suggestions</div>
+                                            <div className="p-4 text-center text-muted-foreground">No suggestions</div>
                                         )}
                                     </div>
                                 )}
@@ -264,7 +264,7 @@ export default function SearchPage() {
                                         const Icon = f.icon;
                                         const isActive = filter === f.id;
                                         return (
-                                            <button key={f.id || "all"} type="button" onClick={() => handleSearch(query, f.id)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", isActive ? "bg-purple-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white")}>
+                                            <button key={f.id || "all"} type="button" onClick={() => handleSearch(query, f.id)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border border-[rgba(255,255,255,0.1)]", isActive ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white border-transparent" : "bg-[rgba(255,255,255,0.05)] text-white/80 hover:bg-[rgba(102,126,234,0.2)] hover:border-[#667eea] hover:text-white")}>
                                                 <Icon className="w-4 h-4" />{f.label}
                                             </button>
                                         );
@@ -274,26 +274,26 @@ export default function SearchPage() {
                         )}
 
                         {/* Error */}
-                        {error && <div className="w-full px-4 md:px-8 mb-6"><div className="p-4 bg-red-900/50 border border-red-700 rounded-xl text-red-300">Error: {error}</div></div>}
+                        {error && <div className="w-full px-4 md:px-8 mb-6"><div className="p-4 bg-destructive/20 border border-destructive/50 rounded-xl text-destructive-foreground">Error: {error}</div></div>}
 
                         {/* Results */}
                         {allResults.length > 0 && <div className="w-full px-4 md:px-8 mb-4 text-zinc-400 text-sm">Found {allResults.length} results</div>}
                         <div className="w-full px-4 md:px-8 pb-32">
                             <div className="space-y-2">
                                 {allResults.map((item, i) => (
-                                    <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => handleItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-purple-500/30 rounded-xl cursor-pointer group text-left transition-all">
-                                        <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded-lg overflow-hidden relative">
-                                            {item.thumbnails?.[0]?.url ? <Image src={item.thumbnails[0].url} alt={item.title || ""} fill className="object-cover" unoptimized /> : <div className="w-full h-full flex items-center justify-center text-zinc-600">{getResultIcon(item.resultType)}</div>}
+                                    <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => handleItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] rounded-xl cursor-pointer group text-left transition-all">
+                                        <div className="w-14 h-14 flex-shrink-0 bg-secondary rounded-lg overflow-hidden relative">
+                                            {item.thumbnails?.[0]?.url ? <Image src={item.thumbnails[0].url} alt={item.title || ""} fill className="object-cover" unoptimized /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">{getResultIcon(item.resultType)}</div>}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1"><span className="text-purple-400">{getResultIcon(item.resultType)}</span><span className="text-xs text-purple-400 uppercase font-medium">{item.resultType}</span></div>
-                                            <h3 className="text-white font-medium truncate group-hover:text-purple-300">{item.title || item.artist}</h3>
-                                            <p className="text-sm text-zinc-400 truncate">{item.artists?.map((a: Artist) => a.name).join(", ") || ""}{item.duration && ` • ${item.duration}`}</p>
+                                            <div className="flex items-center gap-2 mb-1"><span className="text-[#667eea]">{getResultIcon(item.resultType)}</span><span className="text-xs text-[#667eea] uppercase font-medium">{item.resultType}</span></div>
+                                            <h3 className="text-white font-medium truncate group-hover:text-[#667eea]">{item.title || item.artist}</h3>
+                                            <p className="text-sm text-white/60 truncate">{item.artists?.map((a: Artist) => a.name).join(", ") || ""}{item.duration && ` • ${item.duration}`}</p>
                                         </div>
                                     </button>
                                 ))}
                             </div>
-                            {!isLoading && allResults.length === 0 && hasSearched && !error && <div className="py-20 text-center text-zinc-500">No results found for &quot;{query}&quot;</div>}
+                            {!isLoading && allResults.length === 0 && hasSearched && !error && <div className="py-20 text-center text-muted-foreground">No results found for &quot;{query}&quot;</div>}
                         </div>
                     </div>
                 )}
