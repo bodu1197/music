@@ -16,7 +16,7 @@ export default function MainLayout({
     children: React.ReactNode;
 }>) {
     const pathname = usePathname();
-    const isSearchPage = pathname === "/search";
+    const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/");
 
     return (
         <PlayerProvider>
@@ -25,10 +25,10 @@ export default function MainLayout({
                 <aside>
                     <Sidebar />
                 </aside>
-                <main className={`flex-1 md:ml-[245px] ${isSearchPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
+                <main className={`flex-1 md:ml-[245px] ${isFullWidthPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
                     {children}
                 </main>
-                {!isSearchPage && (
+                {!isFullWidthPage && (
                     <aside className="hidden lg:block">
                         <RightSidebar />
                     </aside>
