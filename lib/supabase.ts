@@ -33,7 +33,7 @@ function makeCacheKey(...args: (string | number | undefined | null)[]): string {
  * Supabase에서 캐시된 앨범 데이터 직접 읽기
  * Cloud Run을 거치지 않아 매우 빠름 (~50ms)
  */
-export async function getCachedAlbum(browseId: string): Promise<unknown | null> {
+export async function getCachedAlbum(browseId: string): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('album', browseId);
         const { data, error } = await supabase
@@ -106,7 +106,7 @@ export async function getCachedAlbums(browseIds: string[]): Promise<Map<string, 
  * 캐시된 플레이리스트 데이터 직접 읽기
  * 백엔드 키: make_cache_key("watch", videoId, playlistId)
  */
-export async function getCachedPlaylist(playlistId: string): Promise<unknown | null> {
+export async function getCachedPlaylist(playlistId: string): Promise<unknown> {
     try {
         // 백엔드에서는 watch 엔드포인트로 저장: make_cache_key("watch", videoId, playlistId)
         // videoId가 없으면 None으로 저장됨
@@ -134,7 +134,7 @@ export async function getCachedPlaylist(playlistId: string): Promise<unknown | n
  * 캐시된 홈 데이터 직접 읽기
  * 백엔드 키: make_cache_key("home", limit, country, language)
  */
-export async function getCachedHome(limit: number = 100, country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+export async function getCachedHome(limit: number = 100, country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('home', limit, country, language);
         const { data, error } = await supabase
@@ -160,7 +160,7 @@ export async function getCachedHome(limit: number = 100, country: string = 'US',
  * 캐시된 차트 데이터 직접 읽기
  * 백엔드 키: make_cache_key("charts", country, language)
  */
-export async function getCachedCharts(country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+export async function getCachedCharts(country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('charts', country, language);
         const { data, error } = await supabase
@@ -186,7 +186,7 @@ export async function getCachedCharts(country: string = 'US', language: string =
  * 캐시된 무드 카테고리 데이터 직접 읽기
  * 백엔드 키: make_cache_key("moods", country, language)
  */
-export async function getCachedMoods(country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+export async function getCachedMoods(country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('moods', country, language);
         const { data, error } = await supabase
@@ -212,7 +212,7 @@ export async function getCachedMoods(country: string = 'US', language: string = 
  * 캐시된 무드 플레이리스트 데이터 직접 읽기
  * 백엔드 키: make_cache_key("mood_playlists", params, country, language)
  */
-export async function getCachedMoodPlaylists(params: string, country: string = 'US', language: string = 'en'): Promise<unknown | null> {
+export async function getCachedMoodPlaylists(params: string, country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('mood_playlists', params, country, language);
         const { data, error } = await supabase
@@ -238,7 +238,7 @@ export async function getCachedMoodPlaylists(params: string, country: string = '
  * 캐시된 watch playlist 직접 읽기
  * 백엔드 키: make_cache_key("watch", videoId, playlistId)
  */
-export async function getCachedWatch(videoId?: string, playlistId?: string): Promise<unknown | null> {
+export async function getCachedWatch(videoId?: string, playlistId?: string): Promise<unknown> {
     try {
         const cacheKey = makeCacheKey('watch', videoId || 'None', playlistId || 'None');
         const { data, error } = await supabase

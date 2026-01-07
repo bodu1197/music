@@ -149,7 +149,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {(categories as MoodCategory[]).map((cat: MoodCategory, i: number) => (
+                                {categories.map((cat, i) => (
                                     <button
                                         key={cat.params || i}
                                         onClick={() => setSelectedCategory({ title: cat.title, params: cat.params })}
