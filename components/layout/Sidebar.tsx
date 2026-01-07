@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, User, ShoppingBag, Send } from "lucide-react";
+import { Home, PlusSquare, User, ShoppingBag, Send, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -10,6 +10,7 @@ export default function Sidebar() {
 
     const navItems = [
         { name: "Home", href: "/", icon: Home },
+        { name: "Music", href: "/music", icon: Music2 },
         { name: "Shop", href: "/shop", icon: ShoppingBag },
         { name: "Messages", href: "/messages", icon: Send },
         { name: "Create", href: "/create", icon: PlusSquare },
