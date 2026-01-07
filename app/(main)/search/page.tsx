@@ -49,28 +49,27 @@ function SearchPageContent() {
 
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
-    // IP-based country detection with localStorage persistence
+    // IP-based country detection (always fresh, cache for 24 hours)
     useEffect(() => {
         async function detectCountry() {
             const savedCode = localStorage.getItem("user_country_code");
             const savedLang = localStorage.getItem("user_country_lang");
             const savedName = localStorage.getItem("user_country_name");
+            const savedTime = localStorage.getItem("user_country_detected_at");
 
-            const VALID_LANGS = ["ko", "hi", "it", "de", "tr", "en", "pt", "cs", "zh_CN", "ja", "es", "ru", "fr", "nl", "ar", "ur", "zh_TW"];
-            const isValidLang = savedLang && VALID_LANGS.includes(savedLang);
+            const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+            const isCacheValid = savedTime && (Date.now() - parseInt(savedTime, 10)) < CACHE_DURATION;
 
-            if (savedCode && isValidLang) {
+            // Use cached value only if within 24 hours
+            if (savedCode && savedLang && isCacheValid) {
                 const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-                setCountry(found || { code: savedCode, lang: savedLang, name: savedName || savedCode });
-                return;
+                if (found) {
+                    setCountry(found);
+                    return;
+                }
             }
 
-            if (savedCode && !isValidLang) {
-                localStorage.removeItem("user_country_code");
-                localStorage.removeItem("user_country_lang");
-                localStorage.removeItem("user_country_name");
-            }
-
+            // Always detect fresh IP
             try {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
@@ -81,17 +80,28 @@ function SearchPageContent() {
                         localStorage.setItem("user_country_code", found.code);
                         localStorage.setItem("user_country_lang", found.lang);
                         localStorage.setItem("user_country_name", found.name);
+                        localStorage.setItem("user_country_detected_at", Date.now().toString());
                         return;
                     }
+                    // Country not in supported list, use Global
                     const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
                     setCountry(global);
                     localStorage.setItem("user_country_code", global.code);
                     localStorage.setItem("user_country_lang", global.lang);
                     localStorage.setItem("user_country_name", global.name);
+                    localStorage.setItem("user_country_detected_at", Date.now().toString());
                     return;
                 }
             } catch (e) {
                 console.error("IP Detect failed:", e);
+                // On error, use cached value if exists
+                if (savedCode && savedLang) {
+                    const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
+                    if (found) {
+                        setCountry(found);
+                        return;
+                    }
+                }
             }
 
             setCountry(DEFAULT_COUNTRY);
