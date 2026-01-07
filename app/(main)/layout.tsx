@@ -8,6 +8,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import GlobalPlayer from "@/components/player/GlobalPlayer";
 import MobilePlayer from "@/components/player/MobilePlayer";
 import PlayerSidebar from "@/components/player/PlayerSidebar";
+import MainContent from "@/components/layout/MainContent";
 import { PlayerProvider } from "@/contexts/PlayerContext";
 import { AppPreloader } from "@/components/preload/AppPreloader";
 
@@ -28,9 +29,9 @@ export default function MainLayout({
                         <Sidebar />
                     </Suspense>
                 </aside>
-                <main className={`flex-1 md:ml-[clamp(200px,18.5vw,280px)] ${isFullWidthPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
+                <MainContent>
                     {children}
-                </main>
+                </MainContent>
                 {!isFullWidthPage && (
                     <aside className="hidden lg:block">
                         <RightSidebar />
@@ -44,3 +45,4 @@ export default function MainLayout({
         </PlayerProvider>
     );
 }
+
