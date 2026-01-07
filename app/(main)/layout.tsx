@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -12,6 +15,9 @@ export default function MainLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const pathname = usePathname();
+    const isSearchPage = pathname === "/search";
+
     return (
         <PlayerProvider>
             <AppPreloader />
@@ -19,12 +25,14 @@ export default function MainLayout({
                 <aside>
                     <Sidebar />
                 </aside>
-                <main className="flex-1 md:ml-[245px] lg:pr-[340px] pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden">
+                <main className={`flex-1 md:ml-[245px] ${isSearchPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
                     {children}
                 </main>
-                <aside className="hidden lg:block">
-                    <RightSidebar />
-                </aside>
+                {!isSearchPage && (
+                    <aside className="hidden lg:block">
+                        <RightSidebar />
+                    </aside>
+                )}
                 <PlayerSidebar />
                 <GlobalPlayer />
                 <MobilePlayer />
