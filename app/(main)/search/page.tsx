@@ -115,6 +115,13 @@ function SearchPageContent() {
         setChartsCountry(newCountry);
     };
 
+    // Reset chartsCountry when leaving charts tab
+    useEffect(() => {
+        if (tab !== "charts") {
+            setChartsCountry(null);
+        }
+    }, [tab]);
+
     // Fetch suggestions
     useEffect(() => {
         if (query.length < 2) { setSuggestions([]); return; }
