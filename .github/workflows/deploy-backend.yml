@@ -35,6 +35,9 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
 
       - name: Deploy to Cloud Run
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --source ./backend \
@@ -44,7 +47,7 @@ jobs:
             --max-instances 100 \
             --memory 2Gi \
             --cpu 2 \
-            --set-env-vars "SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}"
+            --set-env-vars "SUPABASE_URL=${SUPABASE_URL},SUPABASE_KEY=${SUPABASE_KEY}"
 
 
       - name: Show deployed URL
