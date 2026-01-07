@@ -708,7 +708,7 @@ function calculateNextIndex(
         if (total > 1) {
             // Simple random for now (avoid same track)
             do {
-                nextIndex = Math.floor(Math.random() * total);
+                nextIndex = Math.floor(Math.random() * total); // NOSONAR - shuffle only, not security
             } while (nextIndex === currentIndex);
         } else {
             nextIndex = currentIndex;
@@ -736,7 +736,7 @@ function calculatePrevIndex(
     if (isShuffling) {
         if (total > 1) {
             do {
-                prevIndex = Math.floor(Math.random() * total);
+                prevIndex = Math.floor(Math.random() * total); // NOSONAR - shuffle only, not security
             } while (prevIndex === currentIndex);
         } else {
             prevIndex = currentIndex;
