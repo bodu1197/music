@@ -18,7 +18,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <div className="hidden md:flex flex-col w-[245px] h-screen fixed left-0 top-0 border-r border-zinc-800 bg-black px-4 py-8 z-50">
+        <div className="hidden md:flex flex-col w-[245px] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] px-4 py-8 z-50">
             <Link href="/" className="mb-10 px-4">
                 <h1 className="text-2xl font-bold font-heading bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text">VibeStation</h1>
             </Link>
@@ -33,8 +33,10 @@ export default function Sidebar() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-4 px-4 py-3 rounded-md transition-all duration-200 group hover:bg-zinc-900",
-                                isActive && "font-bold"
+                                "flex items-center gap-4 px-4 py-3 rounded-md transition-all duration-200 group relative overflow-hidden",
+                                isActive
+                                    ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-bold shadow-lg shadow-[#667eea]/20"
+                                    : "text-white/70 hover:text-white hover:bg-[rgba(255,255,255,0.05)]"
                             )}
                         >
                             <Icon
@@ -43,7 +45,7 @@ export default function Sidebar() {
                                     isActive ? "stroke-[3px]" : "stroke-[2px]"
                                 )}
                             />
-                            <span className={cn("text-base", isActive ? "font-bold" : "font-normal")}>
+                            <span className={cn("text-base relative z-10", isActive ? "font-bold" : "font-normal")}>
                                 {item.name}
                             </span>
                         </Link>

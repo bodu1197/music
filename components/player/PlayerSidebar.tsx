@@ -59,7 +59,7 @@ export default function PlayerSidebar() {
                 </div>
 
                 {/* Queue List */}
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                <div className="flex-1 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {currentPlaylist.length === 0 ? (
                         <div className="text-center text-zinc-500 py-8">
                             No tracks in queue
