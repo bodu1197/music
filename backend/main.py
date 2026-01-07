@@ -438,14 +438,14 @@ async def warm_cache(country: str = "KR", language: str = "ko"):
     return results
 
 @app.get("/search")
-def search(q: str, filter: str = None):
+def search(q: str, filter: str = None, limit: int = 500):
     """
     Search YouTube Music.
     Filter options: songs, videos, albums, artists, playlists, community_playlists, featured_playlists, uploads
     """
     try:
         yt = get_ytmusic()
-        results = run_with_retry(yt.search, q, filter=filter)
+        results = run_with_retry(yt.search, q, filter=filter, limit=limit)
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
