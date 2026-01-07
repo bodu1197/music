@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
@@ -23,7 +24,9 @@ export default function MainLayout({
             <AppPreloader />
             <div className="flex min-h-screen">
                 <aside>
-                    <Sidebar />
+                    <Suspense fallback={null}>
+                        <Sidebar />
+                    </Suspense>
                 </aside>
                 <main className={`flex-1 md:ml-[245px] ${isFullWidthPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
                     {children}
