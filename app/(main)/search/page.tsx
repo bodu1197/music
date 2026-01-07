@@ -321,12 +321,7 @@ function SearchPageContent() {
                 {tab === "music" && (
                     <div className="w-full px-4 md:px-8 py-6">
                         {country ? (
-                            <>
-                                <div className="flex justify-end mb-4">
-                                    <CountrySelector value={country} onChange={handleCountryChange} />
-                                </div>
-                                <MusicTab country={country} />
-                            </>
+                            <MusicTab country={country} />
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
                         )}
@@ -353,12 +348,7 @@ function SearchPageContent() {
                 {tab === "moods" && (
                     <div className="w-full px-4 md:px-8 py-6 pb-32">
                         {country ? (
-                            <>
-                                <div className="flex justify-end mb-4">
-                                    <CountrySelector value={country} onChange={handleCountryChange} />
-                                </div>
-                                <MoodsTab country={country} />
-                            </>
+                            <MoodsTab country={country} />
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
                         )}

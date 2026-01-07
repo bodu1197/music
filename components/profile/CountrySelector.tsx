@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,32 +41,34 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-[180px] justify-between text-xs h-8 bg-zinc-900 border-zinc-700 hover:bg-zinc-800"
+                    className="min-w-[150px] justify-between px-5 py-2.5 h-auto bg-[#0f3460] text-[#e94560] border-none rounded-lg hover:bg-[#e94560] hover:text-white transition-colors duration-300"
                 >
                     <span className="flex items-center gap-2">
-                        <span className="font-mono text-zinc-400">{value.code}</span>
-                        <span className="truncate">{value.name}</span>
+                        <span className="truncate font-medium">{value.name}</span>
                     </span>
-                    <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[240px] p-0 bg-zinc-900 border-zinc-800">
-                <Command>
-                    <CommandInput placeholder="Search country..." className="h-9" />
-                    <CommandEmpty>No country found.</CommandEmpty>
-                    <CommandGroup className="max-h-[300px] overflow-y-auto">
+            <PopoverContent className="w-[320px] p-0 bg-[#1a1a2e] border border-[#0f3460] rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
+                <Command className="bg-transparent">
+                    <CommandInput
+                        placeholder="Search country..."
+                        className="h-10 bg-[#16213e] border border-[#0f3460] rounded-md mx-2.5 my-2.5 text-[#e0e0e0] placeholder:text-[#a0a0a0] focus:border-[#e94560] focus:ring-0"
+                    />
+                    <CommandEmpty className="text-[#a0a0a0] py-4 text-center">No country found.</CommandEmpty>
+                    <CommandGroup className="max-h-[300px] overflow-y-auto px-2.5 pb-2.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0f3460] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#e94560]">
                         {SUPPORTED_COUNTRIES.map((country) => (
                             <CommandItem
                                 key={country.code}
                                 value={country.name}
                                 onSelect={() => handleSelect(country.code)}
-                                className="text-xs text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-white cursor-pointer"
+                                className="py-3 px-4 rounded-lg text-white cursor-pointer hover:bg-[#0f3460] aria-selected:bg-[#0f3460] transition-colors"
                             >
-                                <span className="mr-2 font-mono text-zinc-500 w-6">{country.code}</span>
-                                {country.name}
+                                <span className="mr-3 text-lg">{country.code === "ZZ" ? "🌍" : ""}</span>
+                                <span className="flex-1">{country.name}</span>
                                 <Check
                                     className={cn(
-                                        "ml-auto h-3 w-3",
+                                        "ml-auto h-4 w-4 text-[#e94560]",
                                         value.code === country.code
                                             ? "opacity-100"
                                             : "opacity-0"
@@ -80,3 +82,4 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
         </Popover>
     );
 }
+
