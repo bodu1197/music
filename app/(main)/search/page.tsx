@@ -168,7 +168,7 @@ export default function SearchPage() {
         <div className="min-h-screen bg-gradient-to-b from-[#0c0c1a] via-[#080812] to-black">
             {/* Tab Navigation */}
             <nav className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-zinc-800">
-                <div className="max-w-4xl mx-auto px-4">
+                <div className="w-full px-4 md:px-8">
                     <div className="flex gap-1 py-2">
                         {MAIN_TABS.map((tab) => {
                             const Icon = tab.icon;
@@ -258,7 +258,7 @@ export default function SearchPage() {
 
                         {/* Filter Tabs */}
                         {hasSearched && (
-                            <div className="max-w-4xl mx-auto px-4 mb-6 overflow-x-auto">
+                            <div className="w-full px-4 md:px-8 mb-6 overflow-x-auto">
                                 <div className="flex gap-2 pb-2">
                                     {SEARCH_FILTERS.map((f) => {
                                         const Icon = f.icon;
@@ -274,11 +274,11 @@ export default function SearchPage() {
                         )}
 
                         {/* Error */}
-                        {error && <div className="max-w-4xl mx-auto px-4 mb-6"><div className="p-4 bg-red-900/50 border border-red-700 rounded-xl text-red-300">Error: {error}</div></div>}
+                        {error && <div className="w-full px-4 md:px-8 mb-6"><div className="p-4 bg-red-900/50 border border-red-700 rounded-xl text-red-300">Error: {error}</div></div>}
 
                         {/* Results */}
-                        {allResults.length > 0 && <div className="max-w-4xl mx-auto px-4 mb-4 text-zinc-400 text-sm">Found {allResults.length} results</div>}
-                        <div className="max-w-4xl mx-auto px-4 pb-32">
+                        {allResults.length > 0 && <div className="w-full px-4 md:px-8 mb-4 text-zinc-400 text-sm">Found {allResults.length} results</div>}
+                        <div className="w-full px-4 md:px-8 pb-32">
                             <div className="space-y-2">
                                 {allResults.map((item, i) => (
                                     <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => handleItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-purple-500/30 rounded-xl cursor-pointer group text-left transition-all">
@@ -300,21 +300,21 @@ export default function SearchPage() {
 
                 {/* MUSIC Tab */}
                 {activeTab === "music" && (
-                    <div className="max-w-4xl mx-auto px-4 py-6">
+                    <div className="w-full px-4 md:px-8 py-6">
                         <MusicTab country={country} />
                     </div>
                 )}
 
                 {/* CHARTS Tab */}
                 {activeTab === "charts" && (
-                    <div className="max-w-4xl mx-auto px-4 py-6">
+                    <div className="w-full px-4 md:px-8 py-6">
                         <ChartsTab country={country} />
                     </div>
                 )}
 
                 {/* MOODS Tab */}
                 {activeTab === "moods" && (
-                    <div className="max-w-4xl mx-auto px-4 py-6 pb-32">
+                    <div className="w-full px-4 md:px-8 py-6 pb-32">
                         <MoodsTab country={country} />
                     </div>
                 )}
