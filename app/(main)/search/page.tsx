@@ -252,9 +252,29 @@ export default function SearchPage() {
                         {/* Suggestions */}
                         {showSuggestions && query.length >= 2 && (
                             <div className="absolute w-full mt-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                                {isSuggestionsLoading ? <div className="p-4 text-center text-zinc-500"><Loader2 className="w-5 h-5 animate-spin inline" /></div> : suggestions.length > 0 ? (
-                                    <ul>{suggestions.slice(0, 8).map((s, i) => <li key={i}><button type="button" className="w-full px-4 py-3 text-left text-white hover:bg-zinc-800 flex items-center gap-3" onClick={() => { setQuery(s); handleSearch(s, null); }}><Search className="w-4 h-4 text-zinc-400" />{s}</button></li>)}</ul>
-                                ) : <div className="p-4 text-center text-zinc-500">No suggestions</div>}
+                                {isSuggestionsLoading && (
+                                    <div className="p-4 text-center text-zinc-500">
+                                        <Loader2 className="w-5 h-5 animate-spin inline" />
+                                    </div>
+                                )}
+                                {!isSuggestionsLoading && suggestions.length > 0 && (
+                                    <ul>
+                                        {suggestions.slice(0, 8).map((s) => (
+                                            <li key={s}>
+                                                <button
+                                                    type="button"
+                                                    className="w-full px-4 py-3 text-left text-white hover:bg-zinc-800 flex items-center gap-3"
+                                                    onClick={() => { setQuery(s); handleSearch(s, null); }}
+                                                >
+                                                    <Search className="w-4 h-4 text-zinc-400" />{s}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {!isSuggestionsLoading && suggestions.length === 0 && (
+                                    <div className="p-4 text-center text-zinc-500">No suggestions</div>
+                                )}
                             </div>
                         )}
                     </div>
