@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, User, ShoppingBag } from "lucide-react";
+import { Home, PlusSquare, User, ShoppingBag, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function BottomNav() {
@@ -12,6 +12,7 @@ export default function BottomNav() {
         { name: "Home", href: "/", icon: Home },
         { name: "Create", href: "/create", icon: PlusSquare },
         { name: "Shop", href: "/shop", icon: ShoppingBag },
+        { name: "Music", href: "/music", icon: Music2 },
         { name: "Profile", href: "/profile", icon: User },
     ];
 
