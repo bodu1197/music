@@ -28,7 +28,7 @@ export default function MainLayout({
                         <Sidebar />
                     </Suspense>
                 </aside>
-                <main className={`flex-1 md:ml-[245px] ${isFullWidthPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
+                <main className={`flex-1 md:ml-[clamp(200px,18.5vw,280px)] ${isFullWidthPage ? '' : 'lg:pr-[340px]'} pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden`}>
                     {children}
                 </main>
                 {!isFullWidthPage && (

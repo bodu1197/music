@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search } from "lucide-react";
+import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -21,8 +21,8 @@ export default function Sidebar() {
             href: "/search",
             icon: Music2,
             subItems: [
-                { name: "Music Home", href: "/search?tab=music", id: "music", icon: Home },
                 { name: "Search", href: "/search?tab=search", id: "search", icon: Search },
+                { name: "Discover", href: "/search?tab=music", id: "music", icon: Compass },
                 { name: "Charts", href: "/search?tab=charts", id: "charts", icon: BarChart2 },
                 { name: "Moods", href: "/search?tab=moods", id: "moods", icon: Sparkles },
             ]
@@ -31,7 +31,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <div className="hidden md:flex flex-col w-[245px] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] px-4 py-8 z-50 overflow-y-auto no-scrollbar">
+        <div className="hidden md:flex flex-col w-[clamp(200px,18.5vw,280px)] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] px-4 py-8 z-50 overflow-y-auto no-scrollbar">
             <Link href="/" className="mb-10 px-4">
                 <h1 className="text-2xl font-bold font-heading bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text">VibeStation</h1>
             </Link>
