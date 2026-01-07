@@ -99,11 +99,11 @@ export default function SearchPage() {
             setAllResults(data);
 
             // All 검색 시 캐시 초기화 및 백그라운드 프리페치
-            if (!searchFilter) {
+            if (searchFilter) {
+                setFilterCache(prev => ({ ...prev, [searchFilter]: data }));
+            } else {
                 setFilterCache({ all: data });
                 prefetchFilters(q);
-            } else {
-                setFilterCache(prev => ({ ...prev, [searchFilter]: data }));
             }
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Search failed"); }
         finally { setIsLoading(false); }

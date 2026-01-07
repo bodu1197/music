@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR, { preload } from "swr";
+import useSWR from "swr";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { Play, Loader2 } from "lucide-react";

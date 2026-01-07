@@ -8,13 +8,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-3
 const CDN_CACHE_TTL = 3600;
 
 function makeCacheKey(...args: (string | number)[]): string {
-    const keyStr = args.map(arg => String(arg)).join(':');
+    const keyStr = args.map(String).join(':');
     return md5(keyStr);
 }
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const limit = Number.parseInt(searchParams.get('limit') || '100', 10);
     const country = searchParams.get('country') || 'US';
     const language = searchParams.get('language') || 'en';
 

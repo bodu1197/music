@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-3
 const CDN_CACHE_TTL = 3600;
 
 function makeCacheKey(...args: (string | number)[]): string {
-    const keyStr = args.map(arg => String(arg)).join(':');
+    const keyStr = args.map(String).join(':');
     return md5(keyStr);
 }
 
