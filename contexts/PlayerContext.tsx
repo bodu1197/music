@@ -534,7 +534,7 @@ export function PlayerProvider({ children }: Readonly<PlayerProviderProps>) {
                 }
             }
         } catch (e) {
-            console.log(`[PlayerContext] API preload failed, trying YouTube fallback: ${playlistId}`);
+            console.debug(`[PlayerContext] API preload failed, trying YouTube fallback: ${playlistId}`, e);
         }
 
         // Fallback: YouTube iFrame API (느림, 플레이어 필요)

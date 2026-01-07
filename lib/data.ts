@@ -16,7 +16,7 @@
 /**
  * 홈 데이터 가져오기 (2중 캐싱)
  */
-export async function getHome(limit: number = 100, country: string = 'US', language: string = 'en'): Promise<any | null> {
+export async function getHome(limit: number = 100, country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const params = new URLSearchParams({ limit: String(limit), country, language });
         const res = await fetch(`/api/music/home?${params}`);
@@ -31,7 +31,7 @@ export async function getHome(limit: number = 100, country: string = 'US', langu
 /**
  * 무드 카테고리 가져오기 (2중 캐싱)
  */
-export async function getMoods(country: string = 'US', language: string = 'en'): Promise<any | null> {
+export async function getMoods(country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const params = new URLSearchParams({ country, language });
         const res = await fetch(`/api/music/moods?${params}`);
@@ -46,7 +46,7 @@ export async function getMoods(country: string = 'US', language: string = 'en'):
 /**
  * 무드 플레이리스트 목록 가져오기 (2중 캐싱)
  */
-export async function getMoodPlaylists(moodParams: string, country: string = 'US', language: string = 'en'): Promise<any | null> {
+export async function getMoodPlaylists(moodParams: string, country: string = 'US', language: string = 'en'): Promise<unknown> {
     try {
         const params = new URLSearchParams({ params: moodParams, country, language });
         const res = await fetch(`/api/music/moods/playlists?${params}`);
@@ -61,7 +61,7 @@ export async function getMoodPlaylists(moodParams: string, country: string = 'US
 /**
  * 앨범 데이터 가져오기 (2중 캐싱)
  */
-export async function getAlbum(browseId: string): Promise<any | null> {
+export async function getAlbum(browseId: string): Promise<unknown> {
     try {
         const res = await fetch(`/api/music/album/${browseId}`);
         if (!res.ok) return null;
@@ -75,7 +75,7 @@ export async function getAlbum(browseId: string): Promise<any | null> {
 /**
  * 플레이리스트/Watch 데이터 가져오기 (Cloud Run 직접 호출 - 동적 데이터)
  */
-export async function getPlaylist(playlistId: string): Promise<any | null> {
+export async function getPlaylist(playlistId: string): Promise<unknown> {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sori-music-backend-322455104824.us-central1.run.app';
 
     try {

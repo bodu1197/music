@@ -7,7 +7,7 @@ interface ImageWithFallbackProps extends ImageProps {
     fallbackSrc?: string;
 }
 
-export function ImageWithFallback({ src, fallbackSrc = "/images/default-album.svg", alt, ...props }: ImageWithFallbackProps) {
+export function ImageWithFallback({ src, fallbackSrc = "/images/default-album.svg", alt, ...props }: Readonly<ImageWithFallbackProps>) {
     const [imgSrc, setImgSrc] = useState(src);
 
     useEffect(() => {

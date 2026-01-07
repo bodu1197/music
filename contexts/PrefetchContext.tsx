@@ -9,7 +9,7 @@
  * 역할: 호환성 유지용 (기존 코드에서 import 에러 방지)
  */
 
-import React, { createContext, useContext, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useCallback, useMemo, ReactNode } from "react";
 
 interface PrefetchContextType {
     // 호환성 유지용 빈 함수들
@@ -32,7 +32,7 @@ export function PrefetchProvider({ children }: Readonly<{ children: ReactNode }>
     const prefetchPlaylist = useCallback(async () => null, []);
     const prefetchFromHomeData = useCallback(async () => { }, []);
 
-    const value: PrefetchContextType = {
+    const value = useMemo<PrefetchContextType>(() => ({
         getAlbum,
         getPlaylist,
         prefetchAlbum,
@@ -40,7 +40,7 @@ export function PrefetchProvider({ children }: Readonly<{ children: ReactNode }>
         prefetchFromHomeData,
         isReady: true,
         prefetchedCount: 0,
-    };
+    }), [getAlbum, getPlaylist, prefetchAlbum, prefetchPlaylist, prefetchFromHomeData]);
 
     return (
         <PrefetchContext.Provider value={value}>

@@ -18,16 +18,16 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const { toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
 
     // 🔥 lib/data.ts 통합 함수 사용 (Supabase 캐시 → API fallback)
-    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR(
+    const { data: moodsAllData, error: moodsError, isLoading: moodsLoading } = useSWR<Record<string, MoodCategory[]> | null>(
         ["/moods", country.code, country.lang],
-        () => getMoods(country.code, country.lang),
+        () => getMoods(country.code, country.lang) as Promise<Record<string, MoodCategory[]> | null>,
         { revalidateOnFocus: false }
     );
 
     // 선택된 카테고리의 플레이리스트
-    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR(
+    const { data: playlistsData, error: playlistsError, isLoading: playlistsLoading } = useSWR<MoodPlaylist[] | null>(
         selectedCategory ? ["/moods/playlists", selectedCategory.params, country.code, country.lang] : null,
-        () => getMoodPlaylists(selectedCategory!.params, country.code, country.lang),
+        () => getMoodPlaylists(selectedCategory!.params, country.code, country.lang) as Promise<MoodPlaylist[] | null>,
         { revalidateOnFocus: false }
     );
 

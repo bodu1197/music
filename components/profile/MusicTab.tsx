@@ -58,7 +58,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         // browseId가 있는 항목(앨범)만 추출
         const albumsToPrefetch = data
             .flatMap((shelf: HomeSection) => shelf.contents || [])
-            .filter((item: HomeSectionContent) => item && item.browseId)
+            .filter((item: HomeSectionContent) => item?.browseId)
             .slice(0, 20); // 과부하 방지: 상위 20개만
 
         if (albumsToPrefetch.length > 0) {
@@ -101,7 +101,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
         try {
             // 🔥 통합 함수: Supabase 캐시 → API fallback
             // 이미 프리페치되어 있을 가능성 높음!
-            const albumData = await getAlbum(browseId);
+            const albumData = await getAlbum(browseId) as AlbumData | null;
 
             if (!albumData) {
                 console.warn("[MusicTab] Album not found:", browseId);
