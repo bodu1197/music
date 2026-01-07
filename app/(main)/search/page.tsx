@@ -11,6 +11,7 @@ import type { SearchResult, Artist, AlbumTrack, WatchTrack } from "@/types/music
 import { ChartsTab } from "@/components/profile/ChartsTab";
 import { MoodsTab } from "@/components/profile/MoodsTab";
 import { MusicTab } from "@/components/profile/MusicTab";
+import { CountrySelector } from "@/components/profile/CountrySelector";
 import { SUPPORTED_COUNTRIES, DEFAULT_COUNTRY, Country } from "@/lib/constants";
 
 
@@ -28,7 +29,7 @@ function SearchPageContent() {
     // URL Tab state
     const searchParams = useSearchParams();
     const tab = searchParams.get("tab") || "search";
-    const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+    const [country, setCountry] = useState<Country | null>(null);
 
     // Search state
     const [query, setQuery] = useState("");
@@ -47,15 +48,64 @@ function SearchPageContent() {
 
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
-    // Detect country on mount
+    // IP-based country detection with localStorage persistence
     useEffect(() => {
-        const savedCode = localStorage.getItem("user_country_code");
-        const savedLang = localStorage.getItem("user_country_lang");
-        const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-        if (found) {
-            setCountry({ ...found, lang: savedLang || found.lang });
+        async function detectCountry() {
+            const savedCode = localStorage.getItem("user_country_code");
+            const savedLang = localStorage.getItem("user_country_lang");
+            const savedName = localStorage.getItem("user_country_name");
+
+            const VALID_LANGS = ["ko", "hi", "it", "de", "tr", "en", "pt", "cs", "zh_CN", "ja", "es", "ru", "fr", "nl", "ar", "ur", "zh_TW"];
+            const isValidLang = savedLang && VALID_LANGS.includes(savedLang);
+
+            if (savedCode && isValidLang) {
+                const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
+                setCountry(found || { code: savedCode, lang: savedLang, name: savedName || savedCode });
+                return;
+            }
+
+            if (savedCode && !isValidLang) {
+                localStorage.removeItem("user_country_code");
+                localStorage.removeItem("user_country_lang");
+                localStorage.removeItem("user_country_name");
+            }
+
+            try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                if (data.country_code) {
+                    const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
+                    if (found) {
+                        setCountry(found);
+                        localStorage.setItem("user_country_code", found.code);
+                        localStorage.setItem("user_country_lang", found.lang);
+                        localStorage.setItem("user_country_name", found.name);
+                        return;
+                    }
+                    const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
+                    setCountry(global);
+                    localStorage.setItem("user_country_code", global.code);
+                    localStorage.setItem("user_country_lang", global.lang);
+                    localStorage.setItem("user_country_name", global.name);
+                    return;
+                }
+            } catch (e) {
+                console.error("IP Detect failed:", e);
+            }
+
+            setCountry(DEFAULT_COUNTRY);
         }
+
+        detectCountry();
     }, []);
+
+    // Handle country change
+    const handleCountryChange = (newCountry: Country) => {
+        setCountry(newCountry);
+        localStorage.setItem("user_country_code", newCountry.code);
+        localStorage.setItem("user_country_lang", newCountry.lang);
+        localStorage.setItem("user_country_name", newCountry.name);
+    };
 
     // Fetch suggestions
     useEffect(() => {
@@ -270,21 +320,48 @@ function SearchPageContent() {
                 {/* MUSIC Tab */}
                 {tab === "music" && (
                     <div className="w-full px-4 md:px-8 py-6">
-                        <MusicTab country={country} />
+                        {country ? (
+                            <>
+                                <div className="flex justify-end mb-4">
+                                    <CountrySelector value={country} onChange={handleCountryChange} />
+                                </div>
+                                <MusicTab country={country} />
+                            </>
+                        ) : (
+                            <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
+                        )}
                     </div>
                 )}
 
                 {/* CHARTS Tab */}
                 {tab === "charts" && (
                     <div className="w-full px-4 md:px-8 py-6">
-                        <ChartsTab country={country} />
+                        {country ? (
+                            <>
+                                <div className="flex justify-end mb-4">
+                                    <CountrySelector value={country} onChange={handleCountryChange} />
+                                </div>
+                                <ChartsTab country={country} />
+                            </>
+                        ) : (
+                            <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
+                        )}
                     </div>
                 )}
 
                 {/* MOODS Tab */}
                 {tab === "moods" && (
                     <div className="w-full px-4 md:px-8 py-6 pb-32">
-                        <MoodsTab country={country} />
+                        {country ? (
+                            <>
+                                <div className="flex justify-end mb-4">
+                                    <CountrySelector value={country} onChange={handleCountryChange} />
+                                </div>
+                                <MoodsTab country={country} />
+                            </>
+                        ) : (
+                            <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
+                        )}
                     </div>
                 )}
             </div>
