@@ -18,9 +18,7 @@ const FILTERS = [
     { id: "playlists", label: "Playlists", icon: ListMusic },
 ];
 
-const EXAMPLE_QUERIES = [
-    "AUDREY NUNA", "K-POP", "Hip Hop", "Jazz", "Workout", "Country", "발라드", "Classic"
-];
+
 
 export default function SearchPage() {
     const [query, setQuery] = useState("");
@@ -81,7 +79,7 @@ export default function SearchPage() {
     };
 
     const handleSuggestionClick = (s: string) => { setQuery(s); setShowSuggestions(false); handleSearch(s); };
-    const handleExampleClick = (eq: string) => { setQuery(eq); handleSearch(eq); };
+
 
     // Handle item click
     const handleItemClick = async (item: SearchResult) => {
@@ -154,15 +152,6 @@ export default function SearchPage() {
                             ))}
                         </div>
                     )}
-                </div>
-
-                {/* Example Queries */}
-                <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-3xl mx-auto">
-                    {EXAMPLE_QUERIES.map((eq) => (
-                        <button key={eq} onClick={() => handleExampleClick(eq)} className="px-4 py-2 bg-zinc-800/50 hover:bg-purple-500/20 border border-zinc-700 hover:border-purple-500/50 rounded-full text-sm text-zinc-300 hover:text-white transition-all">
-                            {eq}
-                        </button>
-                    ))}
                 </div>
             </section>
 
