@@ -43,11 +43,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { data, error, isLoading } = useSWR(
         ["/music/home", country.code, country.lang],
         () => getHome(100, country.code, country.lang),
-        {
-            revalidateOnFocus: false,
-            dedupingInterval: 60000,
-            keepPreviousData: true,
-        }
+        { revalidateOnFocus: false }
     );
 
     // 🔥 앨범 데이터 백그라운드 프리페치 (Albums for you 등)
