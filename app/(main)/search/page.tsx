@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Loader2, Music, Video, Disc, User, ListMusic, Brain, ArrowRight, BarChart2, Sparkles, Music2 } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
@@ -13,13 +13,7 @@ import { MoodsTab } from "@/components/profile/MoodsTab";
 import { MusicTab } from "@/components/profile/MusicTab";
 import { SUPPORTED_COUNTRIES, DEFAULT_COUNTRY, Country } from "@/lib/constants";
 
-// Main tabs - MUSIC 추가
-const MAIN_TABS = [
-    { id: "search", label: "SEARCH", icon: Search },
-    { id: "music", label: "MUSIC", icon: Music2 },
-    { id: "charts", label: "CHARTS", icon: BarChart2 },
-    { id: "moods", label: "MOODS", icon: Sparkles },
-];
+
 
 const SEARCH_FILTERS = [
     { id: null, label: "All", icon: Search },
@@ -31,8 +25,9 @@ const SEARCH_FILTERS = [
 ];
 
 export default function SearchPage() {
-    // Active tab state
-    const [activeTab, setActiveTab] = useState<string>("search");
+    // URL Tab state
+    const searchParams = useSearchParams();
+    const tab = searchParams.get("tab") || "search";
     const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
 
     // Search state
@@ -166,38 +161,12 @@ export default function SearchPage() {
 
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)]">
-            {/* Tab Navigation */}
-            <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border">
-                <div className="w-full px-4 md:px-8">
-                    <div className="flex gap-1 py-2">
-                        {MAIN_TABS.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                                        isActive
-                                            ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-[#667eea]/25"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                    )}
-                                >
-                                    <Icon className="w-4 h-4" />
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </nav>
+
 
             {/* Tab Content - 선택된 탭만 표시 */}
             <div className="animate-in fade-in duration-300">
                 {/* SEARCH Tab */}
-                {activeTab === "search" && (
+                {tab === "search" && (
                     <div className="min-h-screen">
                         {/* Hero */}
                         <div className="px-4 py-8 md:py-16 text-center">
@@ -299,21 +268,21 @@ export default function SearchPage() {
                 )}
 
                 {/* MUSIC Tab */}
-                {activeTab === "music" && (
+                {tab === "music" && (
                     <div className="w-full px-4 md:px-8 py-6">
                         <MusicTab country={country} />
                     </div>
                 )}
 
                 {/* CHARTS Tab */}
-                {activeTab === "charts" && (
+                {tab === "charts" && (
                     <div className="w-full px-4 md:px-8 py-6">
                         <ChartsTab country={country} />
                     </div>
                 )}
 
                 {/* MOODS Tab */}
-                {activeTab === "moods" && (
+                {tab === "moods" && (
                     <div className="w-full px-4 md:px-8 py-6 pb-32">
                         <MoodsTab country={country} />
                     </div>
