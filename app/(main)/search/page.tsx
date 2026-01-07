@@ -30,6 +30,7 @@ function SearchPageContent() {
     const searchParams = useSearchParams();
     const tab = searchParams.get("tab") || "search";
     const [country, setCountry] = useState<Country | null>(null);
+    const [chartsCountry, setChartsCountry] = useState<Country | null>(null); // Separate state for Charts tab
 
     // Search state
     const [query, setQuery] = useState("");
@@ -99,12 +100,9 @@ function SearchPageContent() {
         detectCountry();
     }, []);
 
-    // Handle country change
-    const handleCountryChange = (newCountry: Country) => {
-        setCountry(newCountry);
-        localStorage.setItem("user_country_code", newCountry.code);
-        localStorage.setItem("user_country_lang", newCountry.lang);
-        localStorage.setItem("user_country_name", newCountry.name);
+    // Handle country change (Charts only - does NOT persist to localStorage)
+    const handleChartsCountryChange = (newCountry: Country) => {
+        setChartsCountry(newCountry);
     };
 
     // Fetch suggestions
@@ -334,9 +332,9 @@ function SearchPageContent() {
                         {country ? (
                             <>
                                 <div className="flex justify-end mb-4">
-                                    <CountrySelector value={country} onChange={handleCountryChange} />
+                                    <CountrySelector value={chartsCountry || country} onChange={handleChartsCountryChange} />
                                 </div>
-                                <ChartsTab country={country} />
+                                <ChartsTab country={chartsCountry || country} />
                             </>
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>
