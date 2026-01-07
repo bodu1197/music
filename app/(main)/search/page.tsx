@@ -61,7 +61,7 @@ export default function SearchPage() {
     }, []);
 
     // Perform search
-    const handleSearch = async (searchQuery?: string) => {
+    const handleSearch = async (searchQuery?: string, filterOverride?: string | null) => {
         const q = searchQuery || query;
         if (!q.trim()) return;
         setShowSuggestions(false);
@@ -70,7 +70,8 @@ export default function SearchPage() {
         setResults([]);
         setHasSearched(true);
         try {
-            const filterParam = filter ? `&filter=${filter}` : "";
+            const activeFilter = filterOverride !== undefined ? filterOverride : filter;
+            const filterParam = activeFilter ? `&filter=${activeFilter}` : "";
             const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=100${filterParam}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             setResults((await res.json()) || []);
@@ -163,7 +164,7 @@ export default function SearchPage() {
                             const Icon = f.icon;
                             const isActive = filter === f.id;
                             return (
-                                <button key={f.id || "all"} onClick={() => { setFilter(f.id); if (query) handleSearch(); }} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", isActive ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-700")}>
+                                <button key={f.id || "all"} onClick={() => { setFilter(f.id); if (query) handleSearch(undefined, f.id); }} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", isActive ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-700")}>
                                     <Icon className="w-4 h-4" />{f.label}
                                 </button>
                             );
