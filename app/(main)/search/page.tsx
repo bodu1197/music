@@ -36,18 +36,6 @@ export default function SearchPage() {
 
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
-    // 클라이언트 측 필터링 - 즉시 반영
-    const filteredResults = filter
-        ? allResults.filter(item => {
-            if (filter === 'songs') return item.resultType === 'song';
-            if (filter === 'videos') return item.resultType === 'video';
-            if (filter === 'albums') return item.resultType === 'album';
-            if (filter === 'artists') return item.resultType === 'artist';
-            if (filter === 'playlists') return item.resultType === 'playlist';
-            return true;
-        })
-        : allResults;
-
     // Fetch suggestions
     useEffect(() => {
         if (query.length < 2) { setSuggestions([]); return; }
@@ -72,18 +60,18 @@ export default function SearchPage() {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    // Perform search (전체 결과 가져오기, 필터 없이)
-    const handleSearch = async (searchQuery?: string) => {
+    // Perform search
+    const handleSearch = async (searchQuery?: string, searchFilter?: string | null) => {
         const q = searchQuery || query;
         if (!q.trim()) return;
         setShowSuggestions(false);
         setIsLoading(true);
         setError(null);
         setAllResults([]);
-        setFilter(null); // 새 검색 시 필터 초기화
         setHasSearched(true);
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+            const filterParam = searchFilter ? `&filter=${searchFilter}` : '';
+            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}${filterParam}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             setAllResults((await res.json()) || []);
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Search failed"); }
@@ -175,7 +163,7 @@ export default function SearchPage() {
                             const Icon = f.icon;
                             const isActive = filter === f.id;
                             return (
-                                <button key={f.id || "all"} onClick={() => setFilter(f.id)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", isActive ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-700")}>
+                                <button key={f.id || "all"} onClick={() => { setFilter(f.id); handleSearch(undefined, f.id); }} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all", isActive ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700 border border-zinc-700")}>
                                     <Icon className="w-4 h-4" />{f.label}
                                 </button>
                             );
@@ -188,12 +176,12 @@ export default function SearchPage() {
             {error && <div className="max-w-4xl mx-auto px-4 mb-6"><div className="p-4 bg-red-900/50 border border-red-700 rounded-xl text-red-300">Error: {error}</div></div>}
 
             {/* Results Count */}
-            {filteredResults.length > 0 && <div className="max-w-4xl mx-auto px-4 mb-4 text-zinc-400 text-sm">Found {filteredResults.length} results{filter && ` (filtered from ${allResults.length})`}</div>}
+            {allResults.length > 0 && <div className="max-w-4xl mx-auto px-4 mb-4 text-zinc-400 text-sm">Found {allResults.length} results</div>}
 
             {/* Results - Slide up animation */}
             <div className="max-w-4xl mx-auto px-4 pb-32">
                 <div className="space-y-2">
-                    {filteredResults.map((item, i) => (
+                    {allResults.map((item, i) => (
                         <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => handleItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-purple-500/30 rounded-xl cursor-pointer group text-left transition-all animate-in slide-in-from-bottom-4 duration-300" style={{ animationDelay: `${i * 30}ms` }}>
                             <div className="w-14 h-14 flex-shrink-0 bg-zinc-800 rounded-lg overflow-hidden relative">
                                 {item.thumbnails?.[0]?.url ? <Image src={item.thumbnails[0].url} alt={item.title || ""} fill className="object-cover" unoptimized /> : <div className="w-full h-full flex items-center justify-center text-zinc-600">{getResultIcon(item.resultType)}</div>}
@@ -206,7 +194,7 @@ export default function SearchPage() {
                         </button>
                     ))}
                 </div>
-                {!isLoading && filteredResults.length === 0 && hasSearched && !error && <div className="py-20 text-center text-zinc-500">No results found for &quot;{query}&quot;{filter && " with this filter"}</div>}
+                {!isLoading && allResults.length === 0 && hasSearched && !error && <div className="py-20 text-center text-zinc-500">No results found for &quot;{query}&quot;</div>}
             </div>
         </div>
     );
