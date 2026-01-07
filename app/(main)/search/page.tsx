@@ -137,7 +137,7 @@ export default function SearchPage() {
                 {/* Search Form */}
                 <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
                     <div className="relative flex items-center">
-                        <Brain className="absolute left-4 w-5 h-5 text-purple-300" />
+                        <Brain className="absolute left-4 w-5 h-5 text-white z-10" />
                         <input
                             ref={inputRef}
                             type="text"
