@@ -83,7 +83,7 @@ export default function SearchPage() {
         setFilter(null); // 새 검색 시 필터 초기화
         setHasSearched(true);
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=100`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             setAllResults((await res.json()) || []);
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Search failed"); }
