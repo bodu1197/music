@@ -184,8 +184,12 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
                             type="button"
                             onClick={() => handleArtistClick(artist)}
                             disabled={!!loadingId}
-                            className="group flex flex-col items-center p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 transition-all duration-200 disabled:opacity-50"
+                            className="group relative flex flex-col items-center p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 transition-all duration-200 disabled:opacity-50"
                         >
+                            {/* Rank Badge */}
+                            <div className="absolute top-1 left-1 w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white shadow-lg z-10">
+                                {artist.rank}
+                            </div>
 
                             {/* Artist Image */}
                             <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden mb-2 ring-2 ring-zinc-700 group-hover:ring-zinc-500 transition-all">
