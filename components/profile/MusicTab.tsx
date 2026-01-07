@@ -35,6 +35,13 @@ function albumTrackToTrack(track: AlbumTrack, albumInfo: AlbumData): Track | nul
     };
 }
 
+// Helper to get high-res image
+function getHighResImage(url: string | undefined): string {
+    if (!url) return "/images/default-album.svg";
+    // Replace width/height params (e.g. w120-h120) with w544-h544 for better quality
+    return url.replace(/w\d+-h\d+/, "w544-h544");
+}
+
 export function MusicTab({ country }: Readonly<MusicTabProps>) {
     const { setPlaylist, toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
     const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -200,7 +207,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                                 const subtitle = item.artists
                                     ? item.artists.map((a: Artist) => a.name).join(", ")
                                     : item.subscribers || "";
-                                const image = item.thumbnails?.at(-1)?.url || "/images/default-album.svg";
+                                const image = getHighResImage(item.thumbnails?.at(-1)?.url);
                                 const isPlayable = !!(item.videoId || item.browseId || item.playlistId);
                                 const isItemLoading = !!(loadingId && loadingId === item.browseId);
 
