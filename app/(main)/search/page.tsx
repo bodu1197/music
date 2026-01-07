@@ -128,16 +128,16 @@ export default function SearchPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#0c0c1a] via-[#080812] to-black">
             {/* Hero Section */}
-            <section className="px-4 py-16 md:py-24 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500 text-transparent bg-clip-text">
+            <section className="px-4 py-12 md:py-24 text-center">
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500 text-transparent bg-clip-text whitespace-nowrap">
                     Discover Music with AI
                 </h1>
-                <p className="text-zinc-400 text-lg mb-8">Global music big data - explore without limits</p>
+                <p className="text-zinc-400 text-sm sm:text-base md:text-lg mb-6 md:mb-8 whitespace-nowrap">Global music big data - explore without limits</p>
 
                 {/* Search Form */}
                 <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
                     <div className="relative flex items-center">
-                        <Brain className="absolute left-4 w-5 h-5 text-purple-400" />
+                        <Brain className="absolute left-4 w-5 h-5 text-purple-300" />
                         <input
                             ref={inputRef}
                             type="text"
