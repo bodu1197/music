@@ -23,13 +23,14 @@ const FILTERS = [
 export default function SearchPage() {
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [allResults, setAllResults] = useState<SearchResult[]>([]); // 전체 결과 저장
+    const [allResults, setAllResults] = useState<SearchResult[]>([]);
     const [filter, setFilter] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
+    const [filterCache, setFilterCache] = useState<Record<string, SearchResult[]>>({});
     const inputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
@@ -60,6 +61,20 @@ export default function SearchPage() {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
+    // Prefetch other filters in background
+    const prefetchFilters = async (q: string) => {
+        const filters = ['songs', 'videos', 'albums', 'artists', 'playlists'];
+        filters.forEach(async (f) => {
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&filter=${f}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setFilterCache(prev => ({ ...prev, [f]: data || [] }));
+                }
+            } catch { /* ignore */ }
+        });
+    };
+
     // Perform search
     const handleSearch = async (searchQuery?: string, searchFilter?: string | null) => {
         const q = searchQuery || query;
@@ -67,13 +82,29 @@ export default function SearchPage() {
         setShowSuggestions(false);
         setIsLoading(true);
         setError(null);
-        setAllResults([]);
         setHasSearched(true);
+
+        // 캐시에서 먼저 확인
+        if (searchFilter && filterCache[searchFilter]) {
+            setAllResults(filterCache[searchFilter]);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const filterParam = searchFilter ? `&filter=${searchFilter}` : '';
             const res = await fetch(`/api/search?q=${encodeURIComponent(q)}${filterParam}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            setAllResults((await res.json()) || []);
+            const data = (await res.json()) || [];
+            setAllResults(data);
+
+            // All 검색 시 캐시 초기화 및 백그라운드 프리페치
+            if (!searchFilter) {
+                setFilterCache({ all: data });
+                prefetchFilters(q);
+            } else {
+                setFilterCache(prev => ({ ...prev, [searchFilter]: data }));
+            }
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Search failed"); }
         finally { setIsLoading(false); }
     };
