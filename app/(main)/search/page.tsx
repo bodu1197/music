@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Loader2, Music, Video, Disc, User, ListMusic, Brain, ArrowRight, BarChart2, Sparkles, Music2 } from "lucide-react";
+import { Search, Loader2, Music, Video, Disc, User, ListMusic, Brain, ArrowRight } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";

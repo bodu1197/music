@@ -8,7 +8,7 @@ interface MainContentProps {
     children: React.ReactNode;
 }
 
-export default function MainContent({ children }: MainContentProps) {
+export default function MainContent({ children }: Readonly<MainContentProps>) {
     const pathname = usePathname();
     const { isQueueOpen } = usePlayer();
 

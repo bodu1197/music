@@ -1,8 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
