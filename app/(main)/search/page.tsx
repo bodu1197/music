@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Loader2, Music, Video, Disc, User, ListMusic, Brain, ArrowRight, BarChart2, Sparkles, Music2 } from "lucide-react";
@@ -24,7 +24,7 @@ const SEARCH_FILTERS = [
     { id: "playlists", label: "Playlists", icon: ListMusic },
 ];
 
-export default function SearchPage() {
+function SearchPageContent() {
     // URL Tab state
     const searchParams = useSearchParams();
     const tab = searchParams.get("tab") || "search";
@@ -289,5 +289,17 @@ export default function SearchPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] flex items-center justify-center">
+                <div className="text-white/60">Loading...</div>
+            </div>
+        }>
+            <SearchPageContent />
+        </Suspense>
     );
 }
