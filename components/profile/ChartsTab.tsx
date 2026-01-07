@@ -173,7 +173,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
         }
 
         return (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {artists.map((artist) => {
                     const isArtistLoading = loadingId === artist.browseId;
                     const thumbnailUrl = artist.thumbnails?.at(-1)?.url || "/images/default-artist.svg";
@@ -243,7 +243,7 @@ export function ChartsTab({ country }: Readonly<ChartsTabProps>) {
     return (
         <div className="space-y-8 animate-in fade-in duration-300">
             {/* Chart Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {chartCards.map((card) => {
                     const isCardLoading = loadingId === card.id;
 

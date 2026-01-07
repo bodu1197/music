@@ -77,7 +77,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
         }
 
         return (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {playlistsData.map((playlist: MoodPlaylist, i: number) => (
                     <button
                         key={playlist.playlistId || i}
@@ -148,7 +148,7 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                     {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                                 {categories.map((cat, i) => (
                                     <button
                                         key={cat.params || i}

@@ -196,7 +196,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                             <h2 className="mb-3 text-lg font-bold text-zinc-100">{shelf.title}</h2>
                         )}
 
-                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4 md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:overflow-visible">
+                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4 md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 md:overflow-visible">
                             {shelf.contents.map((item: HomeSectionContent, i: number) => {
                                 if (!item) return null;
 
