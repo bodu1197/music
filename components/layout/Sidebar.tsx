@@ -13,7 +13,7 @@ export default function Sidebar() {
         { name: "Shop", href: "/shop", icon: ShoppingBag },
         { name: "Messages", href: "/messages", icon: Send },
         { name: "Create", href: "/create", icon: PlusSquare },
-        { name: "Music", href: "/music", icon: Music2 },
+        { name: "Music", href: "/search", icon: Music2 },
         { name: "Profile", href: "/profile", icon: User },
     ];
 

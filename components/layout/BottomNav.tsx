@@ -12,7 +12,7 @@ export default function BottomNav() {
         { name: "Home", href: "/", icon: Home },
         { name: "Create", href: "/create", icon: PlusSquare },
         { name: "Shop", href: "/shop", icon: ShoppingBag },
-        { name: "Music", href: "/music", icon: Music2 },
+        { name: "Music", href: "/search", icon: Music2 },
         { name: "Profile", href: "/profile", icon: User },
     ];
 
