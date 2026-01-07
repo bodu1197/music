@@ -31,7 +31,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <div className="hidden md:flex flex-col w-[245px] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] px-4 py-8 z-50 overflow-y-auto no-scrollbar">
+        <div className="hidden md:flex flex-col w-[245px] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] px-4 py-8 z-50 overflow-y-auto no-scrollbar">
             <Link href="/" className="mb-10 px-4">
                 <h1 className="text-2xl font-bold font-heading bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text">VibeStation</h1>
             </Link>
