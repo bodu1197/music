@@ -196,7 +196,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                             <h2 className="mb-3 text-lg font-bold text-zinc-100">{shelf.title}</h2>
                         )}
 
-                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4">
+                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pr-4 md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:overflow-visible">
                             {shelf.contents.map((item: HomeSectionContent, i: number) => {
                                 if (!item) return null;
 
@@ -212,7 +212,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                                     <button
                                         key={item.videoId || item.browseId || item.playlistId || `item-${sIndex}-${i}`}
                                         type="button"
-                                        className="flex-none w-[140px] group cursor-pointer text-left bg-transparent border-none p-0"
+                                        className="flex-none w-[140px] md:w-full group cursor-pointer text-left bg-transparent border-none p-0"
                                         onClick={() => isPlayable && !isItemLoading && handleItemClick(item, shelf.contents, i)}
                                     >
                                         <div className="relative aspect-square w-full mb-2 bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
@@ -221,7 +221,7 @@ export function MusicTab({ country }: Readonly<MusicTabProps>) {
                                                 alt={title}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                sizes="(max-width: 768px) 140px, 160px"
+                                                sizes="(max-width: 768px) 140px, (max-width: 1024px) 25vw, 20vw"
                                                 fallbackSrc="/images/default-album.svg"
                                             />
                                             {isPlayable && (
