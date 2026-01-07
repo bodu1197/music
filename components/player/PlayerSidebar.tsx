@@ -36,22 +36,19 @@ export default function PlayerSidebar() {
                     isQueueOpen ? "translate-x-0" : "translate-x-full"
                 )}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-                    <h3 className="text-white font-semibold">Now Playing</h3>
+                {/* Video Display - ACTUAL YouTube Player (최상단 배치) */}
+                <div className="relative w-full">
+                    <div className="w-full aspect-video bg-black overflow-hidden">
+                        <YouTubePlayer className="w-full h-full" />
+                    </div>
+                    {/* 닫기 버튼 (모바일에서만 표시) */}
                     <button
                         onClick={toggleQueue}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all md:hidden"
+                        className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 transition-all md:hidden z-10"
+                        aria-label="Close"
                     >
                         <X className="w-5 h-5" />
                     </button>
-                </div>
-
-                {/* Video Display - ACTUAL YouTube Player */}
-                <div className="w-full px-4 py-4">
-                    <div className="w-full aspect-video bg-black rounded overflow-hidden">
-                        <YouTubePlayer className="w-full h-full" />
-                    </div>
                 </div>
 
                 {/* Queue Title */}
