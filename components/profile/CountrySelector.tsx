@@ -10,14 +10,10 @@ interface CountrySelectorProps {
     onChange: (country: Country) => void;
 }
 
-// Convert country code to flag emoji
-function getFlagEmoji(countryCode: string): string {
-    if (countryCode === "ZZ") return "🌍";
-    const codePoints = countryCode
-        .toUpperCase()
-        .split("")
-        .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
+// Get flag icon URL from flagcdn.com
+function getFlagUrl(countryCode: string): string {
+    if (countryCode === "ZZ") return "";
+    return `https://flagcdn.com/24x18/${countryCode.toLowerCase()}.png`;
 }
 
 export function CountrySelector({ value, onChange }: Readonly<CountrySelectorProps>) {
@@ -48,25 +44,33 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
-            {/* Trigger Button */}
+        <div className="relative w-full md:w-[320px]" ref={dropdownRef}>
+            {/* Trigger Button - same width as dropdown */}
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#0f3460] text-[#e94560] rounded-lg hover:bg-[#e94560] hover:text-white transition-colors duration-300 min-w-[160px] justify-between"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-[#0f3460] text-[#e94560] rounded-lg hover:bg-[#e94560] hover:text-white transition-colors duration-300 justify-between"
             >
-                <span className="flex items-center gap-2">
-                    <span className="text-xl">{getFlagEmoji(value.code)}</span>
-                    <span className="font-medium">{value.name}</span>
+                <span className="flex items-center gap-3">
+                    {value.code === "ZZ" ? (
+                        <span className="text-xl">🌍</span>
+                    ) : (
+                        <img
+                            src={getFlagUrl(value.code)}
+                            alt={value.code}
+                            className="w-6 h-4 object-cover rounded-sm"
+                        />
+                    )}
+                    <span className="font-medium truncate">{value.name}</span>
                 </span>
-                <ChevronDown className={cn("w-4 h-4 transition-transform", open && "rotate-180")} />
+                <ChevronDown className={cn("w-5 h-5 transition-transform flex-shrink-0", open && "rotate-180")} />
             </button>
 
-            {/* Dropdown Panel */}
+            {/* Dropdown Panel - same width as button */}
             {open && (
-                <div className="absolute top-full right-0 mt-1 w-[300px] bg-[#1a1a2e] border border-[#0f3460] rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a2e] border border-[#0f3460] rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-2.5">
+                    <div className="p-3">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a0a0a0]" />
                             <input
@@ -74,14 +78,14 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search country..."
-                                className="w-full pl-9 pr-3 py-2.5 bg-[#16213e] border border-[#0f3460] rounded-lg text-[#e0e0e0] placeholder:text-[#6b7280] focus:outline-none focus:border-[#e94560] text-sm"
+                                className="w-full pl-10 pr-3 py-2.5 bg-[#16213e] border border-[#0f3460] rounded-lg text-[#e0e0e0] placeholder:text-[#6b7280] focus:outline-none focus:border-[#e94560] text-sm"
                                 autoFocus
                             />
                         </div>
                     </div>
 
                     {/* Countries List */}
-                    <div className="max-h-[300px] overflow-y-auto px-2.5 pb-2.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0f3460] [&::-webkit-scrollbar-thumb]:rounded-full">
+                    <div className="max-h-[300px] overflow-y-auto px-3 pb-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0f3460] [&::-webkit-scrollbar-thumb]:rounded-full">
                         {filteredCountries.length === 0 ? (
                             <div className="py-4 text-center text-[#a0a0a0] text-sm">No country found</div>
                         ) : (
@@ -97,10 +101,18 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
                                             : "text-[#e0e0e0] hover:bg-[#0f3460]/50"
                                     )}
                                 >
-                                    <span className="text-xl">{getFlagEmoji(country.code)}</span>
+                                    {country.code === "ZZ" ? (
+                                        <span className="text-xl w-6 text-center">🌍</span>
+                                    ) : (
+                                        <img
+                                            src={getFlagUrl(country.code)}
+                                            alt={country.code}
+                                            className="w-6 h-4 object-cover rounded-sm"
+                                        />
+                                    )}
                                     <span className="flex-1 text-sm">{country.name}</span>
                                     {value.code === country.code && (
-                                        <Check className="w-4 h-4 text-[#e94560]" />
+                                        <Check className="w-4 h-4 text-[#e94560] flex-shrink-0" />
                                     )}
                                 </button>
                             ))
@@ -111,3 +123,4 @@ export function CountrySelector({ value, onChange }: Readonly<CountrySelectorPro
         </div>
     );
 }
+
