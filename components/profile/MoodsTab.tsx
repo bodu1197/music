@@ -13,6 +13,31 @@ interface MoodsTabProps {
     country: Country;
 }
 
+// 🔥 Component to handle aggressive prefetching of mood playlists
+function MoodsPrefetcher({ moods, country }: { moods: Record<string, MoodCategory[]>, country: Country }) {
+    useEffect(() => {
+        if (!moods) return;
+
+        console.log("[MoodsTab] 🚀 Starting aggressive prefetch for all categories...");
+
+        // Flatten all categories
+        const allCategories = Object.values(moods).flat();
+
+        // Prefetch all in parallel (Supabase will handle caching)
+        allCategories.forEach((cat) => {
+            if (cat.params) {
+                getMoodPlaylists(cat.params, country.code, country.lang).catch(err => {
+                    // Start silently, errors are expected for some categories
+                    // console.debug(`Prefetch failed for ${cat.title}`, err);
+                });
+            }
+        });
+
+    }, [moods, country.code]);
+
+    return null;
+}
+
 export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; params: string } | null>(null);
     const { toggleQueue, isQueueOpen, playYouTubePlaylist } = usePlayer();
@@ -145,6 +170,11 @@ export function MoodsTab({ country }: Readonly<MoodsTabProps>) {
                 </div>
             ) : (
                 <div className="space-y-6">
+                    {/* Aggressive Prefetching Status: Hidden but active */}
+                    {moodsAllData && (
+                        <MoodsPrefetcher moods={moodsAllData} country={country} />
+                    )}
+
                     {moodsAllData && Object.entries(moodsAllData).map(([sectionTitle, categories]) => (
                         <section key={sectionTitle}>
                             <h2 className="text-sm font-bold text-white mb-3">{sectionTitle}</h2>
