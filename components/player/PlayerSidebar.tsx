@@ -1,9 +1,10 @@
 "use client";
 
 import { usePlayer, Track } from "@/contexts/PlayerContext";
+import { useLibrary } from "@/contexts/LibraryContext";
 import YouTubePlayer from "./YouTubePlayer";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 export default function PlayerSidebar() {
     const {
@@ -91,21 +92,35 @@ interface QueueItemProps {
 }
 
 function QueueItem({ track, index, isPlaying, onClick }: Readonly<QueueItemProps>) {
+    const { openAddToLibraryModal, isTrackInAnyFolder } = useLibrary();
     const thumbnail = track.thumbnail || "/images/default-album.svg";
+    const isInLibrary = isTrackInAnyFolder(track.videoId);
+
+    const handleAddToLibrary = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        openAddToLibraryModal({
+            videoId: track.videoId,
+            title: track.title,
+            artist: track.artist || "",
+            thumbnail: track.thumbnail || "",
+        });
+    };
 
     return (
         <li className="list-none">
-            <button
-                type="button"
-                onClick={onClick}
+            <div
                 className={cn(
-                    "w-full flex items-center gap-3 p-2 rounded cursor-pointer transition-colors text-left",
+                    "w-full flex items-center gap-3 p-2 rounded transition-colors group",
                     "hover:bg-white/5",
                     isPlaying && "bg-[#667eea]/20"
                 )}
             >
                 {/* Track Number / Playing Indicator */}
-                <div className="w-6 text-center flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={onClick}
+                    className="w-6 text-center flex-shrink-0"
+                >
                     {isPlaying ? (
                         <div className="flex items-end justify-center gap-[2px] h-4">
                             <span className="w-1 bg-[#667eea] animate-[equalizer_1.2s_ease-in-out_infinite]" style={{ height: "8px" }} />
@@ -115,10 +130,12 @@ function QueueItem({ track, index, isPlaying, onClick }: Readonly<QueueItemProps
                     ) : (
                         <span className="text-xs text-white/40">{index + 1}</span>
                     )}
-                </div>
+                </button>
 
                 {/* Thumbnail */}
-                <div
+                <button
+                    type="button"
+                    onClick={onClick}
                     className="w-9 h-9 bg-zinc-800 rounded flex-shrink-0 overflow-hidden"
                     style={{
                         backgroundImage: `url(${thumbnail})`,
@@ -128,7 +145,11 @@ function QueueItem({ track, index, isPlaying, onClick }: Readonly<QueueItemProps
                 />
 
                 {/* Track Info */}
-                <div className="flex-1 min-w-0">
+                <button
+                    type="button"
+                    onClick={onClick}
+                    className="flex-1 min-w-0 text-left"
+                >
                     <div
                         className={cn(
                             "text-sm truncate",
@@ -138,8 +159,24 @@ function QueueItem({ track, index, isPlaying, onClick }: Readonly<QueueItemProps
                         {track.title}
                     </div>
                     <div className="text-xs text-white/50 truncate">{track.artist}</div>
-                </div>
-            </button>
+                </button>
+
+                {/* Add to Library Button */}
+                <button
+                    type="button"
+                    onClick={handleAddToLibrary}
+                    className={cn(
+                        "w-7 h-7 flex items-center justify-center rounded-full transition-all flex-shrink-0",
+                        "opacity-0 group-hover:opacity-100",
+                        isInLibrary
+                            ? "text-green-400 bg-green-500/20 opacity-100"
+                            : "text-white/50 hover:text-white hover:bg-white/10"
+                    )}
+                    title={isInLibrary ? "In Library" : "Add to Library"}
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+            </div>
         </li>
     );
 }

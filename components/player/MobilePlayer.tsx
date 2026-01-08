@@ -1,6 +1,7 @@
 "use client";
 
 import { usePlayer } from "@/contexts/PlayerContext";
+import { useLibrary } from "@/contexts/LibraryContext";
 import {
     Play,
     Pause,
@@ -8,11 +9,10 @@ import {
     SkipForward,
     Shuffle,
     Repeat,
-    Heart,
+    Plus,
     ListMusic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 
 // Format time (seconds) to mm:ss
 function formatTime(seconds: number): string {
@@ -102,6 +102,20 @@ function MobileControls({ player }: { readonly player: ReturnType<typeof usePlay
         isQueueOpen,
     } = player;
 
+    const { openAddToLibraryModal, isTrackInAnyFolder } = useLibrary();
+
+    const handleAddToLibrary = () => {
+        if (!currentTrack) return;
+        openAddToLibraryModal({
+            videoId: currentTrack.videoId,
+            title: currentTrack.title,
+            artist: currentTrack.artist || "",
+            thumbnail: currentTrack.thumbnail || "",
+        });
+    };
+
+    const isInLibrary = currentTrack ? isTrackInAnyFolder(currentTrack.videoId) : false;
+
     const getRepeatLabel = () => {
         if (repeatMode === "one") return "1";
         if (repeatMode === "all") return "ALL";
@@ -116,13 +130,20 @@ function MobileControls({ player }: { readonly player: ReturnType<typeof usePlay
 
     return (
         <div className="flex items-center justify-between w-full">
-            {/* Heart / Like Button */}
+            {/* Add to Library Button */}
             <button
-                className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-rose-400 active:scale-90 transition-all"
-                title="Like"
+                onClick={handleAddToLibrary}
+                className={cn(
+                    "w-10 h-10 flex items-center justify-center active:scale-90 transition-all",
+                    isInLibrary
+                        ? "text-green-400"
+                        : "text-white/60 hover:text-white"
+                )}
+                title={isInLibrary ? "In Library" : "Add to Library"}
             >
-                <Heart className="w-5 h-5" />
+                <Plus className="w-5 h-5" />
             </button>
+
 
             {/* Shuffle */}
             <button

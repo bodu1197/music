@@ -1,6 +1,7 @@
 "use client";
 
 import { usePlayer } from "@/contexts/PlayerContext";
+import { useLibrary } from "@/contexts/LibraryContext";
 import {
     Play,
     Pause,
@@ -12,9 +13,11 @@ import {
     VolumeX,
     Volume1,
     ListMusic,
+    Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRef, useCallback } from "react";
+
 
 // Format time (seconds) to mm:ss
 function formatTime(seconds: number): string {
@@ -26,10 +29,23 @@ function formatTime(seconds: number): string {
 
 export default function GlobalPlayer() {
     const player = usePlayer();
+    const { openAddToLibraryModal, isTrackInAnyFolder } = useLibrary();
     const { currentTrack } = player;
 
     // Default thumbnail if none provided
     const thumbnail = currentTrack?.thumbnail || "/images/default-album.svg";
+
+    const handleAddToLibrary = () => {
+        if (!currentTrack) return;
+        openAddToLibraryModal({
+            videoId: currentTrack.videoId,
+            title: currentTrack.title,
+            artist: currentTrack.artist || "",
+            thumbnail: currentTrack.thumbnail || "",
+        });
+    };
+
+    const isInLibrary = currentTrack ? isTrackInAnyFolder(currentTrack.videoId) : false;
 
     return (
         <div className="hidden md:flex fixed bottom-0 left-0 w-full bg-black/90 border-t border-white/10 z-[1001] h-[90px] items-center px-4 md:pl-[245px]">
@@ -43,7 +59,7 @@ export default function GlobalPlayer() {
                         backgroundPosition: "center",
                     }}
                 />
-                <div className="flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0 flex-1">
                     <span className="text-sm font-medium text-white truncate">
                         {currentTrack?.title || "Ready to play"}
                     </span>
@@ -51,6 +67,21 @@ export default function GlobalPlayer() {
                         {currentTrack?.artist || "Select a song"}
                     </span>
                 </div>
+                {/* Add to Library Button */}
+                {currentTrack && (
+                    <button
+                        onClick={handleAddToLibrary}
+                        className={cn(
+                            "w-8 h-8 flex items-center justify-center rounded-full transition-all flex-shrink-0",
+                            isInLibrary
+                                ? "text-green-400 bg-green-500/20"
+                                : "text-white/60 hover:text-white hover:bg-white/10"
+                        )}
+                        title={isInLibrary ? "In Library" : "Add to Library"}
+                    >
+                        <Plus className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
             {/* Center Section - Controls & Progress */}
