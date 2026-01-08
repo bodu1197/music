@@ -881,12 +881,13 @@ def get_mood_categories(country: str = "US", language: str = "en"):
         return result
     except Exception as e:
         # Fallback to US if the requested country fails
+        # 🔥 NOTE: Do NOT cache fallback data with original key (causes cache pollution)
         if country != "US":
             print(f"[FALLBACK] /moods country={country} failed, trying US...")
             try:
                 yt_fallback = get_ytmusic(country="US", language="en")
                 result = run_with_retry(yt_fallback.get_mood_categories)
-                cache_set(cache_key, result, TTL_MOODS)
+                # Don't cache US data with original country key - return without caching
                 return result
             except Exception as fallback_error:
                 print(f"[FALLBACK FAILED] US also failed: {fallback_error}")
@@ -1007,6 +1008,7 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
 
     except Exception as e:
         # Fallback to US if the requested country fails
+        # 🔥 NOTE: Do NOT cache fallback data with original key (causes cache pollution)
         if country != "US":
             print(f"[FALLBACK] /moods/playlists country={country} failed, trying US...")
             try:
@@ -1019,7 +1021,7 @@ def get_mood_playlists(params: str, country: str = "US", language: str = "en"):
                 if not result:
                     result = parse_genre_playlists(yt_fallback, params)
                 final_result = result if result else []
-                cache_set(cache_key, final_result, TTL_MOOD_PLAYLISTS)
+                # Don't cache US data with original country key - return without caching
                 return final_result
             except Exception as fallback_error:
                 print(f"[FALLBACK FAILED] US also failed: {fallback_error}")
