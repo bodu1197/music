@@ -2,7 +2,7 @@
 
 import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass } from "lucide-react";
+import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass, Library, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -24,6 +24,8 @@ export default function Sidebar() {
                 { name: "Discover", href: "/search?tab=music", id: "music", icon: Compass },
                 { name: "Charts", href: "/search?tab=charts", id: "charts", icon: BarChart2 },
                 { name: "Moods", href: "/search?tab=moods", id: "moods", icon: Sparkles },
+                { name: "My Library", href: "/library", id: "library", icon: Library },
+                { name: "My Cafe", href: "/my-cafe", id: "my-cafe", icon: Coffee },
             ]
         },
         { name: "Profile", href: "/profile", icon: User },
@@ -39,7 +41,7 @@ export default function Sidebar() {
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     // Check if parent is active (includes sub-routes for Music)
-                    const isParentActive = pathname === item.href || (item.name === "Music" && pathname === "/search");
+                    const isParentActive = pathname === item.href || (item.name === "Music" && (pathname === "/search" || pathname === "/library" || pathname === "/my-cafe"));
 
                     return (
                         <div key={item.name}>
@@ -68,7 +70,10 @@ export default function Sidebar() {
                                 <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-2">
                                     {item.subItems.map((sub) => {
                                         const SubIcon = sub.icon;
-                                        const isActiveSub = currentTab === sub.id || (!currentTab && sub.id === "search");
+                                        const isActiveSub = currentTab === sub.id ||
+                                            (!currentTab && sub.id === "search" && pathname === "/search") ||
+                                            (sub.id === "library" && pathname === "/library") ||
+                                            (sub.id === "my-cafe" && pathname === "/my-cafe");
 
                                         return (
                                             <Link
