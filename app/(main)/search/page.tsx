@@ -12,7 +12,7 @@ import { ChartsTab } from "@/components/profile/ChartsTab";
 import { MoodsTab } from "@/components/profile/MoodsTab";
 import { MusicTab } from "@/components/profile/MusicTab";
 import { CountrySelector } from "@/components/profile/CountrySelector";
-import { SUPPORTED_COUNTRIES, DEFAULT_COUNTRY, Country } from "@/lib/constants";
+import { SUPPORTED_COUNTRIES, YTMUSICAPI_SUPPORTED_LOCATIONS, DEFAULT_COUNTRY, getCountryInfo, Country } from "@/lib/constants";
 
 
 
@@ -60,11 +60,11 @@ function SearchPageContent() {
             const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
             const isCacheValid = savedTime && (Date.now() - parseInt(savedTime, 10)) < CACHE_DURATION;
 
-            // Use cached value only if within 24 hours
+            // Use cached value only if within 24 hours (supports all 109 ytmusicapi countries)
             if (savedCode && savedLang && isCacheValid) {
-                const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-                if (found) {
-                    setCountry(found);
+                const countryInfo = getCountryInfo(savedCode);
+                if (countryInfo) {
+                    setCountry(countryInfo);
                     return;
                 }
             }
@@ -74,16 +74,19 @@ function SearchPageContent() {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
                 if (data.country_code) {
-                    const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
-                    if (found) {
-                        setCountry(found);
-                        localStorage.setItem("user_country_code", found.code);
-                        localStorage.setItem("user_country_lang", found.lang);
-                        localStorage.setItem("user_country_name", found.name);
-                        localStorage.setItem("user_country_detected_at", Date.now().toString());
-                        return;
+                    // Check if country is supported by ytmusicapi (109 countries)
+                    if (YTMUSICAPI_SUPPORTED_LOCATIONS.has(data.country_code)) {
+                        const countryInfo = getCountryInfo(data.country_code);
+                        if (countryInfo) {
+                            setCountry(countryInfo);
+                            localStorage.setItem("user_country_code", countryInfo.code);
+                            localStorage.setItem("user_country_lang", countryInfo.lang);
+                            localStorage.setItem("user_country_name", countryInfo.name);
+                            localStorage.setItem("user_country_detected_at", Date.now().toString());
+                            return;
+                        }
                     }
-                    // Country not in supported list, use Global
+                    // Country not in ytmusicapi supported list, use Global
                     const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
                     setCountry(global);
                     localStorage.setItem("user_country_code", global.code);
@@ -94,11 +97,11 @@ function SearchPageContent() {
                 }
             } catch (e) {
                 console.error("IP Detect failed:", e);
-                // On error, use cached value if exists
+                // On error, use cached value if exists (supports all 109 countries)
                 if (savedCode && savedLang) {
-                    const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-                    if (found) {
-                        setCountry(found);
+                    const countryInfo = getCountryInfo(savedCode);
+                    if (countryInfo) {
+                        setCountry(countryInfo);
                         return;
                     }
                 }
