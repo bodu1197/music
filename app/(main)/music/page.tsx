@@ -7,7 +7,7 @@ import { MusicTab } from "@/components/profile/MusicTab";
 import { ChartsTab } from "@/components/profile/ChartsTab";
 import { MoodsTab } from "@/components/profile/MoodsTab";
 import { CountrySelector } from "@/components/profile/CountrySelector";
-import { DEFAULT_COUNTRY, SUPPORTED_COUNTRIES, Country } from "@/lib/constants";
+import { DEFAULT_COUNTRY, SUPPORTED_COUNTRIES, YTMUSICAPI_SUPPORTED_LOCATIONS, getCountryInfo, Country } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export default function MusicPage() {
@@ -26,8 +26,9 @@ export default function MusicPage() {
             const isValidLang = savedLang && VALID_LANGS.includes(savedLang);
 
             if (savedCode && isValidLang) {
-                const found = SUPPORTED_COUNTRIES.find(c => c.code === savedCode);
-                setCurrentCountry(found || { code: savedCode, lang: savedLang, name: savedName || savedCode });
+                // Use getCountryInfo to support all 109 ytmusicapi countries
+                const countryInfo = getCountryInfo(savedCode);
+                setCurrentCountry(countryInfo || { code: savedCode, lang: savedLang, name: savedName || savedCode });
                 return;
             }
 
@@ -41,14 +42,18 @@ export default function MusicPage() {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
                 if (data.country_code) {
-                    const found = SUPPORTED_COUNTRIES.find(c => c.code === data.country_code);
-                    if (found) {
-                        setCurrentCountry(found);
-                        localStorage.setItem("user_country_code", found.code);
-                        localStorage.setItem("user_country_lang", found.lang);
-                        localStorage.setItem("user_country_name", found.name);
-                        return;
+                    // Check if country is supported by ytmusicapi (109 countries)
+                    if (YTMUSICAPI_SUPPORTED_LOCATIONS.has(data.country_code)) {
+                        const countryInfo = getCountryInfo(data.country_code);
+                        if (countryInfo) {
+                            setCurrentCountry(countryInfo);
+                            localStorage.setItem("user_country_code", countryInfo.code);
+                            localStorage.setItem("user_country_lang", countryInfo.lang);
+                            localStorage.setItem("user_country_name", countryInfo.name);
+                            return;
+                        }
                     }
+                    // Fallback to Global only if country not in ytmusicapi supported locations
                     const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
                     setCurrentCountry(global);
                     localStorage.setItem("user_country_code", global.code);
