@@ -118,6 +118,14 @@ function SearchPageContent() {
         setChartsCountry(newCountry);
     };
 
+    // Get Charts-compatible country (62 countries only)
+    // If country is not in SUPPORTED_COUNTRIES, fallback to Global
+    const getChartsCompatibleCountry = (c: Country): Country => {
+        const isChartsSupported = SUPPORTED_COUNTRIES.some(sc => sc.code === c.code);
+        if (isChartsSupported) return c;
+        return SUPPORTED_COUNTRIES.find(sc => sc.code === "ZZ")!;
+    };
+
     // Reset chartsCountry when leaving charts tab
     useEffect(() => {
         if (tab !== "charts") {
@@ -352,9 +360,9 @@ function SearchPageContent() {
                         {country ? (
                             <>
                                 <div className="flex justify-end mb-4">
-                                    <CountrySelector value={chartsCountry || country} onChange={handleChartsCountryChange} />
+                                    <CountrySelector value={chartsCountry || getChartsCompatibleCountry(country)} onChange={handleChartsCountryChange} />
                                 </div>
-                                <ChartsTab country={chartsCountry || country} />
+                                <ChartsTab country={chartsCountry || getChartsCompatibleCountry(country)} />
                             </>
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">Detecting your location...</div>

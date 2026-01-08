@@ -859,26 +859,6 @@ def get_charts(country: str = "US", language: str = "en"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/moods/raw")
-def get_raw_mood_categories(country: str = "US", language: str = "en"):
-    """
-    [TEST ONLY] Get raw ytmusicapi get_mood_categories() response.
-    No caching, no processing - pure ytmusicapi output.
-    """
-    try:
-        print(f"[RAW TEST] /moods/raw country={country} lang={language}")
-        yt = get_ytmusic(country=country, language=language)
-        result = yt.get_mood_categories()
-        return {
-            "source": "ytmusicapi.get_mood_categories()",
-            "requested_country": country,
-            "requested_language": language,
-            "data": result
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/moods")
 def get_mood_categories(country: str = "US", language: str = "en"):
     """

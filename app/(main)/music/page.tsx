@@ -75,6 +75,15 @@ export default function MusicPage() {
         setChartsCountry(c);
     };
 
+    // Get Charts-compatible country (62 countries only)
+    // If currentCountry is not in SUPPORTED_COUNTRIES, fallback to Global
+    const getChartsCompatibleCountry = (country: Country): Country => {
+        const isChartsSupported = SUPPORTED_COUNTRIES.some(c => c.code === country.code);
+        if (isChartsSupported) return country;
+        // Fallback to Global for countries not supported by Charts
+        return SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
+    };
+
     const tabs = [
         { id: "search", icon: Search, label: "SEARCH" },
         { id: "music", icon: Music2, label: "MUSIC" },
@@ -104,7 +113,8 @@ export default function MusicPage() {
                                 onClick={() => {
                                     setActiveTab(tab.id);
                                     if (tab.id === "charts" && currentCountry) {
-                                        setChartsCountry(currentCountry);
+                                        // Use Charts-compatible country (62 countries only)
+                                        setChartsCountry(getChartsCompatibleCountry(currentCountry));
                                     }
                                 }}
                                 className={cn(
@@ -144,11 +154,11 @@ export default function MusicPage() {
                             <>
                                 <div className="flex justify-end mb-4">
                                     <CountrySelector
-                                        value={chartsCountry || currentCountry!}
+                                        value={chartsCountry || getChartsCompatibleCountry(currentCountry!)}
                                         onChange={handleChartsCountryChange}
                                     />
                                 </div>
-                                <ChartsTab country={chartsCountry || currentCountry!} />
+                                <ChartsTab country={chartsCountry || getChartsCompatibleCountry(currentCountry!)} />
                             </>
                         ) : (
                             <div className="py-20 text-center text-zinc-500 animate-pulse">
