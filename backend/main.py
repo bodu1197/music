@@ -871,10 +871,8 @@ def get_raw_mood_categories(country: str = "US", language: str = "en"):
         result = yt.get_mood_categories()
         return {
             "source": "ytmusicapi.get_mood_categories()",
-            "country": country,
-            "language": language,
-            "ytmusic_location": yt.location,
-            "ytmusic_language": yt.language,
+            "requested_country": country,
+            "requested_language": language,
             "data": result
         }
     except Exception as e:
