@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CLOUD_RUN_URL = process.env.CLOUD_RUN_URL || "https://musi-backend-1080574880314.us-central1.run.app";
+const CLOUD_RUN_URL = process.env.NEXT_PUBLIC_API_URL || "https://sori-music-backend-322455104824.us-central1.run.app";
 
 export const dynamic = "force-dynamic"; // No caching at all
 
