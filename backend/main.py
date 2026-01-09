@@ -1378,7 +1378,7 @@ def generate_artist_post(request: AIPostRequest):
     
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-3-flash")
         
         # Build prompt based on post type
         prompts = {
