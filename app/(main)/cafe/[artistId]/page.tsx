@@ -197,7 +197,7 @@ function useCafePageLogic(artistId: string) {
                         likes_count: Math.floor(Math.random() * 50) + 10,
                         isAI: true,
                         isAI_generated: true,
-                        user: { display_name: "AI Artist" }
+                        user: { display_name: `${artist.name} 팬카페 지기` }
                     } as CafePost, ...prev]);
                 }
             } catch { /* ignore */ }
@@ -499,10 +499,13 @@ interface CafePostFeedProps {
     readonly handleReaction: (id: string, type: ReactionType) => void;
     readonly reactingPostId: string | null;
     readonly setReportingPost: (post: CafePost) => void;
+    readonly artistThumbnail?: string | null;
+    readonly artistName?: string;
 }
 
 function CafePostFeed({
-    posts, postsLoading, handleReaction, reactingPostId, setReportingPost
+    posts, postsLoading, handleReaction, reactingPostId, setReportingPost,
+    artistThumbnail, artistName
 }: CafePostFeedProps) {
     if (postsLoading) return <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" /></div>;
     if (posts.length === 0) return <div className="text-center py-12 text-zinc-500">아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!</div>;
@@ -512,13 +515,20 @@ function CafePostFeed({
             {posts.map((post) => (
                 <div key={post.id} className={cn("bg-[#1a1a2e]/80 border rounded-xl p-4", post.isAI ? "border-[#667eea]/30 bg-gradient-to-r from-[#667eea]/5 to-[#764ba2]/5" : "border-white/10")}>
                     <div className="flex gap-3">
-                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0", post.isAI ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]" : "bg-zinc-700")}>
-                            {post.user?.display_name?.[0].toUpperCase() || "U"}
-                        </div>
+                        {/* Avatar - Show artist thumbnail for AI posts */}
+                        {post.isAI && artistThumbnail ? (
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#667eea] flex-shrink-0 relative">
+                                <Image src={artistThumbnail} alt={artistName || "Artist"} fill className="object-cover" unoptimized />
+                            </div>
+                        ) : (
+                            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0", post.isAI ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]" : "bg-zinc-700")}>
+                                {post.user?.display_name?.[0].toUpperCase() || "U"}
+                            </div>
+                        )}
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-white">{post.user?.display_name || "Unknown User"}</span>
-                                {post.isAI && <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">AI Artist</span>}
+                                {post.isAI && <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">카페지기</span>}
                                 <span className="text-zinc-500 text-sm">• {new Date(post.created_at).toLocaleDateString()}</span>
                             </div>
                             <p className="text-zinc-300 whitespace-pre-wrap mb-3">{post.content}</p>
@@ -948,6 +958,8 @@ export default function CafePage() {
                             handleReaction={handleReaction}
                             reactingPostId={reactingPostId}
                             setReportingPost={setReportingPost}
+                            artistThumbnail={thumbnail}
+                            artistName={artist.name}
                         />
                     </>
                 )}
