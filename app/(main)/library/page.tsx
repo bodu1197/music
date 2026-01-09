@@ -263,23 +263,16 @@ export default function LibraryPage() {
                                                 <p className="text-white/50 text-sm truncate">{track.artist}</p>
                                             </div>
                                             <span className="text-white/40 text-sm">{track.duration || "--:--"}</span>
-                                            <span
-                                                role="button"
-                                                tabIndex={0}
+                                            <button
+                                                type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleRemoveTrack(track.videoId);
                                                 }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter" || e.key === " ") {
-                                                        e.stopPropagation();
-                                                        handleRemoveTrack(track.videoId);
-                                                    }
-                                                }}
                                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded-full transition-all"
                                             >
                                                 <Trash2 className="w-4 h-4 text-red-400" />
-                                            </span>
+                                            </button>
                                         </button>
                                     ))}
                                 </div>

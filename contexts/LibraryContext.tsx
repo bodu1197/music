@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/auth-provider";
 
@@ -356,23 +356,36 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         setAddToLibraryModal({ isOpen: false, track: null });
     }, []);
 
+    const contextValue = useMemo(() => ({
+        folders,
+        isLoading,
+        addFolder,
+        deleteFolder,
+        renameFolder,
+        addTrackToFolder,
+        removeTrackFromFolder,
+        isTrackInFolder,
+        isTrackInAnyFolder,
+        openAddToLibraryModal,
+        closeAddToLibraryModal,
+        addToLibraryModal,
+    }), [
+        folders,
+        isLoading,
+        addFolder,
+        deleteFolder,
+        renameFolder,
+        addTrackToFolder,
+        removeTrackFromFolder,
+        isTrackInFolder,
+        isTrackInAnyFolder,
+        openAddToLibraryModal,
+        closeAddToLibraryModal,
+        addToLibraryModal,
+    ]);
+
     return (
-        <LibraryContext.Provider
-            value={{
-                folders,
-                isLoading,
-                addFolder,
-                deleteFolder,
-                renameFolder,
-                addTrackToFolder,
-                removeTrackFromFolder,
-                isTrackInFolder,
-                isTrackInAnyFolder,
-                openAddToLibraryModal,
-                closeAddToLibraryModal,
-                addToLibraryModal,
-            }}
-        >
+        <LibraryContext.Provider value={contextValue}>
             {children}
         </LibraryContext.Provider>
     );

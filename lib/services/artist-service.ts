@@ -265,7 +265,7 @@ async function createNewReleasePost(
       user_id: null, // AI 생성 게시물
       artist_id: artist.id,
       type: "release_announcement",
-      content: `🎉 새로운 앨범이 발매되었습니다!\n\n"${newAlbum.title}" - ${newAlbum.year || "2024"}\n\n지금 바로 들어보세요! 🎵`,
+      content: `🎉 새로운 앨범이 발매되었습니다!\n\n"${String(newAlbum.title)}" - ${String(newAlbum.year ?? "2024")}\n\n지금 바로 들어보세요! 🎵`,
       visibility: "public",
     });
 
