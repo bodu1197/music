@@ -4,6 +4,7 @@ import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass, Library, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -33,9 +34,12 @@ export default function Sidebar() {
 
     return (
         <div className="hidden md:flex flex-col w-[clamp(200px,18.5vw,280px)] h-screen fixed left-0 top-0 border-r border-[rgba(255,255,255,0.1)] bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] px-4 py-8 z-50 overflow-y-auto no-scrollbar">
-            <Link href="/" className="mb-10 px-4">
-                <h1 className="text-2xl font-bold font-heading bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text">VibeStation</h1>
-            </Link>
+            <div className="flex items-center justify-between mb-10 px-4">
+                <Link href="/">
+                    <h1 className="text-2xl font-bold font-heading bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text">VibeStation</h1>
+                </Link>
+                <NotificationBell />
+            </div>
 
             <nav className="flex-1 space-y-1">
                 {navItems.map((item) => {

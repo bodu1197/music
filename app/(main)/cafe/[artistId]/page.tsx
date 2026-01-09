@@ -23,6 +23,9 @@ import {
     ChevronDown,
     Shuffle,
     Radio,
+    ThumbsDown,
+    Flag,
+    MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtistData } from "@/hooks/useArtistData";
@@ -30,6 +33,12 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { supabase } from "@/lib/supabase";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
+import {
+    toggleReaction,
+    reportPost,
+    ReactionType,
+    ReportReason,
+} from "@/lib/services/notification-service";
 
 // ============================================
 // Types
@@ -42,11 +51,13 @@ interface CafePost {
     type: string;
     created_at: string;
     likes_count: number;
+    dislikes_count?: number;
     user?: {
         display_name: string;
         avatar_url?: string;
     };
     isAI?: boolean;
+    myReaction?: ReactionType | null;
 }
 
 interface ArtistAPIData {
@@ -127,6 +138,15 @@ export default function CafePage() {
 
     // 앨범 재생 로딩
     const [playingId, setPlayingId] = useState<string | null>(null);
+
+    // 반응 상태
+    const [reactingPostId, setReactingPostId] = useState<string | null>(null);
+
+    // 신고 모달
+    const [reportingPost, setReportingPost] = useState<CafePost | null>(null);
+    const [reportReason, setReportReason] = useState<ReportReason>("spam");
+    const [reportDescription, setReportDescription] = useState("");
+    const [isReporting, setIsReporting] = useState(false);
 
     // ============================================
     // 실시간 API 데이터 로드
@@ -342,6 +362,84 @@ export default function CafePage() {
             setPostError("글 등록 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // ============================================
+    // 반응 핸들러 (좋아요/싫어요)
+    // ============================================
+    const handleReaction = async (postId: string, type: ReactionType) => {
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
+        setReactingPostId(postId);
+
+        try {
+            const result = await toggleReaction(user.id, postId, type);
+
+            // 로컬 상태 업데이트
+            setPosts((prev) =>
+                prev.map((p) => {
+                    if (p.id !== postId) return p;
+
+                    const oldReaction = p.myReaction;
+                    let newLikes = p.likes_count;
+                    let newDislikes = p.dislikes_count || 0;
+
+                    // 기존 반응 제거
+                    if (oldReaction === "like") newLikes--;
+                    if (oldReaction === "dislike") newDislikes--;
+
+                    // 새 반응 추가
+                    if (result.newType === "like") newLikes++;
+                    if (result.newType === "dislike") newDislikes++;
+
+                    return {
+                        ...p,
+                        likes_count: Math.max(0, newLikes),
+                        dislikes_count: Math.max(0, newDislikes),
+                        myReaction: result.newType,
+                    };
+                })
+            );
+        } catch (e) {
+            console.error("[CafePage] Reaction error:", e);
+        } finally {
+            setReactingPostId(null);
+        }
+    };
+
+    // ============================================
+    // 신고 핸들러
+    // ============================================
+    const handleReport = async () => {
+        if (!user || !reportingPost) return;
+
+        setIsReporting(true);
+
+        try {
+            const success = await reportPost(
+                user.id,
+                reportingPost.id,
+                reportReason,
+                reportDescription || undefined
+            );
+
+            if (success) {
+                alert("신고가 접수되었습니다.");
+                setReportingPost(null);
+                setReportReason("spam");
+                setReportDescription("");
+            } else {
+                alert("신고 처리에 실패했습니다.");
+            }
+        } catch (e) {
+            console.error("[CafePage] Report error:", e);
+            alert("신고 처리 중 오류가 발생했습니다.");
+        } finally {
+            setIsReporting(false);
         }
     };
 
@@ -780,14 +878,51 @@ export default function CafePage() {
                                                 </p>
 
                                                 <div className="flex items-center gap-4 mt-3">
-                                                    <button className="flex items-center gap-1 text-zinc-500 hover:text-rose-400 transition-colors text-sm">
-                                                        <Heart className="w-4 h-4" />
+                                                    {/* 좋아요 */}
+                                                    <button
+                                                        onClick={() => handleReaction(post.id, "like")}
+                                                        disabled={reactingPostId === post.id}
+                                                        className={cn(
+                                                            "flex items-center gap-1 transition-colors text-sm",
+                                                            post.myReaction === "like"
+                                                                ? "text-rose-400"
+                                                                : "text-zinc-500 hover:text-rose-400"
+                                                        )}
+                                                    >
+                                                        <Heart className={cn("w-4 h-4", post.myReaction === "like" && "fill-current")} />
                                                         <span>{post.likes_count || 0}</span>
                                                     </button>
+
+                                                    {/* 싫어요 */}
+                                                    <button
+                                                        onClick={() => handleReaction(post.id, "dislike")}
+                                                        disabled={reactingPostId === post.id}
+                                                        className={cn(
+                                                            "flex items-center gap-1 transition-colors text-sm",
+                                                            post.myReaction === "dislike"
+                                                                ? "text-blue-400"
+                                                                : "text-zinc-500 hover:text-blue-400"
+                                                        )}
+                                                    >
+                                                        <ThumbsDown className={cn("w-4 h-4", post.myReaction === "dislike" && "fill-current")} />
+                                                        <span>{post.dislikes_count || 0}</span>
+                                                    </button>
+
+                                                    {/* 댓글 */}
                                                     <button className="flex items-center gap-1 text-zinc-500 hover:text-[#667eea] transition-colors text-sm">
                                                         <MessageSquare className="w-4 h-4" />
                                                         <span>Reply</span>
                                                     </button>
+
+                                                    {/* 신고 (AI 게시물 제외, 본인 게시물 제외) */}
+                                                    {!post.isAI && post.user_id !== user?.id && (
+                                                        <button
+                                                            onClick={() => setReportingPost(post)}
+                                                            className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
+                                                        >
+                                                            <Flag className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1042,6 +1177,87 @@ export default function CafePage() {
                     </div>
                 )}
             </div>
+
+            {/* Report Modal */}
+            {reportingPost && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Flag className="w-5 h-5 text-orange-400" />
+                            게시물 신고
+                        </h2>
+
+                        <div className="mb-4">
+                            <p className="text-sm text-zinc-400 mb-2">신고할 게시물:</p>
+                            <div className="bg-white/5 rounded-lg p-3 text-sm text-zinc-300 line-clamp-3">
+                                {reportingPost.content}
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-white mb-2">신고 사유</label>
+                            <div className="space-y-2">
+                                {[
+                                    { value: "spam", label: "스팸 / 광고" },
+                                    { value: "harassment", label: "괴롭힘 / 혐오 발언" },
+                                    { value: "inappropriate", label: "부적절한 콘텐츠" },
+                                    { value: "other", label: "기타" },
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => setReportReason(option.value as ReportReason)}
+                                        className={cn(
+                                            "w-full text-left px-4 py-2 rounded-lg border transition-colors text-sm",
+                                            reportReason === option.value
+                                                ? "bg-[#667eea]/20 border-[#667eea] text-white"
+                                                : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
+                                        )}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-white mb-2">상세 설명 (선택)</label>
+                            <textarea
+                                value={reportDescription}
+                                onChange={(e) => setReportDescription(e.target.value)}
+                                placeholder="추가적인 설명이 있다면 입력해주세요..."
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 resize-none focus:outline-none focus:border-[#667eea] transition-colors"
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setReportingPost(null);
+                                    setReportReason("spam");
+                                    setReportDescription("");
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium transition-colors"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={handleReport}
+                                disabled={isReporting}
+                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-lg font-medium disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                {isReporting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Flag className="w-4 h-4" />
+                                )}
+                                신고하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
