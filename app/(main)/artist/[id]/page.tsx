@@ -4,7 +4,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ArrowLeft, Play, Shuffle, Radio, Loader2, Music, Disc, Video, Users, ChevronDown } from "lucide-react";
+import { ArrowLeft, Play, Shuffle, Radio, Loader2, Music, Disc, Video, Users, ChevronDown, Coffee } from "lucide-react";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
 
@@ -282,6 +282,13 @@ export default function ArtistPage() {
                                         Radio
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => router.push(`/cafe/${artistId}`)}
+                                    className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg hover:shadow-amber-500/25 text-white font-semibold rounded-full transition-all hover:scale-105"
+                                >
+                                    <Coffee className="w-5 h-5" />
+                                    Visit Cafe
+                                </button>
                             </div>
                         </div>
                     </div>
