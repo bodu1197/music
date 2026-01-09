@@ -239,5 +239,43 @@ export const api = {
             if (!res.ok) return null;
             return res.json();
         }
+    },
+
+    // ============================================
+    // AI API (Gemini-powered artist posts)
+    // ============================================
+    ai: {
+        // Generate an AI post as the artist
+        generatePost: async (data: {
+            artist_name: string;
+            artist_description?: string;
+            post_type?: 'greeting' | 'update' | 'thanks' | 'random';
+            context?: string;
+        }) => {
+            try {
+                const res = await fetch(`${API_URL}/api/ai/artist-post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) return null;
+                return res.json();
+            } catch (e) {
+                console.error('[API] AI post error:', e);
+                return null;
+            }
+        },
+
+        // Get welcome post for a cafe
+        getWelcomePost: async (channelId: string) => {
+            try {
+                const res = await fetch(`${API_URL}/api/ai/welcome/${channelId}`);
+                if (!res.ok) return null;
+                return res.json();
+            } catch (e) {
+                console.error('[API] AI welcome error:', e);
+                return null;
+            }
+        }
     }
 };

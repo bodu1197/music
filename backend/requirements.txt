@@ -5,3 +5,4 @@ python-multipart
 requests
 cachetools==5.5.0
 supabase==2.10.0
+google-generativeai

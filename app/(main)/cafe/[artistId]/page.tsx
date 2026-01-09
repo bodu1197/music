@@ -42,34 +42,6 @@ interface CafePost {
     isAI?: boolean;
 }
 
-// Mock data for demo
-const MOCK_POSTS: CafePost[] = [
-    {
-        id: "1",
-        author: "AI Artist",
-        content: "안녕하세요 팬 여러분! 오늘도 카페에 와주셔서 감사합니다 💜",
-        timestamp: "방금 전",
-        likes: 24,
-        isAI: true
-    },
-    {
-        id: "2",
-        author: "Fan123",
-        avatar: "",
-        content: "새 앨범 너무 기대돼요! 🎵",
-        timestamp: "5분 전",
-        likes: 12
-    },
-    {
-        id: "3",
-        author: "MusicLover",
-        avatar: "",
-        content: "콘서트 때 만나요~!! ✨",
-        timestamp: "10분 전",
-        likes: 8
-    }
-];
-
 export default function CafePage() {
     const params = useParams();
     const router = useRouter();
@@ -78,10 +50,28 @@ export default function CafePage() {
     const [artist, setArtist] = useState<CafeArtist | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [posts, setPosts] = useState<CafePost[]>(MOCK_POSTS);
+    const [posts, setPosts] = useState<CafePost[]>([
+        {
+            id: "2",
+            author: "Fan123",
+            avatar: "",
+            content: "새 앨범 너무 기대돼요! 🎵",
+            timestamp: "5분 전",
+            likes: 12
+        },
+        {
+            id: "3",
+            author: "MusicLover",
+            avatar: "",
+            content: "콘서트 때 만나요~!! ✨",
+            timestamp: "10분 전",
+            likes: 8
+        }
+    ]);
     const [newPost, setNewPost] = useState("");
     const [isJoined, setIsJoined] = useState(false);
     const [memberCount] = useState(1247);
+    const [loadingAI, setLoadingAI] = useState(false);
 
     useEffect(() => {
         async function fetchArtist() {
@@ -114,6 +104,24 @@ export default function CafePage() {
                 }
 
                 setArtist(data);
+
+                // Fetch AI welcome post
+                if (data) {
+                    setLoadingAI(true);
+                    const aiResult = await api.ai.getWelcomePost(artistId);
+                    if (aiResult?.post?.content) {
+                        const aiPost: CafePost = {
+                            id: "ai-welcome",
+                            author: data.name,
+                            content: aiResult.post.content,
+                            timestamp: "방금 전",
+                            likes: Math.floor(Math.random() * 50) + 10,
+                            isAI: true
+                        };
+                        setPosts(prev => [aiPost, ...prev]);
+                    }
+                    setLoadingAI(false);
+                }
             } catch (e: any) {
                 setError(e.message || "Failed to load cafe");
             } finally {

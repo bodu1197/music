@@ -1353,3 +1353,89 @@ def get_registered_artist(channel_id: str):
             raise HTTPException(status_code=404, detail="Artist not found")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ============================================
+# AI Artist (Gemini 3 Flash)
+# ============================================
+import google.generativeai as genai
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+class AIPostRequest(BaseModel):
+    artist_name: str
+    artist_description: Optional[str] = None
+    post_type: str = "greeting"  # greeting, update, thanks, random
+    context: Optional[str] = None
+
+@app.post("/api/ai/artist-post")
+def generate_artist_post(request: AIPostRequest):
+    """
+    Generate an AI-powered post as if written by the artist.
+    Uses Gemini 3 Flash for natural language generation.
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API not configured")
+    
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        
+        # Build prompt based on post type
+        prompts = {
+            "greeting": f"You are {request.artist_name}, a famous music artist. Write a short, warm greeting message (2-3 sentences) to your fans visiting your fan cafe. Include emojis. Be friendly and personal. Write in Korean.",
+            "update": f"You are {request.artist_name}, a music artist. Write a short update message (2-3 sentences) about your music or daily life for your fan cafe. Include emojis. Write in Korean.",
+            "thanks": f"You are {request.artist_name}, a music artist. Write a heartfelt thank you message (2-3 sentences) to your fans for their support. Include emojis. Write in Korean.",
+            "random": f"You are {request.artist_name}, a music artist. Write a casual, fun message (2-3 sentences) for your fan cafe. Could be about anything - a random thought, something you're excited about, or just saying hi. Include emojis. Write in Korean."
+        }
+        
+        prompt = prompts.get(request.post_type, prompts["greeting"])
+        
+        if request.artist_description:
+            prompt += f"\n\nArtist background: {request.artist_description[:500]}"
+        
+        if request.context:
+            prompt += f"\n\nAdditional context: {request.context}"
+        
+        response = model.generate_content(prompt)
+        
+        return {
+            "success": True,
+            "post": {
+                "content": response.text,
+                "artist_name": request.artist_name,
+                "post_type": request.post_type,
+                "is_ai": True
+            }
+        }
+    except Exception as e:
+        print(f"[AI Post Error] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ai/welcome/{channel_id}")
+def get_ai_welcome_post(channel_id: str):
+    """
+    Get a welcome post for a cafe from the AI artist.
+    First checks if artist exists, then generates greeting.
+    """
+    # Get artist info
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=500, detail="Supabase not connected")
+    
+    try:
+        result = sb.table("artists").select("name, description").eq("channel_id", channel_id).single().execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Artist not found")
+        
+        artist = result.data
+        
+        # Generate welcome post
+        return generate_artist_post(AIPostRequest(
+            artist_name=artist["name"],
+            artist_description=artist.get("description"),
+            post_type="greeting"
+        ))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
