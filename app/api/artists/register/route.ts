@@ -54,12 +54,16 @@ interface ArtistInfo {
 
 // Slug 생성 함수
 function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50) + "-" + Date.now().toString(36).slice(-4);
+  return (
+    name
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/^-/, "")
+      .replace(/-$/, "")
+      .slice(0, 50) +
+    "-" +
+    Date.now().toString(36).slice(-4)
+  );
 }
 
 // 앨범 데이터 가져오기
@@ -117,8 +121,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 썸네일 URL 추출
-    const thumbnail = artistInfo.thumbnails?.[artistInfo.thumbnails.length - 1]?.url;
-    const banner = artistInfo.header?.musicVisualHeaderRenderer?.foregroundThumbnail?.thumbnails?.[0]?.url;
+    const thumbnail = artistInfo.thumbnails?.at(-1)?.url;
+    const banner = artistInfo.header?.musicVisualHeaderRenderer?.foregroundThumbnail?.thumbnails?.at(0)?.url;
 
     // artists 테이블에 저장
     const { data: newArtist, error: artistError } = await supabaseAdmin

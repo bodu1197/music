@@ -25,7 +25,6 @@ import {
     Radio,
     ThumbsDown,
     Flag,
-    MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtistData } from "@/hooks/useArtistData";

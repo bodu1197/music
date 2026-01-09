@@ -11,7 +11,7 @@ import type { ArtistWithData } from "@/lib/services/artist-service";
 // Artist Card Component
 // ============================================
 
-function ArtistCard({ artist }: { artist: ArtistWithData }) {
+function ArtistCard({ artist }: Readonly<{ artist: ArtistWithData }>) {
     const artistData = artist.artist_data;
 
     return (

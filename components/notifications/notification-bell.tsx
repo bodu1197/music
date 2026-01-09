@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Check, CheckCheck, Heart, ThumbsDown, MessageSquare, UserPlus } from "lucide-react";
+import { Bell, CheckCheck, Heart, ThumbsDown, MessageSquare, UserPlus } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/components/auth/auth-provider";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export function NotificationBell() {
 
   // 브라우저 알림 권한 요청
   useEffect(() => {
-    if (user && "Notification" in window && Notification.permission === "default") {
+    if (user && typeof globalThis !== "undefined" && "Notification" in globalThis && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, [user]);
@@ -112,7 +112,8 @@ export function NotificationBell() {
               </div>
             ) : (
               notifications.map((notification) => (
-                <div
+                <button
+                  type="button"
                   key={notification.id}
                   onClick={() => {
                     if (!notification.is_read) {
@@ -121,7 +122,7 @@ export function NotificationBell() {
                     setIsOpen(false);
                   }}
                   className={cn(
-                    "flex items-start gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0",
+                    "w-full flex items-start gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0 text-left",
                     !notification.is_read && "bg-[#667eea]/5"
                   )}
                 >
@@ -152,7 +153,7 @@ export function NotificationBell() {
                   {!notification.is_read && (
                     <div className="w-2 h-2 rounded-full bg-[#667eea] flex-shrink-0 mt-2" />
                   )}
-                </div>
+                </button>
               ))
             )}
           </div>

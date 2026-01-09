@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
             const singlesData = singlesRes ? await singlesRes.json().catch(() => ({ results: [] })) : { results: [] };
 
             const thumbnail = artistDetail.thumbnails?.[artistDetail.thumbnails.length - 1]?.url ||
-                              artist.thumbnails?.[0]?.url;
+              artist.thumbnails?.[0]?.url;
 
             // artists 테이블에 저장
             const { data: newArtist, error: insertError } = await supabaseAdmin
@@ -308,10 +308,14 @@ export async function GET() {
 
 // Slug 생성 함수
 function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50) + "-" + Date.now().toString(36).slice(-4);
+  return (
+    name
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/^-/, "")
+      .replace(/-$/, "")
+      .slice(0, 50) +
+    "-" +
+    Date.now().toString(36).slice(-4)
+  );
 }

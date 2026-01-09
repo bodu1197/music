@@ -72,7 +72,7 @@ export default function ArtistPage() {
 
                 // 🎤 Auto-register artist as virtual member (Cafe feature)
                 if (data && data.name) {
-                    const thumbnail = data.thumbnails?.[data.thumbnails.length - 1]?.url;
+                    const thumbnail = data.thumbnails?.at(-1)?.url;
                     api.artists.register({
                         channel_id: artistId,
                         name: data.name,

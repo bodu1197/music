@@ -7,6 +7,9 @@ import {
   joinCafe,
   leaveCafe,
   isJoinedCafe,
+  getJoinedCafes,
+  getPopularArtists,
+  getPrefarmedArtists,
   ArtistWithData,
 } from "@/lib/services/artist-service";
 
@@ -173,8 +176,6 @@ export function useArtistData(channelId: string | null): UseArtistDataReturn {
 // 가입한 카페 목록 조회
 // ============================================
 
-import { getJoinedCafes } from "@/lib/services/artist-service";
-
 interface UseJoinedCafesReturn {
   cafes: ArtistWithData[];
   isLoading: boolean;
@@ -227,8 +228,6 @@ export function useJoinedCafes(): UseJoinedCafesReturn {
 // usePopularArtists Hook
 // 인기 아티스트 목록
 // ============================================
-
-import { getPopularArtists, getPrefarmedArtists } from "@/lib/services/artist-service";
 
 interface UsePopularArtistsReturn {
   artists: ArtistWithData[];

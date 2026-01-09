@@ -1,7 +1,6 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
 
 // ============================================
 // Artist Service - Supabase Direct Operations
@@ -531,12 +530,16 @@ export async function getPrefarmedArtists(
  * 아티스트 이름으로 slug 생성
  */
 function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50) + "-" + Date.now().toString(36).slice(-4);
+  return (
+    name
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/^-/, "")
+      .replace(/-$/, "")
+      .slice(0, 50) +
+    "-" +
+    Date.now().toString(36).slice(-4)
+  );
 }
 
 /**

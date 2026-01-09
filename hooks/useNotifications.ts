@@ -10,6 +10,9 @@ import {
   markAllAsRead,
   subscribeToNotifications,
   unsubscribeFromNotifications,
+  ReactionType,
+  getMyReactions,
+  toggleReaction,
 } from "@/lib/services/notification-service";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -129,12 +132,6 @@ export function useNotifications(limit: number = 50): UseNotificationsReturn {
 // usePostReactions Hook
 // 게시물 반응 관리
 // ============================================
-
-import {
-  ReactionType,
-  getMyReactions,
-  toggleReaction,
-} from "@/lib/services/notification-service";
 
 interface UsePostReactionsReturn {
   reactions: Map<string, ReactionType>;

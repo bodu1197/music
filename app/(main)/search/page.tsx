@@ -54,11 +54,10 @@ function SearchPageContent() {
         async function detectCountry() {
             const savedCode = localStorage.getItem("user_country_code");
             const savedLang = localStorage.getItem("user_country_lang");
-            const savedName = localStorage.getItem("user_country_name");
             const savedTime = localStorage.getItem("user_country_detected_at");
 
             const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-            const isCacheValid = savedTime && (Date.now() - parseInt(savedTime, 10)) < CACHE_DURATION;
+            const isCacheValid = savedTime && (Date.now() - Number.parseInt(savedTime, 10)) < CACHE_DURATION;
 
             // Use cached value only if within 24 hours (supports all 109 ytmusicapi countries)
             if (savedCode && savedLang && isCacheValid) {
