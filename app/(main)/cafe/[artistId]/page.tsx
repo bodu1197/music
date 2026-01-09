@@ -914,15 +914,9 @@ export default function CafePage() {
                                                         <span>Reply</span>
                                                     </button>
 
-                                                    {/* 신고 버튼 (모든 게시물에 표시) */}
+                                                    {/* 신고 버튼 */}
                                                     <button
-                                                        onClick={() => {
-                                                            if (!user) {
-                                                                router.push("/login");
-                                                                return;
-                                                            }
-                                                            setReportingPost(post);
-                                                        }}
+                                                        onClick={() => setReportingPost(post)}
                                                         className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
                                                         title="신고하기"
                                                     >
