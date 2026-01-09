@@ -187,14 +187,10 @@ function SearchResults({
     );
 }
 
-function SearchPageContent() {
-    // URL Tab state
-    const searchParams = useSearchParams();
-    const tab = searchParams.get("tab") || "search";
+// Hook: Search Logic
+function useSearchLogic() {
     const [country, setCountry] = useState<Country | null>(null);
-    const [chartsCountry, setChartsCountry] = useState<Country | null>(null); // Separate state for Charts tab
-
-    // Search state
+    const [chartsCountry, setChartsCountry] = useState<Country | null>(null);
     const [query, setQuery] = useState("");
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [allResults, setAllResults] = useState<SearchResult[]>([]);
@@ -205,11 +201,6 @@ function SearchPageContent() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [filterCache, setFilterCache] = useState<Record<string, SearchResult[]>>({});
-    const inputRef = useRef<HTMLInputElement>(null);
-    const suggestionsRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
     // IP-based country detection (always fresh, cache for 24 hours)
     useEffect(() => {
@@ -274,51 +265,7 @@ function SearchPageContent() {
         detectCountry();
     }, []);
 
-    // Handle country change (Charts only - does NOT persist to localStorage)
-    const handleChartsCountryChange = (newCountry: Country) => {
-        setChartsCountry(newCountry);
-    };
-
-    // Get Charts-compatible country (62 countries only)
-    // If country is not in SUPPORTED_COUNTRIES, fallback to Global
-    const getChartsCompatibleCountry = (c: Country): Country => {
-        const isChartsSupported = SUPPORTED_COUNTRIES.some(sc => sc.code === c.code);
-        if (isChartsSupported) return c;
-        return SUPPORTED_COUNTRIES.find(sc => sc.code === "ZZ")!;
-    };
-
-    // Reset chartsCountry when leaving charts tab
-    useEffect(() => {
-        if (tab !== "charts") {
-            setChartsCountry(null);
-        }
-    }, [tab]);
-
-    // Fetch suggestions
-    useEffect(() => {
-        if (query.length < 2) { setSuggestions([]); return; }
-        const timer = setTimeout(async () => {
-            setIsSuggestionsLoading(true);
-            try {
-                const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                setSuggestions(data || []);
-            } catch { setSuggestions([]); }
-            finally { setIsSuggestionsLoading(false); }
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [query]);
-
-    // Close suggestions on outside click
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) setShowSuggestions(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
-
-    // Prefetch other filters in background
+    // Helper: Prefetch filters
     const prefetchFilters = async (q: string) => {
         const filterTypes = ['songs', 'videos', 'albums', 'artists', 'playlists'];
         await Promise.all(filterTypes.map(async (f) => {
@@ -332,6 +279,7 @@ function SearchPageContent() {
         }));
     };
 
+    // Helper: Handle Search
     const handleSearch = async (searchQuery: string, searchFilter: string | null = null) => {
         const q = searchQuery.trim();
         if (!q) return;
@@ -364,6 +312,93 @@ function SearchPageContent() {
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Search failed"); }
         finally { setIsLoading(false); }
     };
+
+    // Fetch suggestions
+    useEffect(() => {
+        if (query.length < 2) { setSuggestions([]); return; }
+        const timer = setTimeout(async () => {
+            setIsSuggestionsLoading(true);
+            try {
+                const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                setSuggestions(data || []);
+            } catch { setSuggestions([]); }
+            finally { setIsSuggestionsLoading(false); }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    return {
+        country, setCountry,
+        chartsCountry, setChartsCountry,
+        query, setQuery,
+        suggestions,
+        allResults,
+        filter,
+        isLoading,
+        isSuggestionsLoading,
+        showSuggestions, setShowSuggestions,
+        error, setError,
+        hasSearched,
+        handleSearch
+    };
+}
+
+function SearchPageContent() {
+    // URL Tab state
+    // URL Tab state
+    const searchParams = useSearchParams();
+    const tab = searchParams.get("tab") || "search";
+
+    // Use extracted hook
+    const {
+        country,
+        chartsCountry, setChartsCountry,
+        query, setQuery,
+        suggestions,
+        allResults,
+        filter,
+        isLoading,
+        isSuggestionsLoading,
+        showSuggestions, setShowSuggestions,
+        error, setError,
+        hasSearched,
+        handleSearch
+    } = useSearchLogic();
+
+    const inputRef = useRef<HTMLInputElement>(null);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+
+    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+
+    // Handle country change (Charts only - does NOT persist to localStorage)
+    const handleChartsCountryChange = (newCountry: Country) => {
+        setChartsCountry(newCountry);
+    };
+
+    // Get Charts-compatible country (62 countries only)
+    const getChartsCompatibleCountry = (c: Country): Country => {
+        const isChartsSupported = SUPPORTED_COUNTRIES.some(sc => sc.code === c.code);
+        if (isChartsSupported) return c;
+        return SUPPORTED_COUNTRIES.find(sc => sc.code === "ZZ")!;
+    };
+
+    // Reset chartsCountry when leaving charts tab
+    useEffect(() => {
+        if (tab !== "charts") {
+            setChartsCountry(null);
+        }
+    }, [tab]);
+
+    // Close suggestions on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) setShowSuggestions(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [setShowSuggestions]);
 
     const handleItemClick = async (item: SearchResult) => {
         // 아티스트 클릭 시 → 카페 페이지로 이동 (가상회원 자동 생성됨)

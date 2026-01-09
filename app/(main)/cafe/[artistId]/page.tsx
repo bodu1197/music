@@ -42,7 +42,7 @@ import {
 // Types
 // ============================================
 
-interface CafePost {
+export interface CafePost {
     id: string;
     user_id: string | null;
     content: string;
@@ -58,7 +58,7 @@ interface CafePost {
     myReaction?: ReactionType | null;
 }
 
-interface ArtistAPIData {
+export interface ArtistAPIData {
     name: string;
     description?: string;
     subscribers?: string;
@@ -90,16 +90,13 @@ interface ArtistAPIData {
 }
 
 // ============================================
-// Cafe Page Component
+// Hook: Cafe Page Logic
 // ============================================
-
-export default function CafePage() {
-    const params = useParams();
-    const router = useRouter();
+function useCafePageLogic(artistId: string) {
     const { user } = useAuth();
-    const artistId = params.artistId as string;
+    const router = useRouter();
 
-    // 아티스트 데이터 (Cache-First + Background Refresh)
+    // Artist Data
     const {
         artist,
         isLoading,
@@ -109,11 +106,11 @@ export default function CafePage() {
         toggleJoin,
     } = useArtistData(artistId);
 
-    // 실시간 API 데이터
+    // API Data
     const [apiData, setApiData] = useState<ArtistAPIData | null>(null);
     const [apiLoading, setApiLoading] = useState(false);
 
-    // 확장 데이터 상태 (Show All 버튼용)
+    // Expanded Data
     const [allSongs, setAllSongs] = useState<any[] | null>(null);
     const [allAlbums, setAllAlbums] = useState<any[] | null>(null);
     const [allSingles, setAllSingles] = useState<any[] | null>(null);
@@ -121,372 +118,77 @@ export default function CafePage() {
     const [loadingAlbums, setLoadingAlbums] = useState(false);
     const [loadingSingles, setLoadingSingles] = useState(false);
 
-    // 게시물 상태
+    // Posts State
     const [posts, setPosts] = useState<CafePost[]>([]);
     const [postsLoading, setPostsLoading] = useState(true);
     const [newPost, setNewPost] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [postError, setPostError] = useState<string | null>(null);
-
-    // 플레이어
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-
-    // 활성 탭
-    const [activeTab, setActiveTab] = useState<"feed" | "music" | "albums" | "videos" | "related">("feed");
-
-    // 앨범 재생 로딩
-    const [playingId, setPlayingId] = useState<string | null>(null);
-
-    // 반응 상태
     const [reactingPostId, setReactingPostId] = useState<string | null>(null);
 
-    // 신고 모달
+    // UI State
+    const [activeTab, setActiveTab] = useState<"feed" | "music" | "albums" | "videos" | "related">("feed");
+    const [playingId, setPlayingId] = useState<string | null>(null);
     const [reportingPost, setReportingPost] = useState<CafePost | null>(null);
-    const [reportReason, setReportReason] = useState<ReportReason>("spam");
-    const [reportDescription, setReportDescription] = useState("");
-    const [isReporting, setIsReporting] = useState(false);
 
-    // 헬퍼 함수: 조인 버튼 아이콘 결정
-    const getJoinButtonIcon = () => {
-        if (isJoinLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
-        if (isJoined) return <Check className="w-5 h-5" />;
-        return <UserPlus className="w-5 h-5" />;
-    };
-
-    // 헬퍼 함수: 탭 레이블 생성
-    const getTabLabel = (baseLabel: string, count: number, hasMore: boolean) => {
-        if (count === 0) return baseLabel;
-        const suffix = hasMore ? '+' : '';
-        return `${baseLabel} (${count}${suffix})`;
-    };
-
-    // 헬퍼 함수: 게시물 입력 영역 렌더링 (nested ternary 제거)
-    const renderPostInputArea = () => {
-        if (user && isJoined) {
-            return (
-                <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-4">
-                    <div className="flex gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
-                            {user.email?.[0].toUpperCase() || "U"}
-                        </div>
-                        <div className="flex-1">
-                            <textarea
-                                value={newPost}
-                                onChange={(e) => {
-                                    setNewPost(e.target.value);
-                                    if (postError) setPostError(null);
-                                }}
-                                placeholder="팬들과 함께 이야기를 나눠보세요..."
-                                className="w-full bg-transparent text-white placeholder:text-zinc-500 resize-none focus:outline-none min-h-[60px]"
-                                rows={2}
-                            />
-                            {postError && (
-                                <div className="text-rose-400 text-sm mb-2">{postError}</div>
-                            )}
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={handlePostSubmit}
-                                    disabled={!newPost.trim() || isSubmitting}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Send className="w-4 h-4" />
-                                    )}
-                                    게시
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        if (user && !isJoined) {
-            return (
-                <div className="bg-[#1a1a2e]/80 border border-[#667eea]/30 rounded-xl p-6 text-center">
-                    <UserPlus className="w-8 h-8 text-[#667eea] mx-auto mb-3" />
-                    <p className="text-zinc-400 mb-4">카페에 가입한 회원만 글을 작성할 수 있습니다.</p>
-                    <button
-                        onClick={toggleJoin}
-                        disabled={isJoinLoading}
-                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium mx-auto disabled:opacity-50"
-                    >
-                        {isJoinLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <UserPlus className="w-4 h-4" />
-                        )}
-                        카페 가입하기
-                    </button>
-                </div>
-            );
-        }
-
-        return (
-            <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-6 text-center">
-                <p className="text-zinc-400 mb-4">로그인하고 팬들과 함께 이야기를 나눠보세요!</p>
-                <button
-                    onClick={() => router.push("/login")}
-                    className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium"
-                >
-                    로그인
-                </button>
-            </div>
-        );
-    };
-
-    // 헬퍼 함수: 게시물 피드 렌더링 (nested ternary 제거)
-    const renderPostsFeed = () => {
-        if (postsLoading) {
-            return (
-                <div className="text-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
-                </div>
-            );
-        }
-
-        if (posts.length === 0) {
-            return (
-                <div className="text-center py-12 text-zinc-500">
-                    아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!
-                </div>
-            );
-        }
-
-        return (
-            <div className="space-y-4">
-                {posts.map((post) => (
-                    <div
-                        key={post.id}
-                        className={cn(
-                            "bg-[#1a1a2e]/80 border rounded-xl p-4",
-                            post.isAI
-                                ? "border-[#667eea]/30 bg-gradient-to-r from-[#667eea]/5 to-[#764ba2]/5"
-                                : "border-white/10"
-                        )}
-                    >
-                        <div className="flex gap-3">
-                            <div
-                                className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0",
-                                    post.isAI
-                                        ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]"
-                                        : "bg-zinc-700"
-                                )}
-                            >
-                                {post.user?.display_name?.[0].toUpperCase() || "U"}
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-white">
-                                        {post.user?.display_name || "Unknown User"}
-                                    </span>
-                                    {post.isAI && (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">
-                                            AI Artist
-                                        </span>
-                                    )}
-                                    <span className="text-zinc-500 text-sm">
-                                        • {new Date(post.created_at).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                <p className="text-zinc-300 whitespace-pre-wrap mb-3">{post.content}</p>
-
-                                {/* Action Buttons */}
-                                <div className="flex items-center gap-4">
-                                    {/* 좋아요 */}
-                                    <button
-                                        onClick={() => handleReaction(post.id, "like")}
-                                        disabled={reactingPostId === post.id}
-                                        className={cn(
-                                            "flex items-center gap-1 transition-colors text-sm",
-                                            post.myReaction === "like"
-                                                ? "text-pink-500"
-                                                : "text-zinc-500 hover:text-pink-500"
-                                        )}
-                                    >
-                                        <Heart className={cn("w-4 h-4", post.myReaction === "like" && "fill-current")} />
-                                        <span>{post.likes_count || 0}</span>
-                                    </button>
-
-                                    {/* 싫어요 */}
-                                    <button
-                                        onClick={() => handleReaction(post.id, "dislike")}
-                                        disabled={reactingPostId === post.id}
-                                        className={cn(
-                                            "flex items-center gap-1 transition-colors text-sm",
-                                            post.myReaction === "dislike"
-                                                ? "text-blue-400"
-                                                : "text-zinc-500 hover:text-blue-400"
-                                        )}
-                                    >
-                                        <ThumbsDown className={cn("w-4 h-4", post.myReaction === "dislike" && "fill-current")} />
-                                        <span>{post.dislikes_count || 0}</span>
-                                    </button>
-
-                                    {/* 댓글 */}
-                                    <button className="flex items-center gap-1 text-zinc-500 hover:text-[#667eea] transition-colors text-sm">
-                                        <MessageSquare className="w-4 h-4" />
-                                        <span>Reply</span>
-                                    </button>
-
-                                    {/* 신고 버튼 */}
-                                    <button
-                                        onClick={() => setReportingPost(post)}
-                                        className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
-                                        title="신고하기"
-                                    >
-                                        <Flag className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    };
-
-    // ============================================
-    // 실시간 API 데이터 로드
-    // ============================================
+    // Fetch API Data
     useEffect(() => {
         async function fetchAPIData() {
             if (!artistId) return;
-
             try {
                 setApiLoading(true);
-                const data = await api.music.artist(artistId);
-                setApiData(data);
+                setApiData(await api.music.artist(artistId));
             } catch (e) {
                 console.error("[CafePage] API fetch error:", e);
             } finally {
                 setApiLoading(false);
             }
         }
-
         fetchAPIData();
     }, [artistId]);
 
-    // ============================================
-    // 전체 노래 로드
-    // ============================================
-    const handleLoadAllSongs = async () => {
-        if (loadingSongs || allSongs) return;
-        setLoadingSongs(true);
-        try {
-            const data = await api.music.artistSongs(artistId);
-            setAllSongs(data.tracks || []);
-        } catch (e) {
-            console.error("Failed to load all songs:", e);
-        } finally {
-            setLoadingSongs(false);
-        }
-    };
-
-    // ============================================
-    // 전체 앨범 로드
-    // ============================================
-    const handleLoadAllAlbums = async () => {
-        if (loadingAlbums || allAlbums) return;
-        setLoadingAlbums(true);
-        try {
-            const data = await api.music.artistAlbums(artistId, "albums");
-            setAllAlbums(data.items || []);
-        } catch (e) {
-            console.error("Failed to load all albums:", e);
-        } finally {
-            setLoadingAlbums(false);
-        }
-    };
-
-    // ============================================
-    // 전체 싱글 로드
-    // ============================================
-    const handleLoadAllSingles = async () => {
-        if (loadingSingles || allSingles) return;
-        setLoadingSingles(true);
-        try {
-            const data = await api.music.artistAlbums(artistId, "singles");
-            setAllSingles(data.items || []);
-        } catch (e) {
-            console.error("Failed to load all singles:", e);
-        } finally {
-            setLoadingSingles(false);
-        }
-    };
-
-    // ============================================
-    // 게시물 로드
-    // ============================================
-    const loadPosts = useCallback(async () => {
+    // Fetch Posts
+    useEffect(() => {
         if (!artist?.id) return;
+        async function loadPosts() {
+            try {
+                setPostsLoading(true);
+                const { data, error } = await supabase
+                    .from("posts")
+                    .select(`id, user_id, content, type, created_at, likes_count, users:user_id(display_name, avatar_url)`)
+                    .eq("artist_id", artist!.id)
+                    .eq("visibility", "public")
+                    .order("created_at", { ascending: false })
+                    .limit(50);
 
-        try {
-            setPostsLoading(true);
-
-            const { data, error } = await supabase
-                .from("posts")
-                .select(`
-                    id,
-                    user_id,
-                    content,
-                    type,
-                    created_at,
-                    likes_count,
-                    users:user_id (
-                        display_name,
-                        avatar_url
-                    )
-                `)
-                .eq("artist_id", artist.id)
-                .eq("visibility", "public")
-                .order("created_at", { ascending: false })
-                .limit(50);
-
-            if (error) {
-                console.error("[CafePage] Posts load error:", error);
-                return;
+                if (error) throw error;
+                setPosts((data || []).map((p: any) => ({
+                    id: p.id,
+                    user_id: p.user_id,
+                    content: p.content,
+                    type: p.type,
+                    created_at: p.created_at,
+                    likes_count: p.likes_count,
+                    user: Array.isArray(p.users) ? p.users[0] : p.users,
+                    isAI: p.user_id === null,
+                })));
+            } catch (e) {
+                console.error("[CafePage] Posts load error:", e);
+            } finally {
+                setPostsLoading(false);
             }
-
-            const formattedPosts: CafePost[] = (data || []).map((p) => ({
-                id: p.id,
-                user_id: p.user_id,
-                content: p.content,
-                type: p.type,
-                created_at: p.created_at,
-                likes_count: p.likes_count,
-                user: Array.isArray(p.users) ? p.users[0] : p.users,
-                isAI: p.user_id === null,
-            }));
-
-            setPosts(formattedPosts);
-        } catch (e) {
-            console.error("[CafePage] Posts load error:", e);
-        } finally {
-            setPostsLoading(false);
         }
+        loadPosts();
     }, [artist?.id]);
 
-    useEffect(() => {
-        if (artist?.id) {
-            loadPosts();
-        }
-    }, [artist?.id, loadPosts]);
-
-    // ============================================
-    // AI 환영 메시지 생성
-    // ============================================
+    // AI Welcome Post
     useEffect(() => {
         async function generateWelcomePost() {
             if (!artist || posts.some((p) => p.isAI)) return;
-
             try {
                 const aiResult = await api.ai.getWelcomePost(artistId);
                 if (aiResult?.post?.content) {
-                    const aiPost: CafePost = {
+                    setPosts((prev) => [{
                         id: "ai-welcome",
                         user_id: null,
                         content: aiResult.post.content,
@@ -494,26 +196,18 @@ export default function CafePage() {
                         created_at: new Date().toISOString(),
                         likes_count: Math.floor(Math.random() * 50) + 10,
                         isAI: true,
-                    };
-                    setPosts((prev) => [aiPost, ...prev]);
+                        isAI_generated: true,
+                        user: { display_name: "AI Artist" }
+                    } as CafePost, ...prev]);
                 }
-            } catch (e) {
-                console.error("[CafePage] AI welcome error:", e);
-            }
+            } catch { /* ignore */ }
         }
-
-        if (artist && !postsLoading) {
-            generateWelcomePost();
-        }
+        if (artist && !postsLoading) generateWelcomePost();
     }, [artist, artistId, postsLoading, posts]);
 
-    // ============================================
-    // 게시물 작성
-    // ============================================
+    // Handlers
     const handlePostSubmit = async () => {
         if (!newPost.trim() || !user || !artist?.id) return;
-
-        // 가입한 회원만 글 작성 가능
         if (!isJoined) {
             setPostError("카페에 가입한 회원만 글을 작성할 수 있습니다.");
             return;
@@ -522,104 +216,256 @@ export default function CafePage() {
         try {
             setIsSubmitting(true);
             setPostError(null);
+            const { data, error } = await supabase.from("posts").insert({
+                user_id: user.id,
+                artist_id: artist.id,
+                type: "text",
+                content: newPost.trim(),
+                visibility: "public",
+            }).select(`id, user_id, content, type, created_at, likes_count`).single();
 
-            const { data, error } = await supabase
-                .from("posts")
-                .insert({
-                    user_id: user.id,
-                    artist_id: artist.id,
-                    type: "text",
-                    content: newPost.trim(),
-                    visibility: "public",
-                })
-                .select(`
-                    id,
-                    user_id,
-                    content,
-                    type,
-                    created_at,
-                    likes_count
-                `)
-                .single();
-
-            if (error) {
-                console.error("[CafePage] Post submit error:", error);
-                setPostError("글 등록에 실패했습니다. 다시 시도해주세요.");
-                return;
-            }
-
-            const newPostData: CafePost = {
+            if (error) throw error;
+            setPosts((prev) => [{
                 ...data,
-                user: {
-                    display_name: user.email?.split("@")[0] || "User",
-                },
-                isAI: false,
-            };
-
-            setPosts((prev) => [newPostData, ...prev]);
+                user: { display_name: user.email?.split("@")[0] || "User" },
+                isAI: false
+            }, ...prev]);
             setNewPost("");
         } catch (e) {
-            console.error("[CafePage] Post submit error:", e);
-            setPostError("글 등록 중 오류가 발생했습니다.");
+            console.error("[CafePage] Post error:", e);
+            setPostError("글 등록 실패");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // ============================================
-    // 반응 핸들러 (좋아요/싫어요)
-    // ============================================
     const handleReaction = async (postId: string, type: ReactionType) => {
         if (!user) {
             router.push("/login");
             return;
         }
-
         setReactingPostId(postId);
-
         try {
             const result = await toggleReaction(user.id, postId, type);
-
-            // 로컬 상태 업데이트
-            setPosts((prev) =>
-                prev.map((p) => {
-                    if (p.id !== postId) return p;
-
-                    const oldReaction = p.myReaction;
-                    let newLikes = p.likes_count;
-                    let newDislikes = p.dislikes_count || 0;
-
-                    // 기존 반응 제거
-                    if (oldReaction === "like") newLikes--;
-                    if (oldReaction === "dislike") newDislikes--;
-
-                    // 새 반응 추가
-                    if (result.newType === "like") newLikes++;
-                    if (result.newType === "dislike") newDislikes++;
-
-                    return {
-                        ...p,
-                        likes_count: Math.max(0, newLikes),
-                        dislikes_count: Math.max(0, newDislikes),
-                        myReaction: result.newType,
-                    };
-                })
-            );
+            setPosts((prev) => prev.map((p) => {
+                if (p.id !== postId) return p;
+                const old = p.myReaction;
+                let { likes_count: likes, dislikes_count: dislikes = 0 } = p;
+                if (old === "like") likes--;
+                if (old === "dislike") dislikes--;
+                if (result.newType === "like") likes++;
+                if (result.newType === "dislike") dislikes++;
+                return { ...p, myReaction: result.newType, likes_count: likes, dislikes_count: dislikes };
+            }));
         } catch (e) {
-            console.error("[CafePage] Reaction error:", e);
+            console.error("Reaction error:", e);
         } finally {
             setReactingPostId(null);
         }
     };
 
-    // ============================================
-    // 신고 핸들러
-    // ============================================
+    const loadMoreData = async (type: "songs" | "albums" | "singles") => {
+        if (type === "songs") {
+            if (loadingSongs || allSongs) return;
+            setLoadingSongs(true);
+            try {
+                setAllSongs((await api.music.artistSongs(artistId)).tracks || []);
+            } catch (e) { console.error(e); } finally { setLoadingSongs(false); }
+        } else if (type === "albums") {
+            if (loadingAlbums || allAlbums) return;
+            setLoadingAlbums(true);
+            try {
+                setAllAlbums((await api.music.artistAlbums(artistId, "albums")).items || []);
+            } catch (e) { console.error(e); } finally { setLoadingAlbums(false); }
+        } else if (type === "singles") {
+            if (loadingSingles || allSingles) return;
+            setLoadingSingles(true);
+            try {
+                setAllSingles((await api.music.artistAlbums(artistId, "singles")).items || []);
+            } catch (e) { console.error(e); } finally { setLoadingSingles(false); }
+        }
+    };
+
+    return {
+        user, artist, isLoading, error, isJoined, isJoinLoading, toggleJoin,
+        apiData, apiLoading,
+        allSongs, allAlbums, allSingles,
+        loadingSongs, loadingAlbums, loadingSingles,
+        posts, postsLoading, newPost, setNewPost, isSubmitting, postError, setPostError,
+        activeTab, setActiveTab, playingId, setPlayingId,
+        reportingPost, setReportingPost,
+        handlePostSubmit, handleReaction, loadMoreData,
+        reactingPostId
+    };
+}
+
+// ============================================
+// Component: Cafe Post Input
+// ============================================
+interface CafePostInputProps {
+    readonly user: any;
+    readonly isJoined: boolean;
+    readonly isJoinLoading: boolean;
+    readonly toggleJoin: () => void;
+    readonly newPost: string;
+    readonly setNewPost: (val: string) => void;
+    readonly handlePostSubmit: () => void;
+    readonly isSubmitting: boolean;
+    readonly postError: string | null;
+    readonly setPostError: (val: string | null) => void;
+    readonly router: any;
+}
+
+function CafePostInput({
+    user, isJoined, isJoinLoading, toggleJoin,
+    newPost, setNewPost, handlePostSubmit, isSubmitting,
+    postError, setPostError, router
+}: CafePostInputProps) {
+    if (user && isJoined) {
+        return (
+            <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-4">
+                <div className="flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
+                        {user.email?.[0].toUpperCase() || "U"}
+                    </div>
+                    <div className="flex-1">
+                        <textarea
+                            value={newPost}
+                            onChange={(e) => { setNewPost(e.target.value); if (postError) setPostError(null); }}
+                            placeholder="팬들과 함께 이야기를 나눠보세요..."
+                            className="w-full bg-transparent text-white placeholder:text-zinc-500 resize-none focus:outline-none min-h-[60px]"
+                            rows={2}
+                        />
+                        {postError && <div className="text-rose-400 text-sm mb-2">{postError}</div>}
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handlePostSubmit}
+                                disabled={!newPost.trim() || isSubmitting}
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
+                            >
+                                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                게시
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    if (user && !isJoined) {
+        return (
+            <div className="bg-[#1a1a2e]/80 border border-[#667eea]/30 rounded-xl p-6 text-center">
+                <UserPlus className="w-8 h-8 text-[#667eea] mx-auto mb-3" />
+                <p className="text-zinc-400 mb-4">카페에 가입한 회원만 글을 작성할 수 있습니다.</p>
+                <button onClick={toggleJoin} disabled={isJoinLoading} className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium mx-auto disabled:opacity-50">
+                    {isJoinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                    카페 가입하기
+                </button>
+            </div>
+        );
+    }
+    return (
+        <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-6 text-center">
+            <p className="text-zinc-400 mb-4">로그인하고 팬들과 함께 이야기를 나눠보세요!</p>
+            <button onClick={() => router.push("/login")} className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium">로그인</button>
+        </div>
+    );
+}
+
+// ============================================
+// Component: Cafe Post Feed
+// ============================================
+interface CafePostFeedProps {
+    readonly posts: CafePost[];
+    readonly postsLoading: boolean;
+    readonly handleReaction: (id: string, type: ReactionType) => void;
+    readonly reactingPostId: string | null;
+    readonly setReportingPost: (post: CafePost) => void;
+}
+
+function CafePostFeed({
+    posts, postsLoading, handleReaction, reactingPostId, setReportingPost
+}: CafePostFeedProps) {
+    if (postsLoading) return <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" /></div>;
+    if (posts.length === 0) return <div className="text-center py-12 text-zinc-500">아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!</div>;
+
+    return (
+        <div className="space-y-4">
+            {posts.map((post) => (
+                <div key={post.id} className={cn("bg-[#1a1a2e]/80 border rounded-xl p-4", post.isAI ? "border-[#667eea]/30 bg-gradient-to-r from-[#667eea]/5 to-[#764ba2]/5" : "border-white/10")}>
+                    <div className="flex gap-3">
+                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0", post.isAI ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]" : "bg-zinc-700")}>
+                            {post.user?.display_name?.[0].toUpperCase() || "U"}
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-white">{post.user?.display_name || "Unknown User"}</span>
+                                {post.isAI && <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">AI Artist</span>}
+                                <span className="text-zinc-500 text-sm">• {new Date(post.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-zinc-300 whitespace-pre-wrap mb-3">{post.content}</p>
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => handleReaction(post.id, "like")} disabled={reactingPostId === post.id} className={cn("flex items-center gap-1 transition-colors text-sm", post.myReaction === "like" ? "text-pink-500" : "text-zinc-500 hover:text-pink-500")}>
+                                    <Heart className={cn("w-4 h-4", post.myReaction === "like" && "fill-current")} /><span>{post.likes_count || 0}</span>
+                                </button>
+                                <button onClick={() => handleReaction(post.id, "dislike")} disabled={reactingPostId === post.id} className={cn("flex items-center gap-1 transition-colors text-sm", post.myReaction === "dislike" ? "text-blue-400" : "text-zinc-500 hover:text-blue-400")}>
+                                    <ThumbsDown className={cn("w-4 h-4", post.myReaction === "dislike" && "fill-current")} /><span>{post.dislikes_count || 0}</span>
+                                </button>
+                                <button className="flex items-center gap-1 text-zinc-500 hover:text-[#667eea] transition-colors text-sm"><MessageSquare className="w-4 h-4" /><span>Reply</span></button>
+                                <button onClick={() => setReportingPost(post)} className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto" title="신고하기"><Flag className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ============================================
+// Cafe Page Component
+// ============================================
+
+export default function CafePage() {
+    const params = useParams();
+    const artistId = params.artistId as string;
+    const router = useRouter();
+
+    const {
+        user, artist, isLoading, error, isJoined, isJoinLoading, toggleJoin,
+        apiData, apiLoading,
+        allSongs, allAlbums, allSingles,
+        loadingSongs, loadingAlbums, loadingSingles,
+        posts, postsLoading, newPost, setNewPost, isSubmitting, postError, setPostError,
+        activeTab, setActiveTab, playingId, setPlayingId,
+        reportingPost, setReportingPost,
+        handlePostSubmit, handleReaction, loadMoreData,
+        reactingPostId
+    } = useCafePageLogic(artistId);
+
+    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+
+    // Report Modal State
+    const [reportReason, setReportReason] = useState<ReportReason>("spam");
+    const [reportDescription, setReportDescription] = useState("");
+    const [isReporting, setIsReporting] = useState(false);
+
+    // Helpers
+    const getJoinButtonIcon = () => {
+        if (isJoinLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
+        if (isJoined) return <Check className="w-5 h-5" />;
+        return <UserPlus className="w-5 h-5" />;
+    };
+
+    const getTabLabel = (baseLabel: string, count: number, hasMore: boolean) => {
+        if (count === 0) return baseLabel;
+        return `${baseLabel} (${count}${hasMore ? '+' : ''})`;
+    };
+
+    // Logic & Handlers
     const handleReport = async () => {
         if (!user || !reportingPost) return;
-
         setIsReporting(true);
-
         try {
             const success = await reportPost(
                 user.id,
@@ -644,9 +490,6 @@ export default function CafePage() {
         }
     };
 
-    // ============================================
-    // 음악 재생 핸들러
-    // ============================================
     const handlePlaySong = (item: any) => {
         if (!item.videoId) return;
         const track: Track = {
@@ -704,14 +547,7 @@ export default function CafePage() {
         }
     };
 
-    // ============================================
-    // 시간 포맷
-    // ============================================
-
-
-    // ============================================
-    // 로딩 상태
-    // ============================================
+    // Loading & Error States
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
@@ -723,9 +559,6 @@ export default function CafePage() {
         );
     }
 
-    // ============================================
-    // 에러 상태
-    // ============================================
     if (error || !artist) {
         return (
             <div className="max-w-4xl mx-auto py-8 px-4">
@@ -742,38 +575,28 @@ export default function CafePage() {
         );
     }
 
+    // Derived Data
     const artistData = artist.artist_data;
     const thumbnail = apiData?.thumbnails?.[apiData.thumbnails.length - 1]?.url || artistData?.thumbnail_url || artist.thumbnail_url;
 
-    // 실시간 데이터 (API에서 가져온 데이터 우선 사용)
     const displaySongs = allSongs || apiData?.songs?.results || [];
     const displayAlbums = allAlbums || apiData?.albums?.results || [];
     const displaySingles = allSingles || apiData?.singles?.results || [];
     const displayVideos = apiData?.videos?.results || [];
     const displayRelated = apiData?.related?.results || [];
+
     const hasSongsBrowseId = !!apiData?.songs?.browseId;
     const hasAlbumsBrowseId = !!apiData?.albums?.browseId;
     const hasSinglesBrowseId = !!apiData?.singles?.browseId;
 
-    // ============================================
-    // 렌더링
-    // ============================================
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20">
             {/* Hero Banner */}
             <div className="relative w-full h-48 md:h-64 bg-gradient-to-r from-[#667eea] to-[#764ba2]">
                 {artistData?.banner_url && (
-                    <Image
-                        src={artistData.banner_url}
-                        alt={artist.name}
-                        fill
-                        className="object-cover opacity-50"
-                        unoptimized
-                    />
+                    <Image src={artistData.banner_url} alt={artist.name} fill className="object-cover opacity-50" unoptimized />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f23] to-transparent" />
-
-                {/* Back Button */}
                 <button
                     onClick={() => router.back()}
                     className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors z-10"
@@ -790,13 +613,7 @@ export default function CafePage() {
                         {/* Avatar */}
                         <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
                             {thumbnail ? (
-                                <Image
-                                    src={thumbnail}
-                                    alt={artist.name}
-                                    fill
-                                    className="object-cover"
-                                    unoptimized
-                                />
+                                <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
                             ) : (
                                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                     <Music className="w-12 h-12 text-zinc-600" />
@@ -932,17 +749,34 @@ export default function CafePage() {
                 {activeTab === "feed" && (
                     <>
                         {/* Post Input */}
-                        {renderPostInputArea()}
+                        <CafePostInput
+                            user={user}
+                            isJoined={isJoined}
+                            isJoinLoading={isJoinLoading}
+                            toggleJoin={toggleJoin}
+                            newPost={newPost}
+                            setNewPost={setNewPost}
+                            handlePostSubmit={handlePostSubmit}
+                            isSubmitting={isSubmitting}
+                            postError={postError}
+                            setPostError={setPostError}
+                            router={router}
+                        />
 
                         {/* Posts Feed */}
-                        {renderPostsFeed()}
+                        <CafePostFeed
+                            posts={posts}
+                            postsLoading={postsLoading}
+                            handleReaction={handleReaction}
+                            reactingPostId={reactingPostId}
+                            setReportingPost={setReportingPost}
+                        />
                     </>
                 )}
 
-                {/* Music Tab - 실시간 API 데이터 */}
+                {/* Music Tab */}
                 {activeTab === "music" && !apiLoading && (
                     <div className="space-y-4">
-                        {/* Header with Show All */}
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Music className="w-5 h-5" />
@@ -950,7 +784,7 @@ export default function CafePage() {
                             </h2>
                             {hasSongsBrowseId && !allSongs && (
                                 <button
-                                    onClick={handleLoadAllSongs}
+                                    onClick={() => loadMoreData("songs")}
                                     disabled={loadingSongs}
                                     className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
                                 >
@@ -963,8 +797,6 @@ export default function CafePage() {
                                 </button>
                             )}
                         </div>
-
-                        {/* Song List */}
                         <div className="space-y-1">
                             {displaySongs.map((song: any, i: number) => (
                                 <button
@@ -990,14 +822,13 @@ export default function CafePage() {
                                 </button>
                             ))}
                         </div>
-
                         {displaySongs.length === 0 && (
                             <div className="text-center py-12 text-zinc-500">노래 정보가 없습니다</div>
                         )}
                     </div>
                 )}
 
-                {/* Albums Tab - 실시간 API 데이터 */}
+                {/* Albums Tab */}
                 {activeTab === "albums" && !apiLoading && (
                     <div className="space-y-8">
                         {/* Albums Section */}
@@ -1010,7 +841,7 @@ export default function CafePage() {
                                     </h2>
                                     {hasAlbumsBrowseId && !allAlbums && (
                                         <button
-                                            onClick={handleLoadAllAlbums}
+                                            onClick={() => loadMoreData("albums")}
                                             disabled={loadingAlbums}
                                             className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
                                         >
@@ -1063,7 +894,7 @@ export default function CafePage() {
                                     </h2>
                                     {hasSinglesBrowseId && !allSingles && (
                                         <button
-                                            onClick={handleLoadAllSingles}
+                                            onClick={() => loadMoreData("singles")}
                                             disabled={loadingSingles}
                                             className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
                                         >
