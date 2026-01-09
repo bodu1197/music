@@ -147,6 +147,20 @@ export default function CafePage() {
     const [reportDescription, setReportDescription] = useState("");
     const [isReporting, setIsReporting] = useState(false);
 
+    // 헬퍼 함수: 조인 버튼 아이콘 결정
+    const getJoinButtonIcon = () => {
+        if (isJoinLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
+        if (isJoined) return <Check className="w-5 h-5" />;
+        return <UserPlus className="w-5 h-5" />;
+    };
+
+    // 헬퍼 함수: 탭 레이블 생성
+    const getTabLabel = (baseLabel: string, count: number, hasMore: boolean) => {
+        if (count === 0) return baseLabel;
+        const suffix = hasMore ? '+' : '';
+        return `${baseLabel} (${count}${suffix})`;
+    };
+
     // ============================================
     // 실시간 API 데이터 로드
     // ============================================
@@ -678,13 +692,7 @@ export default function CafePage() {
                                         : "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30"
                                 )}
                             >
-                                {isJoinLoading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : isJoined ? (
-                                    <Check className="w-5 h-5" />
-                                ) : (
-                                    <UserPlus className="w-5 h-5" />
-                                )}
+                                {getJoinButtonIcon()}
                                 {isJoined ? "가입됨" : "카페 가입"}
                             </button>
                         ) : (
@@ -713,9 +721,9 @@ export default function CafePage() {
                 <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
                     {[
                         { id: "feed", label: "피드", icon: MessageSquare },
-                        { id: "music", label: `노래${displaySongs.length > 0 ? ` (${displaySongs.length}${!allSongs && hasSongsBrowseId ? '+' : ''})` : ''}`, icon: Music },
-                        { id: "albums", label: `앨범${displayAlbums.length > 0 ? ` (${displayAlbums.length}${!allAlbums && hasAlbumsBrowseId ? '+' : ''})` : ''}`, icon: Disc },
-                        { id: "videos", label: `뮤비${displayVideos.length > 0 ? ` (${displayVideos.length})` : ''}`, icon: Video },
+                        { id: "music", label: getTabLabel("노래", displaySongs.length, !allSongs && hasSongsBrowseId), icon: Music },
+                        { id: "albums", label: getTabLabel("앨범", displayAlbums.length, !allAlbums && hasAlbumsBrowseId), icon: Disc },
+                        { id: "videos", label: getTabLabel("뮤비", displayVideos.length, false), icon: Video },
                         { id: "related", label: "비슷한 아티스트", icon: Users },
                     ].map((tab) => (
                         <button
@@ -1192,8 +1200,8 @@ export default function CafePage() {
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-white mb-2">신고 사유</label>
+                        <fieldset className="mb-4">
+                            <legend className="block text-sm font-medium text-white mb-2">신고 사유</legend>
                             <div className="space-y-2">
                                 {[
                                     { value: "spam", label: "스팸 / 광고" },
@@ -1216,11 +1224,12 @@ export default function CafePage() {
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </fieldset>
 
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-white mb-2">상세 설명 (선택)</label>
+                            <label htmlFor="report-description" className="block text-sm font-medium text-white mb-2">상세 설명 (선택)</label>
                             <textarea
+                                id="report-description"
                                 value={reportDescription}
                                 onChange={(e) => setReportDescription(e.target.value)}
                                 placeholder="추가적인 설명이 있다면 입력해주세요..."
