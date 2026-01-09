@@ -161,6 +161,104 @@ export default function CafePage() {
         return `${baseLabel} (${count}${suffix})`;
     };
 
+    // 헬퍼 함수: 게시물 입력 영역 렌더링 (nested ternary 제거)
+    const renderPostInputArea = () => {
+        if (user && isJoined) {
+            return (
+                <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-4">
+                    <div className="flex gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
+                            {user.email?.[0].toUpperCase() || "U"}
+                        </div>
+                        <div className="flex-1">
+                            <textarea
+                                value={newPost}
+                                onChange={(e) => {
+                                    setNewPost(e.target.value);
+                                    if (postError) setPostError(null);
+                                }}
+                                placeholder="팬들과 함께 이야기를 나눠보세요..."
+                                className="w-full bg-transparent text-white placeholder:text-zinc-500 resize-none focus:outline-none min-h-[60px]"
+                                rows={2}
+                            />
+                            {postError && (
+                                <div className="text-rose-400 text-sm mb-2">{postError}</div>
+                            )}
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handlePostSubmit}
+                                    disabled={!newPost.trim() || isSubmitting}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Send className="w-4 h-4" />
+                                    )}
+                                    게시
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (user && !isJoined) {
+            return (
+                <div className="bg-[#1a1a2e]/80 border border-[#667eea]/30 rounded-xl p-6 text-center">
+                    <UserPlus className="w-8 h-8 text-[#667eea] mx-auto mb-3" />
+                    <p className="text-zinc-400 mb-4">카페에 가입한 회원만 글을 작성할 수 있습니다.</p>
+                    <button
+                        onClick={toggleJoin}
+                        disabled={isJoinLoading}
+                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium mx-auto disabled:opacity-50"
+                    >
+                        {isJoinLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <UserPlus className="w-4 h-4" />
+                        )}
+                        카페 가입하기
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-6 text-center">
+                <p className="text-zinc-400 mb-4">로그인하고 팬들과 함께 이야기를 나눠보세요!</p>
+                <button
+                    onClick={() => router.push("/login")}
+                    className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium"
+                >
+                    로그인
+                </button>
+            </div>
+        );
+    };
+
+    // 헬퍼 함수: 게시물 피드 렌더링 (nested ternary 제거)
+    const renderPostsFeed = () => {
+        if (postsLoading) {
+            return (
+                <div className="text-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
+                </div>
+            );
+        }
+
+        if (posts.length === 0) {
+            return (
+                <div className="text-center py-12 text-zinc-500">
+                    아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!
+                </div>
+            );
+        }
+
+        return null; // posts rendering is inline in JSX
+    };
+
     // ============================================
     // 실시간 API 데이터 로드
     // ============================================
@@ -757,72 +855,7 @@ export default function CafePage() {
                 {activeTab === "feed" && (
                     <>
                         {/* Post Input */}
-                        {user && isJoined ? (
-                            <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-4">
-                                <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
-                                        {user.email?.[0].toUpperCase() || "U"}
-                                    </div>
-                                    <div className="flex-1">
-                                        <textarea
-                                            value={newPost}
-                                            onChange={(e) => {
-                                                setNewPost(e.target.value);
-                                                if (postError) setPostError(null);
-                                            }}
-                                            placeholder="팬들과 함께 이야기를 나눠보세요..."
-                                            className="w-full bg-transparent text-white placeholder:text-zinc-500 resize-none focus:outline-none min-h-[60px]"
-                                            rows={2}
-                                        />
-                                        {/* Error Message */}
-                                        {postError && (
-                                            <div className="text-rose-400 text-sm mb-2">{postError}</div>
-                                        )}
-                                        <div className="flex justify-end">
-                                            <button
-                                                onClick={handlePostSubmit}
-                                                disabled={!newPost.trim() || isSubmitting}
-                                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
-                                            >
-                                                {isSubmitting ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <Send className="w-4 h-4" />
-                                                )}
-                                                게시
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : user && !isJoined ? (
-                            <div className="bg-[#1a1a2e]/80 border border-[#667eea]/30 rounded-xl p-6 text-center">
-                                <UserPlus className="w-8 h-8 text-[#667eea] mx-auto mb-3" />
-                                <p className="text-zinc-400 mb-4">카페에 가입한 회원만 글을 작성할 수 있습니다.</p>
-                                <button
-                                    onClick={toggleJoin}
-                                    disabled={isJoinLoading}
-                                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium mx-auto disabled:opacity-50"
-                                >
-                                    {isJoinLoading ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <UserPlus className="w-4 h-4" />
-                                    )}
-                                    카페 가입하기
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-6 text-center">
-                                <p className="text-zinc-400 mb-4">로그인하고 팬들과 함께 이야기를 나눠보세요!</p>
-                                <button
-                                    onClick={() => router.push("/login")}
-                                    className="px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium"
-                                >
-                                    로그인
-                                </button>
-                            </div>
-                        )}
+                        {renderPostInputArea()}
 
                         {/* Posts Feed */}
                         <div className="space-y-4">
