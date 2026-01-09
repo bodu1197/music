@@ -120,8 +120,6 @@ export async function getArtistByChannelId(
         : artist.artist_data;
 
       if (!artistData) {
-        console.log(`[ArtistService] artist_data missing for ${artist.name}, creating...`);
-
         // API를 통해 artist_data 생성
         const enrichedArtist = await ensureArtistData(channelId);
         if (enrichedArtist) {
@@ -158,8 +156,6 @@ export async function getArtistByChannelId(
  */
 async function ensureArtistData(channelId: string): Promise<ArtistWithData | null> {
   try {
-    console.log(`[ArtistService] Ensuring artist_data for: ${channelId}`);
-
     // API를 통해 artist_data 생성
     const response = await fetch("/api/artists/register", {
       method: "PATCH",
@@ -174,8 +170,6 @@ async function ensureArtistData(channelId: string): Promise<ArtistWithData | nul
     }
 
     const { artist } = await response.json();
-    console.log(`[ArtistService] ✅ artist_data created for: ${artist?.name}`);
-
     return artist as ArtistWithData;
   } catch (e) {
     console.error("[ArtistService] ensureArtistData error:", e);
@@ -192,8 +186,6 @@ export async function registerArtistFromAPI(
   sourceCountry?: string
 ): Promise<ArtistWithData | null> {
   try {
-    console.log(`[ArtistService] Registering new artist via API: ${channelId}`);
-
     // API를 통해 등록 (service_role 사용)
     const res = await fetch("/api/artists/register", {
       method: "POST",
@@ -208,8 +200,6 @@ export async function registerArtistFromAPI(
     }
 
     const { artist } = await res.json();
-    console.log(`[ArtistService] ✅ Registered artist: ${artist?.name}`);
-
     return artist as ArtistWithData;
   } catch (e) {
     console.error("[ArtistService] Registration error:", e);
@@ -235,8 +225,6 @@ async function checkFreshDataInBackground(
       return;
     }
 
-    console.log(`[ArtistService] 🔄 Background check for: ${cachedArtist.name}`);
-
     // API 호출 (백그라운드) - 직접 호출로 서버사이드에서도 동작
     const [freshAlbums, freshSingles] = await Promise.all([
       fetchArtistAlbums(channelId, "albums"),
@@ -255,8 +243,6 @@ async function checkFreshDataInBackground(
     );
 
     if (newAlbums.length > 0 || newSingles.length > 0) {
-      console.log(`[ArtistService] 🎉 New releases detected! Albums: ${newAlbums.length}, Singles: ${newSingles.length}`);
-
       // DB 업데이트 (API 통해서)
       const allAlbums = [
         ...newAlbums.map((a: Record<string, unknown>) => ({
@@ -326,8 +312,6 @@ async function createNewReleasePost(
       content: `🎉 새로운 앨범이 발매되었습니다!\n\n"${String(newAlbum.title)}" - ${String((typeof newAlbum.year === 'string' || typeof newAlbum.year === 'number') ? newAlbum.year : "2024")}\n\n지금 바로 들어보세요! 🎵`,
       visibility: "public",
     });
-
-    console.log(`[ArtistService] 📝 Created release announcement for: ${newAlbum.title}`);
   } catch (e) {
     console.error("[ArtistService] Failed to create release post:", e);
   }
@@ -349,28 +333,21 @@ function incrementViewCount(artistId: string): void {
  */
 export async function joinCafe(userId: string, artistId: string): Promise<boolean> {
   try {
-    console.log("[ArtistService] joinCafe - userId:", userId, "artistId:", artistId);
-
-    const { data, error } = await supabase.from("follows").insert({
+    const { error } = await supabase.from("follows").insert({
       follower_id: userId,
       following_type: "artist",
       following_id: artistId,
       notifications: true,
     }).select();
 
-    console.log("[ArtistService] joinCafe result - data:", data, "error:", error);
-
     if (error) {
       if (error.code === "23505") {
-        // 이미 가입됨
-        console.log("[ArtistService] Already joined (duplicate key)");
-        return true;
+        return true; // 이미 가입됨
       }
-      console.error("[ArtistService] Join cafe error:", error.message, error.code, error.details);
+      console.error("[ArtistService] Join cafe error:", error.message);
       return false;
     }
 
-    console.log("[ArtistService] joinCafe success");
     return true;
   } catch (e) {
     console.error("[ArtistService] Join cafe error:", e);
@@ -383,9 +360,7 @@ export async function joinCafe(userId: string, artistId: string): Promise<boolea
  */
 export async function leaveCafe(userId: string, artistId: string): Promise<boolean> {
   try {
-    console.log("[ArtistService] Leave cafe attempt:", { userId, artistId });
-
-    // 먼저 해당 follow 레코드가 존재하는지 확인
+    // 해당 follow 레코드가 존재하는지 확인
     const { data: existing, error: selectError } = await supabase
       .from("follows")
       .select("id")
@@ -399,7 +374,6 @@ export async function leaveCafe(userId: string, artistId: string): Promise<boole
     }
 
     if (!existing) {
-      console.log("[ArtistService] No follow record found to delete");
       return true; // 이미 탈퇴된 상태
     }
 
@@ -414,7 +388,6 @@ export async function leaveCafe(userId: string, artistId: string): Promise<boole
       return false;
     }
 
-    console.log("[ArtistService] Leave cafe success");
     return true;
   } catch (e) {
     console.error("[ArtistService] Leave cafe error:", e);
@@ -427,17 +400,13 @@ export async function leaveCafe(userId: string, artistId: string): Promise<boole
  */
 export async function isJoinedCafe(userId: string, artistId: string): Promise<boolean> {
   try {
-    console.log("[ArtistService] isJoinedCafe - userId:", userId, "artistId:", artistId);
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("follows")
       .select("id")
       .eq("follower_id", userId)
       .eq("following_type", "artist")
       .eq("following_id", artistId)
-      .maybeSingle(); // single() 대신 maybeSingle() 사용 - 결과 없어도 에러 안남
-
-    console.log("[ArtistService] isJoinedCafe result - data:", data, "error:", error);
+      .maybeSingle();
 
     return !!data;
   } catch (e) {
