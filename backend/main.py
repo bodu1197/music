@@ -1465,26 +1465,27 @@ def get_ai_welcome_post(channel_id: str):
 
     try:
         # 1. Get artist info
-        artist_result = sb.table("artists").select("id, name, description").eq("channel_id", channel_id).single().execute()
-        if not artist_result.data:
+        artist_result = sb.table("artists").select("id, name, description").eq("channel_id", channel_id).limit(1).execute()
+        if not artist_result.data or len(artist_result.data) == 0:
             raise HTTPException(status_code=404, detail="Artist not found")
 
-        artist = artist_result.data
+        artist = artist_result.data[0]
         artist_id = artist["id"]
 
         # 2. Check if announcement already exists in DB
-        announcement_result = sb.table("cafe_announcements").select("*").eq("artist_id", artist_id).eq("type", "welcome").single().execute()
+        announcement_result = sb.table("cafe_announcements").select("*").eq("artist_id", artist_id).eq("type", "welcome").limit(1).execute()
 
-        if announcement_result.data:
+        if announcement_result.data and len(announcement_result.data) > 0:
+            announcement = announcement_result.data[0]
             # Return existing announcement
             return {
                 "success": True,
                 "post": {
-                    "content": announcement_result.data["content"],
+                    "content": announcement["content"],
                     "artist_name": artist["name"],
                     "post_type": "welcome",
-                    "is_ai": announcement_result.data.get("is_ai_generated", True),
-                    "is_pinned": announcement_result.data.get("is_pinned", True)
+                    "is_ai": announcement.get("is_ai_generated", True),
+                    "is_pinned": announcement.get("is_pinned", True)
                 },
                 "from_cache": True
             }
