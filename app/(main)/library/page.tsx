@@ -9,7 +9,7 @@ import Image from "next/image";
 
 export default function LibraryPage() {
     const { folders, addFolder, deleteFolder, renameFolder, removeTrackFromFolder } = useLibrary();
-    const { setPlaylist, currentTrack } = usePlayer();
+    const { setPlaylist, currentTrack, toggleQueue, isQueueOpen } = usePlayer();
 
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
@@ -48,6 +48,21 @@ export default function LibraryPage() {
         }));
 
         setPlaylist(trackList, 0);
+        if (!isQueueOpen) toggleQueue();
+    };
+
+    const playTrack = (trackIndex: number) => {
+        if (!selectedFolder || selectedFolder.tracks.length === 0) return;
+
+        const trackList = selectedFolder.tracks.map(t => ({
+            videoId: t.videoId,
+            title: t.title,
+            artist: t.artist,
+            thumbnail: t.thumbnail,
+        }));
+
+        setPlaylist(trackList, trackIndex);
+        if (!isQueueOpen) toggleQueue();
     };
 
     const handleRemoveTrack = async (videoId: string) => {
@@ -223,8 +238,9 @@ export default function LibraryPage() {
                                     {selectedFolder.tracks.map((track, index) => (
                                         <div
                                             key={track.videoId}
+                                            onClick={() => playTrack(index)}
                                             className={cn(
-                                                "flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group",
+                                                "flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer",
                                                 currentTrack?.videoId === track.videoId && "bg-[#667eea]/20"
                                             )}
                                         >
@@ -243,7 +259,10 @@ export default function LibraryPage() {
                                             </div>
                                             <span className="text-white/40 text-sm">{track.duration || "--:--"}</span>
                                             <button
-                                                onClick={() => handleRemoveTrack(track.videoId)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveTrack(track.videoId);
+                                                }}
                                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded-full transition-all"
                                             >
                                                 <Trash2 className="w-4 h-4 text-red-400" />
