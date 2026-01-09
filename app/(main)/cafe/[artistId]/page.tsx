@@ -914,15 +914,20 @@ export default function CafePage() {
                                                         <span>Reply</span>
                                                     </button>
 
-                                                    {/* 신고 (AI 게시물 제외, 본인 게시물 제외) */}
-                                                    {!post.isAI && post.user_id !== user?.id && (
-                                                        <button
-                                                            onClick={() => setReportingPost(post)}
-                                                            className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
-                                                        >
-                                                            <Flag className="w-4 h-4" />
-                                                        </button>
-                                                    )}
+                                                    {/* 신고 버튼 (모든 게시물에 표시) */}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!user) {
+                                                                router.push("/login");
+                                                                return;
+                                                            }
+                                                            setReportingPost(post);
+                                                        }}
+                                                        className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
+                                                        title="신고하기"
+                                                    >
+                                                        <Flag className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
