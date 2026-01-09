@@ -7,7 +7,12 @@ import { supabase } from "@/lib/supabase";
 // Cache-First + Background Refresh 전략
 // ============================================
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://sori-music-backend-322455104824.us-central1.run.app";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://sori-music-backend-322455104824.us-central1.run.app";
+
+/** 백그라운드 체크 최소 간격 (밀리초) - 1시간 */
+const BACKGROUND_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 // 서버사이드에서도 동작하는 앨범 데이터 가져오기
 async function fetchArtistAlbums(channelId: string, type: "albums" | "singles" = "albums") {
@@ -84,6 +89,9 @@ export interface ArtistWithData extends Artist {
 /**
  * 채널 ID로 아티스트 조회 (DB 우선)
  * Cache-First: DB에서 먼저 조회, 없으면 API 호출 후 저장
+ *
+ * 검색으로 등록된 아티스트 (artist_data 없음) 처리:
+ * - artists 테이블에만 있고 artist_data가 없으면 자동 생성
  */
 export async function getArtistByChannelId(
   channelId: string,
@@ -104,12 +112,30 @@ export async function getArtistByChannelId(
       console.error("[ArtistService] DB query error:", error);
     }
 
-    // 2️⃣ DB에 있으면 즉시 반환 + 백그라운드 체크
+    // 2️⃣ DB에 있으면 처리
     if (artist) {
-      // 조회수 증가 (비동기, 대기 안함)
+      // 2-1. artist_data가 없으면 생성 (검색으로만 등록된 경우)
+      const artistData = Array.isArray(artist.artist_data)
+        ? artist.artist_data[0]
+        : artist.artist_data;
+
+      if (!artistData) {
+        console.log(`[ArtistService] artist_data missing for ${artist.name}, creating...`);
+
+        // API를 통해 artist_data 생성
+        const enrichedArtist = await ensureArtistData(channelId);
+        if (enrichedArtist) {
+          return enrichedArtist;
+        }
+
+        // 실패 시 기본 정보라도 반환
+        return artist as ArtistWithData;
+      }
+
+      // 2-2. 조회수 증가 (비동기, 대기 안함)
       incrementViewCount(artist.id);
 
-      // 백그라운드에서 신선 데이터 체크
+      // 2-3. 백그라운드에서 신선 데이터 체크
       if (!options?.skipBackgroundCheck) {
         checkFreshDataInBackground(channelId, artist);
       }
@@ -121,6 +147,38 @@ export async function getArtistByChannelId(
     return await registerArtistFromAPI(channelId);
   } catch (e) {
     console.error("[ArtistService] Error:", e);
+    return null;
+  }
+}
+
+/**
+ * artist_data가 없는 아티스트에 대해 상세 정보 생성
+ *
+ * 검색으로 등록된 아티스트가 팬카페 방문 시 호출됨
+ */
+async function ensureArtistData(channelId: string): Promise<ArtistWithData | null> {
+  try {
+    console.log(`[ArtistService] Ensuring artist_data for: ${channelId}`);
+
+    // API를 통해 artist_data 생성
+    const response = await fetch("/api/artists/register", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("[ArtistService] ensureArtistData API error:", errorData);
+      return null;
+    }
+
+    const { artist } = await response.json();
+    console.log(`[ArtistService] ✅ artist_data created for: ${artist?.name}`);
+
+    return artist as ArtistWithData;
+  } catch (e) {
+    console.error("[ArtistService] ensureArtistData error:", e);
     return null;
   }
 }
@@ -171,9 +229,9 @@ async function checkFreshDataInBackground(
     const artistData = cachedArtist.artist_data;
     if (!artistData) return;
 
-    // 마지막 체크가 1시간 이내면 스킵
-    const hourAgo = Date.now() - 60 * 60 * 1000;
-    if (artistData.last_checked_at && new Date(artistData.last_checked_at).getTime() > hourAgo) {
+    // 마지막 체크가 일정 간격 이내면 스킵
+    const checkThreshold = Date.now() - BACKGROUND_CHECK_INTERVAL_MS;
+    if (artistData.last_checked_at && new Date(artistData.last_checked_at).getTime() > checkThreshold) {
       return;
     }
 
@@ -525,22 +583,6 @@ export async function getPrefarmedArtists(
 // ============================================
 // Utility Functions
 // ============================================
-
-/**
- * 아티스트 이름으로 slug 생성
- */
-function generateSlug(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9가-힣]+/g, "-")
-      .replace(/^-/, "")
-      .replace(/-$/, "")
-      .slice(0, 50) +
-    "-" +
-    Date.now().toString(36).slice(-4)
-  );
-}
 
 /**
  * 대량 아티스트 등록 (파밍용)
