@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
     ArrowLeft,
@@ -300,6 +300,124 @@ function useCafePageLogic(artistId: string) {
 }
 
 // ============================================
+// Hook: Cafe Player Logic
+// ============================================
+function useCafePlay(
+    apiData: ArtistAPIData | null,
+    artist: any,
+    allSongs: any[] | null,
+    setPlayingId: (id: string | null) => void
+) {
+    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
+
+    const handlePlaySong = (item: any) => {
+        if (!item.videoId) return;
+        const track: Track = {
+            videoId: item.videoId,
+            title: item.title || "Unknown",
+            artist: item.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+            thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        };
+        setPlaylist([track], 0);
+        if (!isQueueOpen) toggleQueue();
+    };
+
+    const handlePlayAll = () => {
+        const songs = allSongs || apiData?.songs?.results || [];
+        if (songs.length === 0) return;
+
+        const tracks: Track[] = songs
+            .filter((s: any) => s.videoId)
+            .map((s: any) => ({
+                videoId: s.videoId,
+                title: s.title || "Unknown",
+                artist: s.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+                thumbnail: s.thumbnails?.[s.thumbnails.length - 1]?.url || "/images/default-album.svg",
+            }));
+
+        if (tracks.length > 0) {
+            setPlaylist(tracks, 0);
+            if (!isQueueOpen) toggleQueue();
+        }
+    };
+
+    const handlePlayAlbum = async (albumId: string) => {
+        setPlayingId(albumId);
+        try {
+            const albumData = await api.music.album(albumId);
+            if (albumData?.tracks) {
+                const tracks: Track[] = albumData.tracks
+                    .filter((t: any) => t.videoId)
+                    .map((t: any) => ({
+                        videoId: t.videoId,
+                        title: t.title || "Unknown",
+                        artist: t.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+                        thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
+                    }));
+
+                if (tracks.length > 0) {
+                    setPlaylist(tracks, 0);
+                    if (!isQueueOpen) toggleQueue();
+                }
+            }
+        } catch (e) {
+            console.error("Album fetch error:", e);
+        } finally {
+            setPlayingId(null);
+        }
+    };
+
+    return { handlePlaySong, handlePlayAll, handlePlayAlbum };
+}
+
+// ============================================
+// Hook: Cafe Report Logic
+// ============================================
+function useCafeReport(
+    user: any,
+    reportingPost: CafePost | null,
+    setReportingPost: (post: CafePost | null) => void
+) {
+    const [reportReason, setReportReason] = useState<ReportReason>("spam");
+    const [reportDescription, setReportDescription] = useState("");
+    const [isReporting, setIsReporting] = useState(false);
+
+    const handleReport = async () => {
+        if (!user || !reportingPost) return;
+        setIsReporting(true);
+        try {
+            const success = await reportPost(
+                user.id,
+                reportingPost.id,
+                reportReason,
+                reportDescription || undefined
+            );
+
+            if (success) {
+                alert("신고가 접수되었습니다.");
+                setReportingPost(null);
+                setReportReason("spam");
+                setReportDescription("");
+            } else {
+                alert("신고 처리에 실패했습니다.");
+            }
+        } catch (e) {
+            console.error("[CafePage] Report error:", e);
+            alert("신고 처리 중 오류가 발생했습니다.");
+        } finally {
+            setIsReporting(false);
+        }
+    };
+
+    return {
+        reportReason, setReportReason,
+        reportDescription, setReportDescription,
+        isReporting, handleReport
+    };
+}
+
+
+// ============================================
 // Component: Cafe Post Input
 // ============================================
 interface CafePostInputProps {
@@ -443,12 +561,12 @@ export default function CafePage() {
         reactingPostId
     } = useCafePageLogic(artistId);
 
-    const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
-
-    // Report Modal State
-    const [reportReason, setReportReason] = useState<ReportReason>("spam");
-    const [reportDescription, setReportDescription] = useState("");
-    const [isReporting, setIsReporting] = useState(false);
+    const { handlePlaySong, handlePlayAll, handlePlayAlbum } = useCafePlay(apiData, artist, allSongs, setPlayingId);
+    const {
+        reportReason, setReportReason,
+        reportDescription, setReportDescription,
+        isReporting, handleReport
+    } = useCafeReport(user, reportingPost, setReportingPost);
 
     // Helpers
     const getJoinButtonIcon = () => {
@@ -460,91 +578,6 @@ export default function CafePage() {
     const getTabLabel = (baseLabel: string, count: number, hasMore: boolean) => {
         if (count === 0) return baseLabel;
         return `${baseLabel} (${count}${hasMore ? '+' : ''})`;
-    };
-
-    // Logic & Handlers
-    const handleReport = async () => {
-        if (!user || !reportingPost) return;
-        setIsReporting(true);
-        try {
-            const success = await reportPost(
-                user.id,
-                reportingPost.id,
-                reportReason,
-                reportDescription || undefined
-            );
-
-            if (success) {
-                alert("신고가 접수되었습니다.");
-                setReportingPost(null);
-                setReportReason("spam");
-                setReportDescription("");
-            } else {
-                alert("신고 처리에 실패했습니다.");
-            }
-        } catch (e) {
-            console.error("[CafePage] Report error:", e);
-            alert("신고 처리 중 오류가 발생했습니다.");
-        } finally {
-            setIsReporting(false);
-        }
-    };
-
-    const handlePlaySong = (item: any) => {
-        if (!item.videoId) return;
-        const track: Track = {
-            videoId: item.videoId,
-            title: item.title || "Unknown",
-            artist: item.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
-            thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
-        };
-        setPlaylist([track], 0);
-        if (!isQueueOpen) toggleQueue();
-    };
-
-    const handlePlayAll = () => {
-        const songs = allSongs || apiData?.songs?.results || [];
-        if (songs.length === 0) return;
-
-        const tracks: Track[] = songs
-            .filter((s: any) => s.videoId)
-            .map((s: any) => ({
-                videoId: s.videoId,
-                title: s.title || "Unknown",
-                artist: s.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
-                thumbnail: s.thumbnails?.[s.thumbnails.length - 1]?.url || "/images/default-album.svg",
-            }));
-
-        if (tracks.length > 0) {
-            setPlaylist(tracks, 0);
-            if (!isQueueOpen) toggleQueue();
-        }
-    };
-
-    const handlePlayAlbum = async (albumId: string) => {
-        setPlayingId(albumId);
-        try {
-            const albumData = await api.music.album(albumId);
-            if (albumData?.tracks) {
-                const tracks: Track[] = albumData.tracks
-                    .filter((t: any) => t.videoId)
-                    .map((t: any) => ({
-                        videoId: t.videoId,
-                        title: t.title || "Unknown",
-                        artist: t.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
-                        thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
-                    }));
-
-                if (tracks.length > 0) {
-                    setPlaylist(tracks, 0);
-                    if (!isQueueOpen) toggleQueue();
-                }
-            }
-        } catch (e) {
-            console.error("Album fetch error:", e);
-        } finally {
-            setPlayingId(null);
-        }
     };
 
     // Loading & Error States

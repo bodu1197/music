@@ -13,6 +13,7 @@ import { MoodsTab } from "@/components/profile/MoodsTab";
 import { MusicTab } from "@/components/profile/MusicTab";
 import { CountrySelector } from "@/components/profile/CountrySelector";
 import { SUPPORTED_COUNTRIES, YTMUSICAPI_SUPPORTED_LOCATIONS, DEFAULT_COUNTRY, getCountryInfo, Country } from "@/lib/constants";
+import { detectAndSetCountry } from "./helpers";
 
 
 
@@ -202,67 +203,9 @@ function useSearchLogic() {
     const [hasSearched, setHasSearched] = useState(false);
     const [filterCache, setFilterCache] = useState<Record<string, SearchResult[]>>({});
 
-    // IP-based country detection (always fresh, cache for 24 hours)
+    // IP-based country detection
     useEffect(() => {
-        async function detectCountry() {
-            const savedCode = localStorage.getItem("user_country_code");
-            const savedLang = localStorage.getItem("user_country_lang");
-            const savedTime = localStorage.getItem("user_country_detected_at");
-
-            const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-            const isCacheValid = savedTime && (Date.now() - Number.parseInt(savedTime, 10)) < CACHE_DURATION;
-
-            // Use cached value only if within 24 hours (supports all 109 ytmusicapi countries)
-            if (savedCode && savedLang && isCacheValid) {
-                const countryInfo = getCountryInfo(savedCode);
-                if (countryInfo) {
-                    setCountry(countryInfo);
-                    return;
-                }
-            }
-
-            // Always detect fresh IP
-            try {
-                const res = await fetch("https://ipapi.co/json/");
-                const data = await res.json();
-                if (data.country_code) {
-                    // Check if country is supported by ytmusicapi (109 countries)
-                    if (YTMUSICAPI_SUPPORTED_LOCATIONS.has(data.country_code)) {
-                        const countryInfo = getCountryInfo(data.country_code);
-                        if (countryInfo) {
-                            setCountry(countryInfo);
-                            localStorage.setItem("user_country_code", countryInfo.code);
-                            localStorage.setItem("user_country_lang", countryInfo.lang);
-                            localStorage.setItem("user_country_name", countryInfo.name);
-                            localStorage.setItem("user_country_detected_at", Date.now().toString());
-                            return;
-                        }
-                    }
-                    // Country not in ytmusicapi supported list, use Global
-                    const global = SUPPORTED_COUNTRIES.find(c => c.code === "ZZ")!;
-                    setCountry(global);
-                    localStorage.setItem("user_country_code", global.code);
-                    localStorage.setItem("user_country_lang", global.lang);
-                    localStorage.setItem("user_country_name", global.name);
-                    localStorage.setItem("user_country_detected_at", Date.now().toString());
-                    return;
-                }
-            } catch (e) {
-                console.error("IP Detect failed:", e);
-                // On error, use cached value if exists (supports all 109 countries)
-                if (savedCode && savedLang) {
-                    const countryInfo = getCountryInfo(savedCode);
-                    if (countryInfo) {
-                        setCountry(countryInfo);
-                        return;
-                    }
-                }
-            }
-
-            setCountry(DEFAULT_COUNTRY);
-        }
-
-        detectCountry();
+        detectAndSetCountry().then(setCountry);
     }, []);
 
     // Helper: Prefetch filters
@@ -361,7 +304,7 @@ function SearchPageContent() {
         isLoading,
         isSuggestionsLoading,
         showSuggestions, setShowSuggestions,
-        error, setError,
+        error,
         hasSearched,
         handleSearch
     } = useSearchLogic();
