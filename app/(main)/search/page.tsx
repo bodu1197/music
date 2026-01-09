@@ -205,8 +205,10 @@ function SearchPageContent() {
     };
 
     const handleItemClick = async (item: SearchResult) => {
+        // 아티스트 클릭 시 → 카페 페이지로 이동 (가상회원 자동 생성됨)
         if (item.resultType === "artist" && (item.browseId || item.artists?.[0]?.id)) {
-            router.push(`/artist/${item.browseId || item.artists?.[0]?.id}`);
+            const artistId = item.browseId || item.artists?.[0]?.id;
+            router.push(`/cafe/${artistId}`);
             return;
         }
         let tracks: Track[] = [];
