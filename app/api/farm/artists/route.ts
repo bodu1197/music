@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
       results.countries[country] = { new: 0, skipped: 0 };
 
       try {
-        // 차트 데이터 가져오기
         const chartsRes = await fetch(`${API_URL}/charts?country=${country}`);
         if (!chartsRes.ok) {
           console.error(`[Farm] Failed to fetch charts for ${country}`);
@@ -118,125 +117,11 @@ export async function POST(request: NextRequest) {
         const charts = await chartsRes.json();
         const artists: ChartArtist[] = charts?.artists?.slice(0, limit) || [];
 
+        // 병렬 처리 대신 순차 처리 유지 (Rate Limit 고려)
         for (const artist of artists) {
-          const channelId = artist.browseId;
-          if (!channelId || processedArtists.has(channelId)) {
-            results.countries[country].skipped++;
-            continue;
-          }
-
-          processedArtists.add(channelId);
-
-          try {
-            // 이미 등록된 아티스트인지 확인
-            const { data: existing } = await supabaseAdmin
-              .from("artists")
-              .select("id")
-              .eq("channel_id", channelId)
-              .single();
-
-            if (existing) {
-              results.countries[country].skipped++;
-              results.skipped++;
-              continue;
-            }
-
-            // 아티스트 상세 정보 가져오기
-            const [artistRes, albumsRes, singlesRes] = await Promise.all([
-              fetch(`${API_URL}/artist/${channelId}?country=${country}`),
-              fetch(`/api/artist-data?id=${channelId}&dataType=albums`).catch(() => null),
-              fetch(`/api/artist-data?id=${channelId}&dataType=albums&type=singles`).catch(() => null),
-            ]);
-
-            if (!artistRes.ok) {
-              console.error(`[Farm] Failed to fetch artist details: ${channelId}`);
-              results.errors++;
-              continue;
-            }
-
-            const artistDetail: ArtistDetail = await artistRes.json();
-            const albumsData = albumsRes ? await albumsRes.json().catch(() => ({ results: [] })) : { results: [] };
-            const singlesData = singlesRes ? await singlesRes.json().catch(() => ({ results: [] })) : { results: [] };
-
-            const thumbnail = artistDetail.thumbnails?.[artistDetail.thumbnails.length - 1]?.url ||
-              artist.thumbnails?.[0]?.url;
-
-            // artists 테이블에 저장
-            const { data: newArtist, error: insertError } = await supabaseAdmin
-              .from("artists")
-              .insert({
-                channel_id: channelId,
-                name: artistDetail.name || artist.name || artist.title || "Unknown",
-                thumbnail_url: thumbnail,
-                description: artistDetail.description,
-                subscribers: artistDetail.subscribers || artist.subscribers,
-                slug: generateSlug(artistDetail.name || artist.name || "unknown"),
-                is_virtual: true,
-              })
-              .select()
-              .single();
-
-            if (insertError) {
-              console.error(`[Farm] Insert artist error: ${insertError.message}`);
-              results.errors++;
-              continue;
-            }
-
-            // artist_data 테이블에 상세 정보 저장
-            const albums = (albumsData?.results || []).map((a: AlbumResult) => ({
-              browseId: a.browseId,
-              title: a.title,
-              year: a.year,
-              thumbnail: a.thumbnails?.[0]?.url,
-              type: a.type,
-            }));
-
-            const singles = (singlesData?.results || []).map((s: AlbumResult) => ({
-              browseId: s.browseId,
-              title: s.title,
-              year: s.year,
-              thumbnail: s.thumbnails?.[0]?.url,
-            }));
-
-            const topSongs = (artistDetail.songs?.results || []).slice(0, 20).map((s) => ({
-              videoId: s.videoId,
-              title: s.title,
-              plays: s.plays,
-              thumbnail: s.thumbnails?.[0]?.url,
-              artists: s.artists,
-            }));
-
-            const relatedArtists = (artistDetail.related?.results || []).slice(0, 10).map((r) => ({
-              browseId: r.browseId,
-              name: r.title,
-              thumbnail: r.thumbnails?.[0]?.url,
-            }));
-
-            await supabaseAdmin.from("artist_data").insert({
-              artist_id: newArtist.id,
-              thumbnail_url: thumbnail,
-              description: artistDetail.description,
-              subscribers: artistDetail.subscribers,
-              albums,
-              singles,
-              top_songs: topSongs,
-              related_artists: relatedArtists,
-              source_country: country,
-              is_prefarmed: true,
-            });
-
-            results.countries[country].new++;
-            results.new++;
-            results.total++;
-
-            console.log(`[Farm] ✅ Registered: ${artistDetail.name || artist.name} (${country})`);
-
-            // Rate limiting
-            await sleep(300);
-          } catch (e) {
-            console.error(`[Farm] Error processing artist ${channelId}:`, e);
-            results.errors++;
-          }
+          await processArtist(artist, country, processedArtists, results);
+          // 국가별 루프 내 Rate Limiting은 processArtist 내부나 여기서 처리
+          await sleep(300);
         }
 
         // 국가간 대기
@@ -303,6 +188,130 @@ export async function GET() {
       { error: "Failed to get status" },
       { status: 500 }
     );
+  }
+}
+
+// 아티스트 개별 처리 함수
+async function processArtist(
+  artist: ChartArtist,
+  country: string,
+  processedArtists: Set<string>,
+  results: any
+) {
+  const channelId = artist.browseId;
+  if (!channelId || processedArtists.has(channelId)) {
+    results.countries[country].skipped++;
+    return;
+  }
+
+  processedArtists.add(channelId);
+
+  try {
+    // 이미 등록된 아티스트인지 확인
+    const { data: existing } = await supabaseAdmin
+      .from("artists")
+      .select("id")
+      .eq("channel_id", channelId)
+      .single();
+
+    if (existing) {
+      results.countries[country].skipped++;
+      results.skipped++;
+      return;
+    }
+
+    // 아티스트 상세 정보 가져오기
+    const [artistRes, albumsRes, singlesRes] = await Promise.all([
+      fetch(`${API_URL}/artist/${channelId}?country=${country}`),
+      fetch(`/api/artist-data?id=${channelId}&dataType=albums`).catch(() => null),
+      fetch(`/api/artist-data?id=${channelId}&dataType=albums&type=singles`).catch(() => null),
+    ]);
+
+    if (!artistRes.ok) {
+      console.error(`[Farm] Failed to fetch artist details: ${channelId}`);
+      results.errors++;
+      return;
+    }
+
+    const artistDetail: ArtistDetail = await artistRes.json();
+    const albumsData = albumsRes ? await albumsRes.json().catch(() => ({ results: [] })) : { results: [] };
+    const singlesData = singlesRes ? await singlesRes.json().catch(() => ({ results: [] })) : { results: [] };
+
+    const thumbnail = artistDetail.thumbnails?.[artistDetail.thumbnails.length - 1]?.url ||
+      artist.thumbnails?.[0]?.url;
+
+    // artists 테이블에 저장
+    const { data: newArtist, error: insertError } = await supabaseAdmin
+      .from("artists")
+      .insert({
+        channel_id: channelId,
+        name: artistDetail.name || artist.name || artist.title || "Unknown",
+        thumbnail_url: thumbnail,
+        description: artistDetail.description,
+        subscribers: artistDetail.subscribers || artist.subscribers,
+        slug: generateSlug(artistDetail.name || artist.name || "unknown"),
+        is_virtual: true,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error(`[Farm] Insert artist error: ${insertError.message}`);
+      results.errors++;
+      return;
+    }
+
+    // artist_data 테이블에 상세 정보 저장
+    const albums = (albumsData?.results || []).map((a: AlbumResult) => ({
+      browseId: a.browseId,
+      title: a.title,
+      year: a.year,
+      thumbnail: a.thumbnails?.[0]?.url,
+      type: a.type,
+    }));
+
+    const singles = (singlesData?.results || []).map((s: AlbumResult) => ({
+      browseId: s.browseId,
+      title: s.title,
+      year: s.year,
+      thumbnail: s.thumbnails?.[0]?.url,
+    }));
+
+    const topSongs = (artistDetail.songs?.results || []).slice(0, 20).map((s) => ({
+      videoId: s.videoId,
+      title: s.title,
+      plays: s.plays,
+      thumbnail: s.thumbnails?.[0]?.url,
+      artists: s.artists,
+    }));
+
+    const relatedArtists = (artistDetail.related?.results || []).slice(0, 10).map((r) => ({
+      browseId: r.browseId,
+      name: r.title,
+      thumbnail: r.thumbnails?.[0]?.url,
+    }));
+
+    await supabaseAdmin.from("artist_data").insert({
+      artist_id: newArtist.id,
+      thumbnail_url: thumbnail,
+      description: artistDetail.description,
+      subscribers: artistDetail.subscribers,
+      albums,
+      singles,
+      top_songs: topSongs,
+      related_artists: relatedArtists,
+      source_country: country,
+      is_prefarmed: true,
+    });
+
+    results.countries[country].new++;
+    results.new++;
+    results.total++;
+
+    console.log(`[Farm] ✅ Registered: ${artistDetail.name || artist.name} (${country})`);
+  } catch (e) {
+    console.error(`[Farm] Error processing artist ${channelId}:`, e);
+    results.errors++;
   }
 }
 

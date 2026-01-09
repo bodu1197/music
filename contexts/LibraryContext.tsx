@@ -319,11 +319,10 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
             }
 
             setFolders(prev =>
-                prev.map(f =>
-                    f.id === folderId
-                        ? { ...f, tracks: f.tracks.filter(t => t.videoId !== videoId) }
-                        : f
-                )
+                prev.map(f => {
+                    if (f.id !== folderId) return f;
+                    return { ...f, tracks: f.tracks.filter(t => t.videoId !== videoId) };
+                })
             );
         } catch (e) {
             console.error("Error removing track:", e);

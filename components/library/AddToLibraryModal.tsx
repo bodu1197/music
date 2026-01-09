@@ -5,6 +5,95 @@ import { X, Plus, Check, FolderPlus } from "lucide-react";
 import { useLibrary } from "@/contexts/LibraryContext";
 import { cn } from "@/lib/utils";
 
+// 분리된 하위 컴포넌트: 폴더 아이템
+function FolderItem({
+    folder,
+    track,
+    addedToFolders,
+    onAddToFolder,
+    isTrackInFolder
+}: {
+    folder: any,
+    track: any,
+    addedToFolders: string[],
+    onAddToFolder: (id: string) => void,
+    isTrackInFolder: (folderId: string, trackId: string) => boolean
+}) {
+    const isInFolder = isTrackInFolder(folder.id, track.videoId);
+    const justAdded = addedToFolders.includes(folder.id);
+
+    return (
+        <button
+            onClick={() => !isInFolder && onAddToFolder(folder.id)}
+            disabled={isInFolder}
+            className={cn(
+                "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
+                isInFolder
+                    ? "bg-green-500/20 border border-green-500/30"
+                    : "bg-white/5 hover:bg-white/10 border border-transparent"
+            )}
+        >
+            <span className="text-2xl">{folder.icon}</span>
+            <div className="flex-1 text-left">
+                <p className="text-white font-medium">{folder.name}</p>
+                <p className="text-white/50 text-sm">{folder.tracks.length}곡</p>
+            </div>
+            {(isInFolder || justAdded) && (
+                <Check className="w-5 h-5 text-green-400" />
+            )}
+            {!isInFolder && !justAdded && (
+                <Plus className="w-5 h-5 text-white/50" />
+            )}
+        </button>
+    );
+}
+
+// 분리된 하위 컴포넌트: 폴더 생성 폼
+function FolderCreationForm({
+    onCreate,
+    onCancel
+}: {
+    onCreate: (name: string) => void,
+    onCancel: () => void
+}) {
+    const [name, setName] = useState("");
+
+    const handleSubmit = () => {
+        if (!name.trim()) return;
+        onCreate(name.trim());
+        setName("");
+    };
+
+    return (
+        <div className="p-3 bg-white/5 rounded-xl space-y-3">
+            <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="폴더 이름"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:border-[#667eea]"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            />
+            <div className="flex gap-2">
+                <button
+                    onClick={onCancel}
+                    className="flex-1 py-2 bg-white/10 rounded-lg text-white/70 hover:bg-white/20 transition-colors text-sm"
+                >
+                    취소
+                </button>
+                <button
+                    onClick={handleSubmit}
+                    disabled={!name.trim()}
+                    className="flex-1 py-2 bg-[#667eea] rounded-lg text-white font-medium disabled:opacity-50 text-sm"
+                >
+                    만들기
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function AddToLibraryModal() {
     const {
         addToLibraryModal,
@@ -16,7 +105,6 @@ export default function AddToLibraryModal() {
     } = useLibrary();
 
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-    const [newFolderName, setNewFolderName] = useState("");
     const [addedToFolders, setAddedToFolders] = useState<string[]>([]);
 
     if (!addToLibraryModal.isOpen || !addToLibraryModal.track) return null;
@@ -26,23 +114,19 @@ export default function AddToLibraryModal() {
     const handleAddToFolder = async (folderId: string) => {
         await addTrackToFolder(folderId, track);
         setAddedToFolders(prev => [...prev, folderId]);
-        // Show success briefly then allow more selections
         setTimeout(() => {
             setAddedToFolders(prev => prev.filter(id => id !== folderId));
         }, 2000);
     };
 
-    const handleCreateFolder = async () => {
-        if (!newFolderName.trim()) return;
-        await addFolder(newFolderName.trim());
-        setNewFolderName("");
+    const handleCreateFolder = async (name: string) => {
+        await addFolder(name);
         setIsCreatingFolder(false);
     };
 
     const handleClose = () => {
         closeAddToLibraryModal();
         setIsCreatingFolder(false);
-        setNewFolderName("");
         setAddedToFolders([]);
     };
 
@@ -87,65 +171,23 @@ export default function AddToLibraryModal() {
                 <div className="p-4 max-h-[300px] overflow-y-auto">
                     <p className="text-white/60 text-sm mb-3">폴더 선택</p>
                     <div className="space-y-2">
-                        {folders.map((folder) => {
-                            const isInFolder = isTrackInFolder(folder.id, track.videoId);
-                            const justAdded = addedToFolders.includes(folder.id);
-
-                            return (
-                                <button
-                                    key={folder.id}
-                                    onClick={() => !isInFolder && handleAddToFolder(folder.id)}
-                                    disabled={isInFolder}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
-                                        isInFolder
-                                            ? "bg-green-500/20 border border-green-500/30"
-                                            : "bg-white/5 hover:bg-white/10 border border-transparent"
-                                    )}
-                                >
-                                    <span className="text-2xl">{folder.icon}</span>
-                                    <div className="flex-1 text-left">
-                                        <p className="text-white font-medium">{folder.name}</p>
-                                        <p className="text-white/50 text-sm">{folder.tracks.length}곡</p>
-                                    </div>
-                                    {(isInFolder || justAdded) && (
-                                        <Check className="w-5 h-5 text-green-400" />
-                                    )}
-                                    {!isInFolder && !justAdded && (
-                                        <Plus className="w-5 h-5 text-white/50" />
-                                    )}
-                                </button>
-                            );
-                        })}
+                        {folders.map((folder) => (
+                            <FolderItem
+                                key={folder.id}
+                                folder={folder}
+                                track={track}
+                                addedToFolders={addedToFolders}
+                                onAddToFolder={handleAddToFolder}
+                                isTrackInFolder={isTrackInFolder}
+                            />
+                        ))}
 
                         {/* Create New Folder */}
                         {isCreatingFolder ? (
-                            <div className="p-3 bg-white/5 rounded-xl space-y-3">
-                                <input
-                                    type="text"
-                                    value={newFolderName}
-                                    onChange={(e) => setNewFolderName(e.target.value)}
-                                    placeholder="폴더 이름"
-                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:border-[#667eea]"
-                                    autoFocus
-                                    onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
-                                />
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setIsCreatingFolder(false)}
-                                        className="flex-1 py-2 bg-white/10 rounded-lg text-white/70 hover:bg-white/20 transition-colors text-sm"
-                                    >
-                                        취소
-                                    </button>
-                                    <button
-                                        onClick={handleCreateFolder}
-                                        disabled={!newFolderName.trim()}
-                                        className="flex-1 py-2 bg-[#667eea] rounded-lg text-white font-medium disabled:opacity-50 text-sm"
-                                    >
-                                        만들기
-                                    </button>
-                                </div>
-                            </div>
+                            <FolderCreationForm
+                                onCreate={handleCreateFolder}
+                                onCancel={() => setIsCreatingFolder(false)}
+                            />
                         ) : (
                             <button
                                 onClick={() => setIsCreatingFolder(true)}

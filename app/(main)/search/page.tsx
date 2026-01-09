@@ -236,6 +236,165 @@ function SearchPageContent() {
         }
     };
 
+    function FilterTabs({
+        filter,
+        onFilterChange
+    }: {
+        filter: string | null,
+        onFilterChange: (id: string | null) => void
+    }) {
+        return (
+            <div className="w-full px-4 md:px-8 mb-6 overflow-x-auto">
+                <div className="flex gap-2 pb-2">
+                    {SEARCH_FILTERS.map((f) => {
+                        const Icon = f.icon;
+                        const isActive = filter === f.id;
+                        return (
+                            <button
+                                key={f.id || "all"}
+                                type="button"
+                                onClick={() => onFilterChange(f.id)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border border-[rgba(255,255,255,0.1)]",
+                                    isActive
+                                        ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white border-transparent"
+                                        : "bg-[rgba(255,255,255,0.05)] text-white/80 hover:bg-[rgba(102,126,234,0.2)] hover:border-[#667eea] hover:text-white"
+                                )}
+                            >
+                                <Icon className="w-4 h-4" />{f.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    function SearchInput({
+        query,
+        setQuery,
+        onSearch,
+        isLoading,
+        suggestions,
+        showSuggestions,
+        setShowSuggestions,
+        isSuggestionsLoading,
+        inputRef,
+        suggestionsRef
+    }: {
+        query: string,
+        setQuery: (val: string) => void,
+        onSearch: (q: string) => void,
+        isLoading: boolean,
+        suggestions: string[],
+        showSuggestions: boolean,
+        setShowSuggestions: (show: boolean) => void,
+        isSuggestionsLoading: boolean,
+        inputRef: React.RefObject<HTMLInputElement | null>,
+        suggestionsRef: React.RefObject<HTMLDivElement | null>
+    }) {
+        return (
+            <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
+                <div className="relative flex items-center">
+                    <Brain className="absolute left-4 w-5 h-5 text-[#667eea] z-10" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onFocus={() => setShowSuggestions(true)}
+                        onKeyDown={(e) => e.key === "Enter" && onSearch(query)}
+                        placeholder="Search for songs, artists, albums..."
+                        className="w-full py-4 pl-12 pr-14 bg-[rgba(255,255,255,0.08)] border-2 border-[rgba(255,255,255,0.1)] rounded-[24px] text-white placeholder:text-white/50 focus:outline-none focus:border-[#667eea] focus:bg-[rgba(255,255,255,0.12)] transition-all"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => onSearch(query)}
+                        disabled={isLoading || !query.trim()}
+                        className="absolute right-2 w-10 h-10 flex items-center justify-center bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50 border-none cursor-pointer"
+                    >
+                        {isLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <ArrowRight className="w-5 h-5 text-white" />}
+                    </button>
+                </div>
+
+                {/* Suggestions */}
+                {showSuggestions && query.length >= 2 && (
+                    <div className="absolute w-full mt-2 bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                        {isSuggestionsLoading && (
+                            <div className="p-4 text-center text-muted-foreground">
+                                <Loader2 className="w-5 h-5 animate-spin inline" />
+                            </div>
+                        )}
+                        {!isSuggestionsLoading && suggestions.length > 0 && (
+                            <ul>
+                                {suggestions.slice(0, 8).map((s) => (
+                                    <li key={s}>
+                                        <button
+                                            type="button"
+                                            className="w-full px-4 py-3 text-left text-foreground hover:bg-accent flex items-center gap-3"
+                                            onClick={() => { setQuery(s); onSearch(s); }}
+                                        >
+                                            <Search className="w-4 h-4 text-muted-foreground" />{s}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {!isSuggestionsLoading && suggestions.length === 0 && (
+                            <div className="p-4 text-center text-muted-foreground">No suggestions</div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    function SearchResults({
+        results,
+        isLoading,
+        hasSearched,
+        error,
+        query,
+        onItemClick,
+        getResultIcon
+    }: {
+        results: SearchResult[],
+        isLoading: boolean,
+        hasSearched: boolean,
+        error: string | null,
+        query: string,
+        onItemClick: (item: SearchResult) => void,
+        getResultIcon: (type: string) => React.ReactNode
+    }) {
+        if (error) {
+            return <div className="w-full px-4 md:px-8 mb-6"><div className="p-4 bg-destructive/20 border border-destructive/50 rounded-xl text-destructive-foreground">Error: {error}</div></div>;
+        }
+
+        if (!isLoading && results.length === 0 && hasSearched) {
+            return <div className="py-20 text-center text-muted-foreground">No results found for &quot;{query}&quot;</div>;
+        }
+
+        return (
+            <div className="w-full px-4 md:px-8 pb-32">
+                {results.length > 0 && <div className="mb-4 text-zinc-400 text-sm">Found {results.length} results</div>}
+                <div className="space-y-2">
+                    {results.map((item, i) => (
+                        <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => onItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] rounded-xl cursor-pointer group text-left transition-all">
+                            <div className="w-14 h-14 flex-shrink-0 bg-secondary rounded-lg overflow-hidden relative">
+                                {item.thumbnails?.[0]?.url ? <Image src={item.thumbnails[0].url} alt={item.title || ""} fill className="object-cover" unoptimized /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">{getResultIcon(item.resultType)}</div>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1"><span className="text-[#667eea]">{getResultIcon(item.resultType)}</span><span className="text-xs text-[#667eea] uppercase font-medium">{item.resultType}</span></div>
+                                <h3 className="text-white font-medium truncate group-hover:text-[#667eea]">{item.title || item.artist}</h3>
+                                <p className="text-sm text-white/60 truncate">{item.artists?.map((a: Artist) => a.name).join(", ") || ""}{item.duration && ` • ${item.duration}`}</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)]">
 
@@ -252,95 +411,38 @@ function SearchPageContent() {
                             </h1>
                             <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-6 md:mb-8">Global music big data - explore without limits</p>
 
-                            {/* Search Form */}
-                            <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
-                                <div className="relative flex items-center">
-                                    <Brain className="absolute left-4 w-5 h-5 text-[#667eea] z-10" />
-                                    <input
-                                        ref={inputRef}
-                                        type="text"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        onFocus={() => setShowSuggestions(true)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleSearch(query, null)}
-                                        placeholder="Search for songs, artists, albums..."
-                                        className="w-full py-4 pl-12 pr-14 bg-[rgba(255,255,255,0.08)] border-2 border-[rgba(255,255,255,0.1)] rounded-[24px] text-white placeholder:text-white/50 focus:outline-none focus:border-[#667eea] focus:bg-[rgba(255,255,255,0.12)] transition-all"
-                                    />
-                                    <button type="button" onClick={() => handleSearch(query, null)} disabled={isLoading || !query.trim()} className="absolute right-2 w-10 h-10 flex items-center justify-center bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50 border-none cursor-pointer">
-                                        {isLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <ArrowRight className="w-5 h-5 text-white" />}
-                                    </button>
-                                </div>
-
-                                {/* Suggestions */}
-                                {showSuggestions && query.length >= 2 && (
-                                    <div className="absolute w-full mt-2 bg-popover border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-                                        {isSuggestionsLoading && (
-                                            <div className="p-4 text-center text-muted-foreground">
-                                                <Loader2 className="w-5 h-5 animate-spin inline" />
-                                            </div>
-                                        )}
-                                        {!isSuggestionsLoading && suggestions.length > 0 && (
-                                            <ul>
-                                                {suggestions.slice(0, 8).map((s) => (
-                                                    <li key={s}>
-                                                        <button
-                                                            type="button"
-                                                            className="w-full px-4 py-3 text-left text-foreground hover:bg-accent flex items-center gap-3"
-                                                            onClick={() => { setQuery(s); handleSearch(s, null); }}
-                                                        >
-                                                            <Search className="w-4 h-4 text-muted-foreground" />{s}
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        {!isSuggestionsLoading && suggestions.length === 0 && (
-                                            <div className="p-4 text-center text-muted-foreground">No suggestions</div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            <SearchInput
+                                query={query}
+                                setQuery={setQuery}
+                                onSearch={(q) => handleSearch(q, null)}
+                                isLoading={isLoading}
+                                suggestions={suggestions}
+                                showSuggestions={showSuggestions}
+                                setShowSuggestions={setShowSuggestions}
+                                isSuggestionsLoading={isSuggestionsLoading}
+                                inputRef={inputRef}
+                                suggestionsRef={suggestionsRef}
+                            />
                         </div>
 
                         {/* Filter Tabs */}
                         {hasSearched && (
-                            <div className="w-full px-4 md:px-8 mb-6 overflow-x-auto">
-                                <div className="flex gap-2 pb-2">
-                                    {SEARCH_FILTERS.map((f) => {
-                                        const Icon = f.icon;
-                                        const isActive = filter === f.id;
-                                        return (
-                                            <button key={f.id || "all"} type="button" onClick={() => handleSearch(query, f.id)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border border-[rgba(255,255,255,0.1)]", isActive ? "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white border-transparent" : "bg-[rgba(255,255,255,0.05)] text-white/80 hover:bg-[rgba(102,126,234,0.2)] hover:border-[#667eea] hover:text-white")}>
-                                                <Icon className="w-4 h-4" />{f.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <FilterTabs
+                                filter={filter}
+                                onFilterChange={(id) => handleSearch(query, id)}
+                            />
                         )}
 
-                        {/* Error */}
-                        {error && <div className="w-full px-4 md:px-8 mb-6"><div className="p-4 bg-destructive/20 border border-destructive/50 rounded-xl text-destructive-foreground">Error: {error}</div></div>}
-
                         {/* Results */}
-                        {allResults.length > 0 && <div className="w-full px-4 md:px-8 mb-4 text-zinc-400 text-sm">Found {allResults.length} results</div>}
-                        <div className="w-full px-4 md:px-8 pb-32">
-                            <div className="space-y-2">
-                                {allResults.map((item, i) => (
-                                    <button key={item.videoId || item.browseId || `result-${i}`} type="button" onClick={() => handleItemClick(item)} className="w-full flex items-center gap-4 p-4 bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] rounded-xl cursor-pointer group text-left transition-all">
-                                        <div className="w-14 h-14 flex-shrink-0 bg-secondary rounded-lg overflow-hidden relative">
-                                            {item.thumbnails?.[0]?.url ? <Image src={item.thumbnails[0].url} alt={item.title || ""} fill className="object-cover" unoptimized /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">{getResultIcon(item.resultType)}</div>}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1"><span className="text-[#667eea]">{getResultIcon(item.resultType)}</span><span className="text-xs text-[#667eea] uppercase font-medium">{item.resultType}</span></div>
-                                            <h3 className="text-white font-medium truncate group-hover:text-[#667eea]">{item.title || item.artist}</h3>
-                                            <p className="text-sm text-white/60 truncate">{item.artists?.map((a: Artist) => a.name).join(", ") || ""}{item.duration && ` • ${item.duration}`}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                            {!isLoading && allResults.length === 0 && hasSearched && !error && <div className="py-20 text-center text-muted-foreground">No results found for &quot;{query}&quot;</div>}
-                        </div>
+                        <SearchResults
+                            results={allResults}
+                            isLoading={isLoading}
+                            hasSearched={hasSearched}
+                            error={error}
+                            query={query}
+                            onItemClick={handleItemClick}
+                            getResultIcon={getResultIcon}
+                        />
                     </div>
                 )}
 

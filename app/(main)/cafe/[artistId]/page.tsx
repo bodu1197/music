@@ -256,7 +256,98 @@ export default function CafePage() {
             );
         }
 
-        return null; // posts rendering is inline in JSX
+        return (
+            <div className="space-y-4">
+                {posts.map((post) => (
+                    <div
+                        key={post.id}
+                        className={cn(
+                            "bg-[#1a1a2e]/80 border rounded-xl p-4",
+                            post.isAI
+                                ? "border-[#667eea]/30 bg-gradient-to-r from-[#667eea]/5 to-[#764ba2]/5"
+                                : "border-white/10"
+                        )}
+                    >
+                        <div className="flex gap-3">
+                            <div
+                                className={cn(
+                                    "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0",
+                                    post.isAI
+                                        ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]"
+                                        : "bg-zinc-700"
+                                )}
+                            >
+                                {post.user?.display_name?.[0].toUpperCase() || "U"}
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-white">
+                                        {post.user?.display_name || "Unknown User"}
+                                    </span>
+                                    {post.isAI && (
+                                        <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">
+                                            AI Artist
+                                        </span>
+                                    )}
+                                    <span className="text-zinc-500 text-sm">
+                                        • {new Date(post.created_at).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <p className="text-zinc-300 whitespace-pre-wrap mb-3">{post.content}</p>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-4">
+                                    {/* 좋아요 */}
+                                    <button
+                                        onClick={() => handleReaction(post.id, "like")}
+                                        disabled={reactingPostId === post.id}
+                                        className={cn(
+                                            "flex items-center gap-1 transition-colors text-sm",
+                                            post.myReaction === "like"
+                                                ? "text-pink-500"
+                                                : "text-zinc-500 hover:text-pink-500"
+                                        )}
+                                    >
+                                        <Heart className={cn("w-4 h-4", post.myReaction === "like" && "fill-current")} />
+                                        <span>{post.likes_count || 0}</span>
+                                    </button>
+
+                                    {/* 싫어요 */}
+                                    <button
+                                        onClick={() => handleReaction(post.id, "dislike")}
+                                        disabled={reactingPostId === post.id}
+                                        className={cn(
+                                            "flex items-center gap-1 transition-colors text-sm",
+                                            post.myReaction === "dislike"
+                                                ? "text-blue-400"
+                                                : "text-zinc-500 hover:text-blue-400"
+                                        )}
+                                    >
+                                        <ThumbsDown className={cn("w-4 h-4", post.myReaction === "dislike" && "fill-current")} />
+                                        <span>{post.dislikes_count || 0}</span>
+                                    </button>
+
+                                    {/* 댓글 */}
+                                    <button className="flex items-center gap-1 text-zinc-500 hover:text-[#667eea] transition-colors text-sm">
+                                        <MessageSquare className="w-4 h-4" />
+                                        <span>Reply</span>
+                                    </button>
+
+                                    {/* 신고 버튼 */}
+                                    <button
+                                        onClick={() => setReportingPost(post)}
+                                        className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
+                                        title="신고하기"
+                                    >
+                                        <Flag className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     // ============================================
@@ -858,117 +949,7 @@ export default function CafePage() {
                         {renderPostInputArea()}
 
                         {/* Posts Feed */}
-                        <div className="space-y-4">
-                            {postsLoading ? (
-                                <div className="text-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
-                                </div>
-                            ) : posts.length === 0 ? (
-                                <div className="text-center py-12 text-zinc-500">
-                                    아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!
-                                </div>
-                            ) : (
-                                posts.map((post) => (
-                                    <div
-                                        key={post.id}
-                                        className={cn(
-                                            "bg-[#1a1a2e]/80 border rounded-xl p-4",
-                                            post.isAI
-                                                ? "border-[#667eea]/30 bg-gradient-to-r from-[#667eea]/5 to-[#764ba2]/5"
-                                                : "border-white/10"
-                                        )}
-                                    >
-                                        <div className="flex gap-3">
-                                            <div
-                                                className={cn(
-                                                    "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0",
-                                                    post.isAI
-                                                        ? "bg-gradient-to-r from-[#667eea] to-[#764ba2]"
-                                                        : "bg-zinc-700"
-                                                )}
-                                            >
-                                                {post.isAI ? (
-                                                    <Sparkles className="w-5 h-5" />
-                                                ) : (
-                                                    (post.user?.display_name?.[0] || "U").toUpperCase()
-                                                )}
-                                            </div>
-
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span
-                                                        className={cn(
-                                                            "font-semibold",
-                                                            post.isAI ? "text-[#667eea]" : "text-white"
-                                                        )}
-                                                    >
-                                                        {post.isAI ? artist.name : post.user?.display_name || "User"}
-                                                    </span>
-                                                    {post.isAI && (
-                                                        <span className="px-2 py-0.5 bg-[#667eea]/20 text-[#667eea] text-xs rounded-full font-medium">
-                                                            AI
-                                                        </span>
-                                                    )}
-                                                    <span className="text-zinc-500 text-sm">
-                                                        {formatTime(post.created_at)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">
-                                                    {post.content}
-                                                </p>
-
-                                                <div className="flex items-center gap-4 mt-3">
-                                                    {/* 좋아요 */}
-                                                    <button
-                                                        onClick={() => handleReaction(post.id, "like")}
-                                                        disabled={reactingPostId === post.id}
-                                                        className={cn(
-                                                            "flex items-center gap-1 transition-colors text-sm",
-                                                            post.myReaction === "like"
-                                                                ? "text-rose-400"
-                                                                : "text-zinc-500 hover:text-rose-400"
-                                                        )}
-                                                    >
-                                                        <Heart className={cn("w-4 h-4", post.myReaction === "like" && "fill-current")} />
-                                                        <span>{post.likes_count || 0}</span>
-                                                    </button>
-
-                                                    {/* 싫어요 */}
-                                                    <button
-                                                        onClick={() => handleReaction(post.id, "dislike")}
-                                                        disabled={reactingPostId === post.id}
-                                                        className={cn(
-                                                            "flex items-center gap-1 transition-colors text-sm",
-                                                            post.myReaction === "dislike"
-                                                                ? "text-blue-400"
-                                                                : "text-zinc-500 hover:text-blue-400"
-                                                        )}
-                                                    >
-                                                        <ThumbsDown className={cn("w-4 h-4", post.myReaction === "dislike" && "fill-current")} />
-                                                        <span>{post.dislikes_count || 0}</span>
-                                                    </button>
-
-                                                    {/* 댓글 */}
-                                                    <button className="flex items-center gap-1 text-zinc-500 hover:text-[#667eea] transition-colors text-sm">
-                                                        <MessageSquare className="w-4 h-4" />
-                                                        <span>Reply</span>
-                                                    </button>
-
-                                                    {/* 신고 버튼 */}
-                                                    <button
-                                                        onClick={() => setReportingPost(post)}
-                                                        className="flex items-center gap-1 text-zinc-500 hover:text-orange-400 transition-colors text-sm ml-auto"
-                                                        title="신고하기"
-                                                    >
-                                                        <Flag className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                        {renderPostsFeed()}
                     </>
                 )}
 
