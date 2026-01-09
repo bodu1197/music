@@ -875,7 +875,7 @@ export default function CafePage() {
                 artist={artist}
                 artistData={artistData}
                 apiData={apiData}
-                thumbnail={thumbnail}
+                thumbnail={thumbnail ?? null}
                 displaySongs={displaySongs}
                 posts={posts}
                 user={user}
