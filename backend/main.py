@@ -1457,27 +1457,65 @@ def generate_artist_post(request: AIPostRequest):
 def get_ai_welcome_post(channel_id: str):
     """
     Get a welcome post for a cafe from the AI artist.
-    First checks if artist exists, then generates greeting.
+    First checks DB for existing announcement, if not found generates and saves.
     """
-    # Get artist info
     sb = get_supabase()
     if not sb:
         raise HTTPException(status_code=500, detail="Supabase not connected")
-    
+
     try:
-        result = sb.table("artists").select("name, description").eq("channel_id", channel_id).single().execute()
-        if not result.data:
+        # 1. Get artist info
+        artist_result = sb.table("artists").select("id, name, description").eq("channel_id", channel_id).single().execute()
+        if not artist_result.data:
             raise HTTPException(status_code=404, detail="Artist not found")
-        
-        artist = result.data
-        
-        # Generate welcome post
-        return generate_artist_post(AIPostRequest(
+
+        artist = artist_result.data
+        artist_id = artist["id"]
+
+        # 2. Check if announcement already exists in DB
+        announcement_result = sb.table("cafe_announcements").select("*").eq("artist_id", artist_id).eq("type", "welcome").single().execute()
+
+        if announcement_result.data:
+            # Return existing announcement
+            return {
+                "success": True,
+                "post": {
+                    "content": announcement_result.data["content"],
+                    "artist_name": artist["name"],
+                    "post_type": "welcome",
+                    "is_ai": announcement_result.data.get("is_ai_generated", True),
+                    "is_pinned": announcement_result.data.get("is_pinned", True)
+                },
+                "from_cache": True
+            }
+
+        # 3. No existing announcement, generate new one with AI
+        ai_result = generate_artist_post(AIPostRequest(
             artist_name=artist["name"],
             artist_description=artist.get("description"),
             post_type="greeting"
         ))
+
+        # 4. Save to DB for future use
+        if ai_result.get("success") and ai_result.get("post", {}).get("content"):
+            try:
+                sb.table("cafe_announcements").insert({
+                    "artist_id": artist_id,
+                    "content": ai_result["post"]["content"],
+                    "type": "welcome",
+                    "is_pinned": True,
+                    "is_ai_generated": True
+                }).execute()
+                print(f"[AI Welcome] Saved announcement for artist: {artist['name']}")
+            except Exception as save_error:
+                print(f"[AI Welcome] Failed to save announcement: {save_error}")
+
+        ai_result["from_cache"] = False
+        ai_result["post"]["is_pinned"] = True
+        return ai_result
+
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[AI Welcome Error] {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -24,6 +24,7 @@ import {
     Radio,
     ThumbsDown,
     Flag,
+    Pin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtistData } from "@/hooks/useArtistData";
@@ -126,6 +127,9 @@ function useCafePageLogic(artistId: string) {
     const [postError, setPostError] = useState<string | null>(null);
     const [reactingPostId, setReactingPostId] = useState<string | null>(null);
 
+    // Announcement State (공지사항 - 한 번만 로드)
+    const [announcement, setAnnouncement] = useState<{ content: string; artistName: string } | null>(null);
+
     // UI State
     const [activeTab, setActiveTab] = useState<"feed" | "music" | "albums" | "videos" | "related">("feed");
     const [playingId, setPlayingId] = useState<string | null>(null);
@@ -181,29 +185,22 @@ function useCafePageLogic(artistId: string) {
         loadPosts();
     }, [artist?.id]);
 
-    // AI Welcome Post
+    // Fetch Announcement (공지사항 - 한 번만 로드, DB에서 가져오거나 생성)
     useEffect(() => {
-        async function generateWelcomePost() {
-            if (!artist || posts.some((p) => p.isAI)) return;
+        async function fetchAnnouncement() {
+            if (!artist || announcement) return;
             try {
                 const aiResult = await api.ai.getWelcomePost(artistId);
                 if (aiResult?.post?.content) {
-                    setPosts((prev) => [{
-                        id: "ai-welcome",
-                        user_id: null,
+                    setAnnouncement({
                         content: aiResult.post.content,
-                        type: "ai_greeting",
-                        created_at: new Date().toISOString(),
-                        likes_count: Math.floor(Math.random() * 50) + 10,
-                        isAI: true,
-                        isAI_generated: true,
-                        user: { display_name: `${artist.name} 팬카페 지기` }
-                    } as CafePost, ...prev]);
+                        artistName: artist.name
+                    });
                 }
             } catch { /* ignore */ }
         }
-        if (artist && !postsLoading) generateWelcomePost();
-    }, [artist, artistId, postsLoading, posts]);
+        if (artist && !postsLoading) fetchAnnouncement();
+    }, [artist, artistId, postsLoading, announcement]);
 
     // Handlers
     const handlePostSubmit = async () => {
@@ -295,7 +292,8 @@ function useCafePageLogic(artistId: string) {
         activeTab, setActiveTab, playingId, setPlayingId,
         reportingPost, setReportingPost,
         handlePostSubmit, handleReaction, loadMoreData,
-        reactingPostId
+        reactingPostId,
+        announcement
     };
 }
 
@@ -804,7 +802,8 @@ export default function CafePage() {
         activeTab, setActiveTab, playingId, setPlayingId,
         reportingPost, setReportingPost,
         handlePostSubmit, handleReaction, loadMoreData,
-        reactingPostId
+        reactingPostId,
+        announcement
     } = useCafePageLogic(artistId);
 
     const { handlePlaySong, handlePlayAll, handlePlayAlbum } = useCafePlay(apiData, artist, allSongs, setPlayingId);
@@ -950,6 +949,34 @@ export default function CafePage() {
                             setPostError={setPostError}
                             router={router}
                         />
+
+                        {/* Pinned Announcement (공지사항) */}
+                        {announcement && (
+                            <div className="bg-gradient-to-r from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/30 rounded-xl p-4 relative">
+                                <div className="absolute -top-2 left-4 px-2 py-0.5 bg-[#667eea] text-white text-xs font-bold rounded-md flex items-center gap-1">
+                                    <Pin className="w-3 h-3" />
+                                    공지
+                                </div>
+                                <div className="flex gap-3 mt-2">
+                                    {thumbnail ? (
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#667eea] flex-shrink-0 relative">
+                                            <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
+                                        </div>
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
+                                            {artist.name[0]}
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium text-white">{announcement.artistName} 팬카페 지기</span>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-[#667eea]/20 text-[#667eea] text-xs font-medium border border-[#667eea]/30">카페지기</span>
+                                        </div>
+                                        <p className="text-zinc-300 whitespace-pre-wrap">{announcement.content}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Posts Feed */}
                         <CafePostFeed
