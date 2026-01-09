@@ -128,114 +128,32 @@ export async function getArtistByChannelId(
 
 /**
  * YouTube Music API에서 아티스트 정보 가져와서 DB에 등록
- * (가상회원 생성)
+ * (가상회원 생성) - API를 통해 service_role로 처리
  */
 export async function registerArtistFromAPI(
   channelId: string,
   sourceCountry?: string
 ): Promise<ArtistWithData | null> {
   try {
-    console.log(`[ArtistService] Registering new artist: ${channelId}`);
+    console.log(`[ArtistService] Registering new artist via API: ${channelId}`);
 
-    // 1. YouTube Music API 호출 (서버사이드에서도 동작하도록 직접 호출)
-    const [artistInfo, albumsData, singlesData] = await Promise.all([
-      api.music.artist(channelId),
-      fetchArtistAlbums(channelId, "albums"),
-      fetchArtistAlbums(channelId, "singles"),
-    ]);
+    // API를 통해 등록 (service_role 사용)
+    const res = await fetch("/api/artists/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId, sourceCountry }),
+    });
 
-    if (!artistInfo || !artistInfo.name) {
-      console.error("[ArtistService] Failed to fetch artist info from API");
+    if (!res.ok) {
+      const error = await res.json();
+      console.error("[ArtistService] Registration API error:", error);
       return null;
     }
 
-    // 2. 썸네일 URL 추출
-    const thumbnail = artistInfo.thumbnails?.[artistInfo.thumbnails.length - 1]?.url;
-    const banner = artistInfo.header?.musicVisualHeaderRenderer?.foregroundThumbnail?.thumbnails?.[0]?.url;
+    const { artist } = await res.json();
+    console.log(`[ArtistService] ✅ Registered artist: ${artist?.name}`);
 
-    // 3. artists 테이블에 기본 정보 저장
-    const { data: newArtist, error: artistError } = await supabase
-      .from("artists")
-      .insert({
-        channel_id: channelId,
-        name: artistInfo.name,
-        thumbnail_url: thumbnail,
-        banner_url: banner,
-        description: artistInfo.description,
-        subscribers: artistInfo.subscribers,
-        slug: generateSlug(artistInfo.name),
-        is_virtual: true,
-      })
-      .select()
-      .single();
-
-    if (artistError) {
-      // 중복 등록 시도인 경우 기존 데이터 반환
-      if (artistError.code === "23505") {
-        return getArtistByChannelId(channelId, { skipBackgroundCheck: true });
-      }
-      console.error("[ArtistService] Failed to insert artist:", artistError);
-      return null;
-    }
-
-    // 4. artist_data 테이블에 상세 정보 저장
-    const albums = (albumsData?.results || []).map((a: Record<string, unknown>) => ({
-      browseId: a.browseId,
-      title: a.title,
-      year: a.year,
-      thumbnail: (a.thumbnails as { url: string }[])?.[0]?.url,
-      type: a.type,
-    }));
-
-    const singles = (singlesData?.results || []).map((s: Record<string, unknown>) => ({
-      browseId: s.browseId,
-      title: s.title,
-      year: s.year,
-      thumbnail: (s.thumbnails as { url: string }[])?.[0]?.url,
-    }));
-
-    const topSongs = (artistInfo.songs?.results || []).slice(0, 20).map((s: Record<string, unknown>) => ({
-      videoId: s.videoId,
-      title: s.title,
-      plays: s.plays,
-      thumbnail: (s.thumbnails as { url: string }[])?.[0]?.url,
-      artists: s.artists,
-    }));
-
-    const relatedArtists = (artistInfo.related?.results || []).slice(0, 10).map((r: Record<string, unknown>) => ({
-      browseId: r.browseId,
-      name: r.title,
-      thumbnail: (r.thumbnails as { url: string }[])?.[0]?.url,
-    }));
-
-    const { data: artistData, error: dataError } = await supabase
-      .from("artist_data")
-      .insert({
-        artist_id: newArtist.id,
-        thumbnail_url: thumbnail,
-        banner_url: banner,
-        description: artistInfo.description,
-        subscribers: artistInfo.subscribers,
-        albums,
-        singles,
-        top_songs: topSongs,
-        related_artists: relatedArtists,
-        source_country: sourceCountry,
-        is_prefarmed: !!sourceCountry,
-      })
-      .select()
-      .single();
-
-    if (dataError) {
-      console.error("[ArtistService] Failed to insert artist_data:", dataError);
-    }
-
-    console.log(`[ArtistService] ✅ Registered artist: ${artistInfo.name}`);
-
-    return {
-      ...newArtist,
-      artist_data: artistData,
-    } as ArtistWithData;
+    return artist as ArtistWithData;
   } catch (e) {
     console.error("[ArtistService] Registration error:", e);
     return null;
@@ -244,6 +162,7 @@ export async function registerArtistFromAPI(
 
 /**
  * 백그라운드에서 신선 데이터 체크 (사용자 대기 없음)
+ * API를 통해 service_role로 업데이트
  */
 async function checkFreshDataInBackground(
   channelId: string,
@@ -281,7 +200,7 @@ async function checkFreshDataInBackground(
     if (newAlbums.length > 0 || newSingles.length > 0) {
       console.log(`[ArtistService] 🎉 New releases detected! Albums: ${newAlbums.length}, Singles: ${newSingles.length}`);
 
-      // DB 업데이트
+      // DB 업데이트 (API 통해서)
       const allAlbums = [
         ...newAlbums.map((a: Record<string, unknown>) => ({
           browseId: a.browseId,
@@ -303,26 +222,31 @@ async function checkFreshDataInBackground(
         ...artistData.singles,
       ];
 
-      await supabase
-        .from("artist_data")
-        .update({
+      // API를 통해 업데이트
+      await fetch("/api/artists/register", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId: cachedArtist.id,
           albums: allAlbums,
           singles: allSingles,
-          last_checked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("artist_id", cachedArtist.id);
+        }),
+      });
 
       // 새 릴리즈 공지 생성 (선택적)
       if (newAlbums.length > 0) {
         await createNewReleasePost(cachedArtist, newAlbums[0]);
       }
     } else {
-      // 체크 시간만 업데이트
-      await supabase
-        .from("artist_data")
-        .update({ last_checked_at: new Date().toISOString() })
-        .eq("artist_id", cachedArtist.id);
+      // 체크 시간만 업데이트 (API 통해서)
+      await fetch("/api/artists/register", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId: cachedArtist.id,
+          lastCheckedAt: new Date().toISOString(),
+        }),
+      });
     }
   } catch (e) {
     console.error("[ArtistService] Background check error:", e);
