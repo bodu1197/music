@@ -292,22 +292,28 @@ function incrementViewCount(artistId: string): void {
  */
 export async function joinCafe(userId: string, artistId: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from("follows").insert({
+    console.log("[ArtistService] joinCafe - userId:", userId, "artistId:", artistId);
+
+    const { data, error } = await supabase.from("follows").insert({
       follower_id: userId,
       following_type: "artist",
       following_id: artistId,
       notifications: true,
-    });
+    }).select();
+
+    console.log("[ArtistService] joinCafe result - data:", data, "error:", error);
 
     if (error) {
       if (error.code === "23505") {
         // 이미 가입됨
+        console.log("[ArtistService] Already joined (duplicate key)");
         return true;
       }
-      console.error("[ArtistService] Join cafe error:", error);
+      console.error("[ArtistService] Join cafe error:", error.message, error.code, error.details);
       return false;
     }
 
+    console.log("[ArtistService] joinCafe success");
     return true;
   } catch (e) {
     console.error("[ArtistService] Join cafe error:", e);
@@ -364,16 +370,21 @@ export async function leaveCafe(userId: string, artistId: string): Promise<boole
  */
 export async function isJoinedCafe(userId: string, artistId: string): Promise<boolean> {
   try {
+    console.log("[ArtistService] isJoinedCafe - userId:", userId, "artistId:", artistId);
+
     const { data, error } = await supabase
       .from("follows")
       .select("id")
       .eq("follower_id", userId)
       .eq("following_type", "artist")
       .eq("following_id", artistId)
-      .single();
+      .maybeSingle(); // single() 대신 maybeSingle() 사용 - 결과 없어도 에러 안남
 
-    return !error && !!data;
-  } catch {
+    console.log("[ArtistService] isJoinedCafe result - data:", data, "error:", error);
+
+    return !!data;
+  } catch (e) {
+    console.error("[ArtistService] isJoinedCafe error:", e);
     return false;
   }
 }

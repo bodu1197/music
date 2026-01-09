@@ -65,11 +65,14 @@ export function useArtistData(channelId: string | null): UseArtistDataReturn {
   // 카페 가입 여부 확인
   const checkJoinStatus = useCallback(async () => {
     if (!user || !artist?.id) {
+      console.log("[useArtistData] Skip checkJoinStatus: user=", !!user, "artistId=", artist?.id);
       setIsJoined(false);
       return;
     }
 
+    console.log("[useArtistData] Checking join status for user:", user.id, "artist:", artist.id);
     const joined = await isJoinedCafe(user.id, artist.id);
+    console.log("[useArtistData] Join status result:", joined);
     setIsJoined(joined);
   }, [user, artist?.id]);
 
@@ -78,10 +81,12 @@ export function useArtistData(channelId: string | null): UseArtistDataReturn {
     loadArtist();
   }, [loadArtist]);
 
-  // 가입 여부 확인
+  // 가입 여부 확인 - artist 로드 후에만 실행
   useEffect(() => {
-    checkJoinStatus();
-  }, [checkJoinStatus]);
+    if (artist?.id) {
+      checkJoinStatus();
+    }
+  }, [artist?.id, checkJoinStatus]);
 
   // 카페 가입
   const handleJoin = useCallback(async () => {
@@ -90,11 +95,20 @@ export function useArtistData(channelId: string | null): UseArtistDataReturn {
       return;
     }
 
+    console.log("[useArtistData] Attempting to join cafe:", artist.id, "user:", user.id);
+
     try {
       setIsJoinLoading(true);
       const success = await joinCafe(user.id, artist.id);
+      console.log("[useArtistData] Join result:", success);
+
       if (success) {
         setIsJoined(true);
+        // 확인을 위해 다시 체크
+        const verified = await isJoinedCafe(user.id, artist.id);
+        console.log("[useArtistData] Join verified:", verified);
+      } else {
+        console.error("[useArtistData] Join failed - joinCafe returned false");
       }
     } catch (e) {
       console.error("[useArtistData] Join error:", e);
@@ -107,11 +121,17 @@ export function useArtistData(channelId: string | null): UseArtistDataReturn {
   const handleLeave = useCallback(async () => {
     if (!user || !artist?.id) return;
 
+    console.log("[useArtistData] Attempting to leave cafe:", artist.id, "user:", user.id);
+
     try {
       setIsJoinLoading(true);
       const success = await leaveCafe(user.id, artist.id);
+      console.log("[useArtistData] Leave result:", success);
+
       if (success) {
         setIsJoined(false);
+      } else {
+        console.error("[useArtistData] Leave failed - leaveCafe returned false");
       }
     } catch (e) {
       console.error("[useArtistData] Leave error:", e);
