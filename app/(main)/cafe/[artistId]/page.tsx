@@ -541,6 +541,242 @@ function CafePostFeed({
 }
 
 // ============================================
+// Helper: Get Join Button Icon
+// ============================================
+function getJoinButtonIcon(isJoinLoading: boolean, isJoined: boolean): React.ReactNode {
+    if (isJoinLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
+    if (isJoined) return <Check className="w-5 h-5" />;
+    return <UserPlus className="w-5 h-5" />;
+}
+
+// ============================================
+// Helper: Get Tab Label
+// ============================================
+function getTabLabel(baseLabel: string, count: number, hasMore: boolean): string {
+    if (count === 0) return baseLabel;
+    return `${baseLabel} (${count}${hasMore ? '+' : ''})`;
+}
+
+// ============================================
+// Component: Cafe Artist Card
+// ============================================
+interface CafeArtistCardProps {
+    readonly artist: any;
+    readonly artistData: any;
+    readonly apiData: ArtistAPIData | null;
+    readonly thumbnail: string | null;
+    readonly displaySongs: any[];
+    readonly posts: CafePost[];
+    readonly user: any;
+    readonly isJoined: boolean;
+    readonly isJoinLoading: boolean;
+    readonly toggleJoin: () => void;
+    readonly handlePlayAll: () => void;
+    readonly router: any;
+}
+
+function CafeArtistCard({
+    artist, artistData, apiData, thumbnail, displaySongs, posts,
+    user, isJoined, isJoinLoading, toggleJoin, handlePlayAll, router
+}: CafeArtistCardProps) {
+    const subscribers = apiData?.subscribers || artistData?.subscribers;
+    const description = apiData?.description || artistData?.description;
+
+    return (
+        <div className="max-w-5xl mx-auto px-4 -mt-20 relative z-10">
+            <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                    {/* Avatar */}
+                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
+                        {thumbnail ? (
+                            <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
+                        ) : (
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                <Music className="w-12 h-12 text-zinc-600" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                            <h1 className="text-2xl md:text-3xl font-bold text-white">{artist.name}</h1>
+                            <Crown className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <p className="text-[#667eea] text-sm font-medium mb-2">Official Fan Cafe</p>
+                        {subscribers && <p className="text-zinc-400 text-sm mb-2">{subscribers}</p>}
+                        {apiData?.views && <p className="text-zinc-500 text-xs mb-4">{apiData.views}</p>}
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
+                            <button
+                                onClick={handlePlayAll}
+                                disabled={displaySongs.length === 0}
+                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Play className="w-5 h-5 fill-current" />
+                                Play
+                            </button>
+                            {apiData?.shuffleId && (
+                                <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                    <Shuffle className="w-5 h-5" />
+                                    Shuffle
+                                </button>
+                            )}
+                            {apiData?.radioId && (
+                                <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                    <Radio className="w-5 h-5" />
+                                    Radio
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Stats */}
+                        <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
+                            <div className="flex items-center gap-2 text-zinc-400">
+                                <Users className="w-4 h-4" />
+                                <span>{(artistData?.follower_count || 0).toLocaleString()} members</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-400">
+                                <MessageSquare className="w-4 h-4" />
+                                <span>{(artistData?.post_count || posts.length)} posts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Join Button */}
+                    {user ? (
+                        <button
+                            onClick={toggleJoin}
+                            disabled={isJoinLoading}
+                            className={cn(
+                                "flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all",
+                                isJoined
+                                    ? "bg-white/10 text-white border border-white/20"
+                                    : "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30"
+                            )}
+                        >
+                            {getJoinButtonIcon(isJoinLoading, isJoined)}
+                            {isJoined ? "가입됨" : "카페 가입"}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => router.push("/login")}
+                            className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
+                        >
+                            <LogIn className="w-5 h-5" />
+                            로그인하고 가입
+                        </button>
+                    )}
+                </div>
+
+                {/* Description */}
+                {description && (
+                    <p className="mt-4 text-zinc-400 text-sm leading-relaxed border-t border-white/10 pt-4">
+                        {description.slice(0, 300)}
+                        {description.length > 300 && "..."}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================
+// Component: Cafe Report Modal
+// ============================================
+interface CafeReportModalProps {
+    readonly reportingPost: CafePost;
+    readonly reportReason: ReportReason;
+    readonly setReportReason: (reason: ReportReason) => void;
+    readonly reportDescription: string;
+    readonly setReportDescription: (desc: string) => void;
+    readonly isReporting: boolean;
+    readonly handleReport: () => void;
+    readonly onClose: () => void;
+}
+
+function CafeReportModal({
+    reportingPost, reportReason, setReportReason,
+    reportDescription, setReportDescription,
+    isReporting, handleReport, onClose
+}: CafeReportModalProps) {
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Flag className="w-5 h-5 text-orange-400" />
+                    게시물 신고
+                </h2>
+
+                <div className="mb-4">
+                    <p className="text-sm text-zinc-400 mb-2">신고할 게시물:</p>
+                    <div className="bg-white/5 rounded-lg p-3 text-sm text-zinc-300 line-clamp-3">
+                        {reportingPost.content}
+                    </div>
+                </div>
+
+                <fieldset className="mb-4">
+                    <legend className="block text-sm font-medium text-white mb-2">신고 사유</legend>
+                    <div className="space-y-2">
+                        {[
+                            { value: "spam", label: "스팸 / 광고" },
+                            { value: "harassment", label: "괴롭힘 / 혐오 발언" },
+                            { value: "inappropriate", label: "부적절한 콘텐츠" },
+                            { value: "other", label: "기타" },
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setReportReason(option.value as ReportReason)}
+                                className={cn(
+                                    "w-full text-left px-4 py-2 rounded-lg border transition-colors text-sm",
+                                    reportReason === option.value
+                                        ? "bg-[#667eea]/20 border-[#667eea] text-white"
+                                        : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </fieldset>
+
+                <div className="mb-6">
+                    <label htmlFor="report-description" className="block text-sm font-medium text-white mb-2">상세 설명 (선택)</label>
+                    <textarea
+                        id="report-description"
+                        value={reportDescription}
+                        onChange={(e) => setReportDescription(e.target.value)}
+                        placeholder="추가적인 설명이 있다면 입력해주세요..."
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 resize-none focus:outline-none focus:border-[#667eea] transition-colors"
+                        rows={3}
+                    />
+                </div>
+
+                <div className="flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium transition-colors"
+                    >
+                        취소
+                    </button>
+                    <button
+                        onClick={handleReport}
+                        disabled={isReporting}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-lg font-medium disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    >
+                        {isReporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
+                        신고하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// ============================================
 // Cafe Page Component
 // ============================================
 
@@ -567,18 +803,6 @@ export default function CafePage() {
         reportDescription, setReportDescription,
         isReporting, handleReport
     } = useCafeReport(user, reportingPost, setReportingPost);
-
-    // Helpers
-    const getJoinButtonIcon = () => {
-        if (isJoinLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
-        if (isJoined) return <Check className="w-5 h-5" />;
-        return <UserPlus className="w-5 h-5" />;
-    };
-
-    const getTabLabel = (baseLabel: string, count: number, hasMore: boolean) => {
-        if (count === 0) return baseLabel;
-        return `${baseLabel} (${count}${hasMore ? '+' : ''})`;
-    };
 
     // Loading & Error States
     if (isLoading) {
@@ -622,6 +846,13 @@ export default function CafePage() {
     const hasAlbumsBrowseId = !!apiData?.albums?.browseId;
     const hasSinglesBrowseId = !!apiData?.singles?.browseId;
 
+    // Close report modal handler
+    const closeReportModal = () => {
+        setReportingPost(null);
+        setReportReason("spam");
+        setReportDescription("");
+    };
+
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20">
             {/* Hero Banner */}
@@ -640,106 +871,20 @@ export default function CafePage() {
             </div>
 
             {/* Artist Info Card */}
-            <div className="max-w-5xl mx-auto px-4 -mt-20 relative z-10">
-                <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                        {/* Avatar */}
-                        <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
-                            {thumbnail ? (
-                                <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
-                            ) : (
-                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <Music className="w-12 h-12 text-zinc-600" />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">{artist.name}</h1>
-                                <Crown className="w-5 h-5 text-yellow-400" />
-                            </div>
-                            <p className="text-[#667eea] text-sm font-medium mb-2">Official Fan Cafe</p>
-                            {(apiData?.subscribers || artistData?.subscribers) && (
-                                <p className="text-zinc-400 text-sm mb-2">{apiData?.subscribers || artistData?.subscribers}</p>
-                            )}
-                            {apiData?.views && (
-                                <p className="text-zinc-500 text-xs mb-4">{apiData.views}</p>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
-                                <button
-                                    onClick={handlePlayAll}
-                                    disabled={displaySongs.length === 0}
-                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Play className="w-5 h-5 fill-current" />
-                                    Play
-                                </button>
-                                {apiData?.shuffleId && (
-                                    <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                        <Shuffle className="w-5 h-5" />
-                                        Shuffle
-                                    </button>
-                                )}
-                                {apiData?.radioId && (
-                                    <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                        <Radio className="w-5 h-5" />
-                                        Radio
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Stats */}
-                            <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
-                                <div className="flex items-center gap-2 text-zinc-400">
-                                    <Users className="w-4 h-4" />
-                                    <span>{(artistData?.follower_count || 0).toLocaleString()} members</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-zinc-400">
-                                    <MessageSquare className="w-4 h-4" />
-                                    <span>{(artistData?.post_count || posts.length)} posts</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Join Button */}
-                        {user ? (
-                            <button
-                                onClick={toggleJoin}
-                                disabled={isJoinLoading}
-                                className={cn(
-                                    "flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all",
-                                    isJoined
-                                        ? "bg-white/10 text-white border border-white/20"
-                                        : "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30"
-                                )}
-                            >
-                                {getJoinButtonIcon()}
-                                {isJoined ? "가입됨" : "카페 가입"}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => router.push("/login")}
-                                className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
-                            >
-                                <LogIn className="w-5 h-5" />
-                                로그인하고 가입
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Description */}
-                    {(apiData?.description || artistData?.description) && (
-                        <p className="mt-4 text-zinc-400 text-sm leading-relaxed border-t border-white/10 pt-4">
-                            {(apiData?.description || artistData?.description || "").slice(0, 300)}
-                            {(apiData?.description || artistData?.description || "").length > 300 && "..."}
-                        </p>
-                    )}
-                </div>
-            </div>
+            <CafeArtistCard
+                artist={artist}
+                artistData={artistData}
+                apiData={apiData}
+                thumbnail={thumbnail}
+                displaySongs={displaySongs}
+                posts={posts}
+                user={user}
+                isJoined={isJoined}
+                isJoinLoading={isJoinLoading}
+                toggleJoin={toggleJoin}
+                handlePlayAll={handlePlayAll}
+                router={router}
+            />
 
             {/* Tab Navigation */}
             <div className="max-w-5xl mx-auto px-4 mt-6">
@@ -1050,84 +1195,16 @@ export default function CafePage() {
 
             {/* Report Modal */}
             {reportingPost && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                            <Flag className="w-5 h-5 text-orange-400" />
-                            게시물 신고
-                        </h2>
-
-                        <div className="mb-4">
-                            <p className="text-sm text-zinc-400 mb-2">신고할 게시물:</p>
-                            <div className="bg-white/5 rounded-lg p-3 text-sm text-zinc-300 line-clamp-3">
-                                {reportingPost.content}
-                            </div>
-                        </div>
-
-                        <fieldset className="mb-4">
-                            <legend className="block text-sm font-medium text-white mb-2">신고 사유</legend>
-                            <div className="space-y-2">
-                                {[
-                                    { value: "spam", label: "스팸 / 광고" },
-                                    { value: "harassment", label: "괴롭힘 / 혐오 발언" },
-                                    { value: "inappropriate", label: "부적절한 콘텐츠" },
-                                    { value: "other", label: "기타" },
-                                ].map((option) => (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        onClick={() => setReportReason(option.value as ReportReason)}
-                                        className={cn(
-                                            "w-full text-left px-4 py-2 rounded-lg border transition-colors text-sm",
-                                            reportReason === option.value
-                                                ? "bg-[#667eea]/20 border-[#667eea] text-white"
-                                                : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
-                                        )}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </fieldset>
-
-                        <div className="mb-6">
-                            <label htmlFor="report-description" className="block text-sm font-medium text-white mb-2">상세 설명 (선택)</label>
-                            <textarea
-                                id="report-description"
-                                value={reportDescription}
-                                onChange={(e) => setReportDescription(e.target.value)}
-                                placeholder="추가적인 설명이 있다면 입력해주세요..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 resize-none focus:outline-none focus:border-[#667eea] transition-colors"
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setReportingPost(null);
-                                    setReportReason("spam");
-                                    setReportDescription("");
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium transition-colors"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={handleReport}
-                                disabled={isReporting}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-lg font-medium disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                            >
-                                {isReporting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Flag className="w-4 h-4" />
-                                )}
-                                신고하기
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <CafeReportModal
+                    reportingPost={reportingPost}
+                    reportReason={reportReason}
+                    setReportReason={setReportReason}
+                    reportDescription={reportDescription}
+                    setReportDescription={setReportDescription}
+                    isReporting={isReporting}
+                    handleReport={handleReport}
+                    onClose={closeReportModal}
+                />
             )}
         </div>
     );
