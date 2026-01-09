@@ -274,10 +274,10 @@ export const api = {
             }
         },
 
-        // Get welcome post for a cafe
+        // Get welcome post for a cafe (Next.js API route → DB 조회)
         getWelcomePost: async (channelId: string) => {
             try {
-                const res = await fetch(`${API_URL}/api/ai/welcome/${channelId}`);
+                const res = await fetch(`/api/ai/welcome/${channelId}`);
                 if (!res.ok) return null;
                 return res.json();
             } catch (e) {
