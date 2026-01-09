@@ -318,12 +318,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                 return;
             }
 
-            setFolders(prev =>
-                prev.map(f => {
-                    if (f.id !== folderId) return f;
-                    return { ...f, tracks: f.tracks.filter(t => t.videoId !== videoId) };
-                })
-            );
+            setFolders(prev => removeTrackFromFoldersState(prev, folderId, videoId));
         } catch (e) {
             console.error("Error removing track:", e);
         }
@@ -396,4 +391,11 @@ export function useLibrary() {
         throw new Error("useLibrary must be used within a LibraryProvider");
     }
     return context;
+}
+
+function removeTrackFromFoldersState(folders: LibraryFolder[], folderId: string, videoId: string): LibraryFolder[] {
+    return folders.map(f => {
+        if (f.id !== folderId) return f;
+        return { ...f, tracks: f.tracks.filter(t => t.videoId !== videoId) };
+    });
 }

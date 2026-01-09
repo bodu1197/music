@@ -124,7 +124,11 @@ export default function AddToLibraryModal() {
         setIsCreatingFolder(false);
     };
 
-    const handleClose = () => {
+    const handleClose = (e?: React.MouseEvent | React.KeyboardEvent) => {
+        // Only close if the click/key event target is the dialog itself (backdrop)
+        // or if it's an explicit close action (e is undefined or explicitly handled)
+        if (e && e.target !== e.currentTarget) return;
+
         closeAddToLibraryModal();
         setIsCreatingFolder(false);
         setAddedToFolders([]);
@@ -141,14 +145,13 @@ export default function AddToLibraryModal() {
         >
             <div
                 className="bg-[#1a1a2e] rounded-2xl w-full max-w-md mx-4 border border-white/10 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
+                role="document"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <h2 className="text-lg font-bold text-white">라이브러리에 추가</h2>
                     <button
-                        onClick={handleClose}
+                        onClick={() => handleClose()}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
                     >
                         <X className="w-5 h-5 text-white/70" />
@@ -203,7 +206,7 @@ export default function AddToLibraryModal() {
                 {/* Footer */}
                 <div className="p-4 border-t border-white/10">
                     <button
-                        onClick={handleClose}
+                        onClick={() => handleClose()}
                         className="w-full py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
                     >
                         완료
