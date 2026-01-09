@@ -204,5 +204,40 @@ export const api = {
             if (!res.ok) throw new Error('Failed to fetch playlist tracks');
             return res.json();
         }
+    },
+
+    // ============================================
+    // Artists API (Cafe Virtual Members)
+    // ============================================
+    artists: {
+        // Register an artist as a virtual member (auto-called when visiting artist page)
+        register: async (artistData: {
+            channel_id: string;
+            name: string;
+            thumbnail_url?: string;
+            banner_url?: string;
+            description?: string;
+            subscribers?: string;
+        }) => {
+            try {
+                const res = await fetch(`${API_URL}/api/artists/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(artistData)
+                });
+                if (!res.ok) throw new Error('Failed to register artist');
+                return res.json();
+            } catch (e) {
+                console.error('[API] Artist register error:', e);
+                return null; // Fail silently - registration is not critical
+            }
+        },
+
+        // Get a registered artist by channel_id
+        get: async (channelId: string) => {
+            const res = await fetch(`${API_URL}/api/artists/${channelId}`);
+            if (!res.ok) return null;
+            return res.json();
+        }
     }
 };

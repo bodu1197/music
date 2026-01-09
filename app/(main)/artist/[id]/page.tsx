@@ -69,6 +69,18 @@ export default function ArtistPage() {
                 setAllSingles(null);
                 const data = await api.music.artist(artistId);
                 setArtist(data);
+
+                // 🎤 Auto-register artist as virtual member (Cafe feature)
+                if (data && data.name) {
+                    const thumbnail = data.thumbnails?.[data.thumbnails.length - 1]?.url;
+                    api.artists.register({
+                        channel_id: artistId,
+                        name: data.name,
+                        thumbnail_url: thumbnail,
+                        description: data.description,
+                        subscribers: data.subscribers
+                    });
+                }
             } catch (e: any) {
                 setError(e.message || "Failed to load artist");
             } finally {

@@ -1277,3 +1277,79 @@ def get_cached_countries():
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+# ============================================
+# Artist Registration (Auto-save to Supabase)
+# ============================================
+from pydantic import BaseModel
+from typing import Optional
+
+class ArtistRegisterRequest(BaseModel):
+    channel_id: str
+    name: str
+    thumbnail_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    description: Optional[str] = None
+    subscribers: Optional[str] = None
+
+@app.post("/api/artists/register")
+def register_artist(artist: ArtistRegisterRequest):
+    """
+    Register/update an artist as a virtual member.
+    Called automatically when a user visits an artist page.
+    Uses upsert to avoid duplicates.
+    """
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=500, detail="Supabase not connected")
+    
+    try:
+        # Create slug from artist name (lowercase, replace spaces with hyphens)
+        slug = artist.name.lower().replace(" ", "-").replace("'", "")[:50]
+        
+        # Upsert artist data
+        result = sb.table("artists").upsert({
+            "channel_id": artist.channel_id,
+            "name": artist.name,
+            "thumbnail_url": artist.thumbnail_url,
+            "banner_url": artist.banner_url,
+            "description": artist.description,
+            "subscribers": artist.subscribers,
+            "slug": slug,
+            "cached_at": datetime.now(timezone.utc).isoformat()
+        }, on_conflict="channel_id").execute()
+        
+        print(f"[Artist Register] {artist.name} (channel_id: {artist.channel_id})")
+        
+        return {
+            "success": True,
+            "artist": {
+                "channel_id": artist.channel_id,
+                "name": artist.name,
+                "slug": slug
+            }
+        }
+    except Exception as e:
+        print(f"[Artist Register Error] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/artists/{channel_id}")
+def get_registered_artist(channel_id: str):
+    """
+    Get a registered artist by channel_id.
+    """
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=500, detail="Supabase not connected")
+    
+    try:
+        result = sb.table("artists").select("*").eq("channel_id", channel_id).single().execute()
+        if result.data:
+            return result.data
+        raise HTTPException(status_code=404, detail="Artist not found")
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="Artist not found")
+        raise HTTPException(status_code=500, detail=str(e))
+
