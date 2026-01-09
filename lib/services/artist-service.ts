@@ -8,6 +8,19 @@ import { api } from "@/lib/api";
 // Cache-First + Background Refresh 전략
 // ============================================
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://sori-music-backend-322455104824.us-central1.run.app";
+
+// 서버사이드에서도 동작하는 앨범 데이터 가져오기
+async function fetchArtistAlbums(channelId: string, type: "albums" | "singles" = "albums") {
+  try {
+    const res = await fetch(`${API_URL}/artist/${channelId}/albums?type=${type}`);
+    if (!res.ok) return { results: [] };
+    return res.json();
+  } catch {
+    return { results: [] };
+  }
+}
+
 export interface Artist {
   id: string;
   channel_id: string;
@@ -124,11 +137,11 @@ export async function registerArtistFromAPI(
   try {
     console.log(`[ArtistService] Registering new artist: ${channelId}`);
 
-    // 1. YouTube Music API 호출
+    // 1. YouTube Music API 호출 (서버사이드에서도 동작하도록 직접 호출)
     const [artistInfo, albumsData, singlesData] = await Promise.all([
       api.music.artist(channelId),
-      api.music.artistAlbums(channelId, "albums").catch(() => ({ results: [] })),
-      api.music.artistAlbums(channelId, "singles").catch(() => ({ results: [] })),
+      fetchArtistAlbums(channelId, "albums"),
+      fetchArtistAlbums(channelId, "singles"),
     ]);
 
     if (!artistInfo || !artistInfo.name) {
@@ -248,10 +261,10 @@ async function checkFreshDataInBackground(
 
     console.log(`[ArtistService] 🔄 Background check for: ${cachedArtist.name}`);
 
-    // API 호출 (백그라운드)
+    // API 호출 (백그라운드) - 직접 호출로 서버사이드에서도 동작
     const [freshAlbums, freshSingles] = await Promise.all([
-      api.music.artistAlbums(channelId, "albums").catch(() => ({ results: [] })),
-      api.music.artistAlbums(channelId, "singles").catch(() => ({ results: [] })),
+      fetchArtistAlbums(channelId, "albums"),
+      fetchArtistAlbums(channelId, "singles"),
     ]);
 
     const cachedAlbumIds = new Set((artistData.albums || []).map((a: Album) => a.browseId));
