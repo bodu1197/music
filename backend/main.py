@@ -1373,43 +1373,85 @@ def generate_artist_post(request: AIPostRequest):
     Generate an AI-powered post as if written by the artist.
     Uses Gemini 3 Flash for natural language generation.
     """
+    # Fallback messages for when API fails
+    fallback_messages = {
+        "greeting": f"안녕하세요, {request.artist_name}입니다! 💕 팬카페에 방문해주셔서 정말 감사해요. 여러분과 함께하는 이 시간이 너무 소중해요! 🎵✨",
+        "update": f"여러분 안녕하세요! {request.artist_name}이에요 🎤 오늘도 열심히 음악 작업 중이에요. 곧 좋은 소식으로 찾아뵐게요! 💪🎵",
+        "thanks": f"사랑하는 팬 여러분, {request.artist_name}입니다 🙏💕 항상 응원해주셔서 진심으로 감사드려요. 여러분이 있어 제가 있어요! ✨",
+        "random": f"안녕하세요~ {request.artist_name}이에요! 😊 오늘 하루도 행복하게 보내고 계신가요? 여러분 생각하며 힘내고 있어요! 🌟💕"
+    }
+
     if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="Gemini API not configured")
-    
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-3-flash-preview")
-        
-        # Build prompt based on post type
-        prompts = {
-            "greeting": f"You are {request.artist_name}, a famous music artist. Write a short, warm greeting message (2-3 sentences) to your fans visiting your fan cafe. Include emojis. Be friendly and personal. Write in Korean.",
-            "update": f"You are {request.artist_name}, a music artist. Write a short update message (2-3 sentences) about your music or daily life for your fan cafe. Include emojis. Write in Korean.",
-            "thanks": f"You are {request.artist_name}, a music artist. Write a heartfelt thank you message (2-3 sentences) to your fans for their support. Include emojis. Write in Korean.",
-            "random": f"You are {request.artist_name}, a music artist. Write a casual, fun message (2-3 sentences) for your fan cafe. Could be about anything - a random thought, something you're excited about, or just saying hi. Include emojis. Write in Korean."
-        }
-        
-        prompt = prompts.get(request.post_type, prompts["greeting"])
-        
-        if request.artist_description:
-            prompt += f"\n\nArtist background: {request.artist_description[:500]}"
-        
-        if request.context:
-            prompt += f"\n\nAdditional context: {request.context}"
-        
-        response = model.generate_content(prompt)
-        
+        # Return fallback instead of error
         return {
             "success": True,
             "post": {
-                "content": response.text,
+                "content": fallback_messages.get(request.post_type, fallback_messages["greeting"]),
                 "artist_name": request.artist_name,
                 "post_type": request.post_type,
                 "is_ai": True
             }
         }
-    except Exception as e:
-        print(f"[AI Post Error] {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+    # Retry logic
+    max_retries = 3
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel("gemini-3-flash-preview")
+
+            # Build prompt based on post type
+            prompts = {
+                "greeting": f"You are {request.artist_name}, a famous music artist. Write a short, warm greeting message (2-3 sentences) to your fans visiting your fan cafe. Include emojis. Be friendly and personal. Write in Korean.",
+                "update": f"You are {request.artist_name}, a music artist. Write a short update message (2-3 sentences) about your music or daily life for your fan cafe. Include emojis. Write in Korean.",
+                "thanks": f"You are {request.artist_name}, a music artist. Write a heartfelt thank you message (2-3 sentences) to your fans for their support. Include emojis. Write in Korean.",
+                "random": f"You are {request.artist_name}, a music artist. Write a casual, fun message (2-3 sentences) for your fan cafe. Could be about anything - a random thought, something you're excited about, or just saying hi. Include emojis. Write in Korean."
+            }
+
+            prompt = prompts.get(request.post_type, prompts["greeting"])
+
+            if request.artist_description:
+                prompt += f"\n\nArtist background: {request.artist_description[:500]}"
+
+            if request.context:
+                prompt += f"\n\nAdditional context: {request.context}"
+
+            response = model.generate_content(prompt)
+
+            # Check if response has valid text
+            if response and response.text and len(response.text.strip()) > 0:
+                return {
+                    "success": True,
+                    "post": {
+                        "content": response.text,
+                        "artist_name": request.artist_name,
+                        "post_type": request.post_type,
+                        "is_ai": True
+                    }
+                }
+            else:
+                print(f"[AI Post] Empty response on attempt {attempt + 1}")
+                last_error = "Empty response from Gemini"
+                continue
+
+        except Exception as e:
+            print(f"[AI Post Error] Attempt {attempt + 1}: {e}")
+            last_error = str(e)
+            continue
+
+    # All retries failed, return fallback
+    print(f"[AI Post] All {max_retries} retries failed, using fallback. Last error: {last_error}")
+    return {
+        "success": True,
+        "post": {
+            "content": fallback_messages.get(request.post_type, fallback_messages["greeting"]),
+            "artist_name": request.artist_name,
+            "post_type": request.post_type,
+            "is_ai": True
+        }
+    }
 
 @app.get("/api/ai/welcome/{channel_id}")
 def get_ai_welcome_post(channel_id: str):
