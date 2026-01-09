@@ -121,22 +121,18 @@ export default function MyCafePage() {
         );
     }
 
-    // 로그인 상태
-    return (
-        <div className="min-h-screen p-6 md:p-8">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">My Cafe</h1>
-                <p className="text-white/60">가입한 아티스트 팬카페를 모아보세요</p>
-            </div>
-
-            {/* Loading */}
-            {cafesLoading ? (
+    // 헬퍼 함수: 카페 콘텐츠 렌더링 (nested ternary 제거)
+    const renderCafesContent = () => {
+        if (cafesLoading) {
+            return (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="w-8 h-8 animate-spin text-[#667eea]" />
                 </div>
-            ) : cafes.length > 0 ? (
-                /* Joined Cafes */
+            );
+        }
+
+        if (cafes.length > 0) {
+            return (
                 <div>
                     <h2 className="text-xl font-bold text-white mb-4">
                         가입한 카페 ({cafes.length})
@@ -147,27 +143,42 @@ export default function MyCafePage() {
                         ))}
                     </div>
                 </div>
-            ) : (
-                /* Empty State */
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-24 h-24 bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 rounded-full flex items-center justify-center mb-6">
-                        <Coffee className="w-12 h-12 text-[#667eea]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-white mb-3">아직 가입한 카페가 없어요</h2>
-                    <p className="text-white/50 max-w-sm mb-8">
-                        좋아하는 아티스트를 검색하고 팬카페에 가입해보세요!
-                        <br />
-                        아티스트의 최신 소식과 팬들과 소통할 수 있어요.
-                    </p>
-                    <Link
-                        href="/search?tab=search"
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium hover:opacity-90 transition-opacity"
-                    >
-                        <Search className="w-5 h-5" />
-                        아티스트 검색하기
-                    </Link>
+            );
+        }
+
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 rounded-full flex items-center justify-center mb-6">
+                    <Coffee className="w-12 h-12 text-[#667eea]" />
                 </div>
-            )}
+                <h2 className="text-2xl font-bold text-white mb-3">아직 가입한 카페가 없어요</h2>
+                <p className="text-white/50 max-w-sm mb-8">
+                    좋아하는 아티스트를 검색하고 팬카페에 가입해보세요!
+                    <br />
+                    아티스트의 최신 소식과 팬들과 소통할 수 있어요.
+                </p>
+                <Link
+                    href="/search?tab=search"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium hover:opacity-90 transition-opacity"
+                >
+                    <Search className="w-5 h-5" />
+                    아티스트 검색하기
+                </Link>
+            </div>
+        );
+    };
+
+    // 로그인 상태
+    return (
+        <div className="min-h-screen p-6 md:p-8">
+            {/* Header */}
+            <div className="mb-8">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">My Cafe</h1>
+                <p className="text-white/60">가입한 아티스트 팬카페를 모아보세요</p>
+            </div>
+
+            {/* Content */}
+            {renderCafesContent()}
 
             {/* Popular Artists Section */}
             {!popularLoading && popularArtists.length > 0 && (

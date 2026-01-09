@@ -126,11 +126,12 @@ export default function LibraryPage() {
                     <h2 className="text-lg font-semibold text-white/80 mb-4">폴더 목록</h2>
                     <div className="space-y-2">
                         {folders.map((folder) => (
-                            <div
+                            <button
+                                type="button"
                                 key={folder.id}
                                 onClick={() => setSelectedFolderId(folder.id)}
                                 className={cn(
-                                    "flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all group",
+                                    "w-full flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all group text-left",
                                     selectedFolderId === folder.id
                                         ? "bg-gradient-to-r from-[#667eea]/30 to-[#764ba2]/30 border border-[#667eea]/50"
                                         : "bg-white/5 hover:bg-white/10 border border-transparent"
@@ -163,6 +164,7 @@ export default function LibraryPage() {
                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {folder.tracks.length > 0 && (
                                         <button
+                                            type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setSelectedFolderId(folder.id);
@@ -176,6 +178,7 @@ export default function LibraryPage() {
                                     {!folder.isDefault && (
                                         <>
                                             <button
+                                                type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setEditingFolder(folder.id);
@@ -185,6 +188,7 @@ export default function LibraryPage() {
                                                 <Edit2 className="w-4 h-4 text-white" />
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteFolder(folder.id);
@@ -196,7 +200,7 @@ export default function LibraryPage() {
                                         </>
                                     )}
                                 </div>
-                            </div>
+                            </button>
                         ))}
 
                         {/* Add New Folder Button */}
@@ -236,11 +240,12 @@ export default function LibraryPage() {
                             {selectedFolder.tracks.length > 0 ? (
                                 <div className="space-y-2">
                                     {selectedFolder.tracks.map((track, index) => (
-                                        <div
+                                        <button
+                                            type="button"
                                             key={track.videoId}
                                             onClick={() => playTrack(index)}
                                             className={cn(
-                                                "flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer",
+                                                "w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer text-left",
                                                 currentTrack?.videoId === track.videoId && "bg-[#667eea]/20"
                                             )}
                                         >
@@ -258,16 +263,24 @@ export default function LibraryPage() {
                                                 <p className="text-white/50 text-sm truncate">{track.artist}</p>
                                             </div>
                                             <span className="text-white/40 text-sm">{track.duration || "--:--"}</span>
-                                            <button
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleRemoveTrack(track.videoId);
                                                 }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                        e.stopPropagation();
+                                                        handleRemoveTrack(track.videoId);
+                                                    }
+                                                }}
                                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded-full transition-all"
                                             >
                                                 <Trash2 className="w-4 h-4 text-red-400" />
-                                            </button>
-                                        </div>
+                                            </span>
+                                        </button>
                                     ))}
                                 </div>
                             ) : (

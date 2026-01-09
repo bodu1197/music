@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     const artistInfo: ArtistInfo = await artistInfoRes.json();
 
-    if (!artistInfo || !artistInfo.name) {
+    if (!artistInfo?.name) {
       return NextResponse.json({ error: "Invalid artist data" }, { status: 400 });
     }
 

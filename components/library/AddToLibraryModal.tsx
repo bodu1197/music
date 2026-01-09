@@ -48,12 +48,19 @@ export default function AddToLibraryModal() {
 
     return (
         <div
+            role="button"
+            tabIndex={0}
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100]"
             onClick={handleClose}
+            onKeyDown={(e) => {
+                if (e.key === "Escape") handleClose();
+            }}
         >
             <div
+                role="presentation"
                 className="bg-[#1a1a2e] rounded-2xl w-full max-w-md mx-4 border border-white/10 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">

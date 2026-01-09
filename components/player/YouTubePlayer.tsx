@@ -153,9 +153,9 @@ export default function YouTubePlayer({ className }: Readonly<YouTubePlayerProps
                         iv_load_policy: 3,
                         modestbranding: 1,
                         rel: 0,
-                        origin: typeof window !== "undefined" ? window.location.origin : undefined,
+                        origin: typeof globalThis !== "undefined" && globalThis.window ? globalThis.location.origin : undefined,
                         enablejsapi: 1,
-                        widget_referrer: typeof window !== "undefined" ? window.location.origin : undefined,
+                        widget_referrer: typeof globalThis !== "undefined" && globalThis.window ? globalThis.location.origin : undefined,
                     },
                     events: {
                         onReady: (event: YT.PlayerEvent) => {
