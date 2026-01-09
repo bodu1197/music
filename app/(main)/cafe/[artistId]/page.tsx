@@ -591,16 +591,16 @@ function CafeArtistCard({
     const description = apiData?.description || artistData?.description;
 
     return (
-        <div className="max-w-5xl mx-auto px-4 -mt-20 relative z-10">
-            <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+        <div className="max-w-5xl mx-auto px-3 md:px-4 -mt-10 relative z-10">
+            <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-2xl">
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
                     {/* Avatar */}
-                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
+                    <div className="w-20 h-20 md:w-32 md:h-32 rounded-full overflow-hidden border-3 md:border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
                         {thumbnail ? (
                             <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
                         ) : (
                             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                <Music className="w-12 h-12 text-zinc-600" />
+                                <Music className="w-8 h-8 md:w-12 md:h-12 text-zinc-600" />
                             </div>
                         )}
                     </div>
@@ -616,37 +616,37 @@ function CafeArtistCard({
                         {apiData?.views && <p className="text-zinc-500 text-xs mb-4">{apiData.views}</p>}
 
                         {/* Action Buttons */}
-                        <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
+                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start mb-3 md:mb-4">
                             <button
                                 onClick={handlePlayAll}
                                 disabled={displaySongs.length === 0}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white text-sm md:text-base font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Play className="w-5 h-5 fill-current" />
+                                <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
                                 Play
                             </button>
                             {apiData?.shuffleId && (
-                                <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                    <Shuffle className="w-5 h-5" />
+                                <button className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm md:text-base font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                    <Shuffle className="w-4 h-4 md:w-5 md:h-5" />
                                     Shuffle
                                 </button>
                             )}
                             {apiData?.radioId && (
-                                <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                    <Radio className="w-5 h-5" />
+                                <button className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm md:text-base font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                    <Radio className="w-4 h-4 md:w-5 md:h-5" />
                                     Radio
                                 </button>
                             )}
                         </div>
 
                         {/* Stats */}
-                        <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
-                            <div className="flex items-center gap-2 text-zinc-400">
-                                <Users className="w-4 h-4" />
+                        <div className="flex items-center justify-center md:justify-start gap-4 md:gap-6 text-xs md:text-sm">
+                            <div className="flex items-center gap-1.5 md:gap-2 text-zinc-400">
+                                <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 <span>{(artistData?.follower_count || 0).toLocaleString()} members</span>
                             </div>
-                            <div className="flex items-center gap-2 text-zinc-400">
-                                <MessageSquare className="w-4 h-4" />
+                            <div className="flex items-center gap-1.5 md:gap-2 text-zinc-400">
+                                <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 <span>{(artistData?.post_count || posts.length)} posts</span>
                             </div>
                         </div>
@@ -658,7 +658,7 @@ function CafeArtistCard({
                             onClick={toggleJoin}
                             disabled={isJoinLoading}
                             className={cn(
-                                "flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all",
+                                "flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-semibold transition-all",
                                 isJoined
                                     ? "bg-white/10 text-white border border-white/20"
                                     : "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30"
@@ -670,9 +670,9 @@ function CafeArtistCard({
                     ) : (
                         <button
                             onClick={() => router.push("/login")}
-                            className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
+                            className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
                         >
-                            <LogIn className="w-5 h-5" />
+                            <LogIn className="w-4 h-4 md:w-5 md:h-5" />
                             로그인하고 가입
                         </button>
                     )}
@@ -864,15 +864,15 @@ export default function CafePage() {
 
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20">
-            {/* Hero Banner */}
-            <div className="relative w-full h-48 md:h-64 bg-gradient-to-r from-[#667eea] to-[#764ba2]">
+            {/* Hero Banner - 높이 축소 */}
+            <div className="relative w-full h-28 md:h-40 bg-gradient-to-r from-[#667eea] to-[#764ba2]">
                 {artistData?.banner_url && (
                     <Image src={artistData.banner_url} alt={artist.name} fill className="object-cover opacity-50" unoptimized />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f23] to-transparent" />
                 <button
                     onClick={() => router.back()}
-                    className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors z-10"
+                    className="absolute top-[20px] left-4 flex items-center gap-2 px-3 py-1.5 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors z-10"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     <span className="text-sm">뒤로</span>
@@ -896,8 +896,8 @@ export default function CafePage() {
             />
 
             {/* Tab Navigation */}
-            <div className="max-w-5xl mx-auto px-4 mt-6">
-                <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="max-w-5xl mx-auto px-3 md:px-4 mt-4 md:mt-6">
+                <div className="flex gap-0.5 md:gap-1 overflow-x-auto pb-2 scrollbar-hide">
                     {[
                         { id: "feed", label: "피드", icon: MessageSquare },
                         { id: "music", label: getTabLabel("노래", displaySongs.length, !allSongs && hasSongsBrowseId), icon: Music },
@@ -909,13 +909,13 @@ export default function CafePage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm",
+                                "flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium transition-all whitespace-nowrap text-xs md:text-sm",
                                 activeTab === tab.id
                                     ? "bg-[#667eea]/20 text-[#667eea]"
                                     : "text-zinc-400 hover:text-white hover:bg-white/5"
                             )}
                         >
-                            <tab.icon className="w-4 h-4" />
+                            <tab.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             {tab.label}
                         </button>
                     ))}
@@ -923,7 +923,7 @@ export default function CafePage() {
             </div>
 
             {/* Content Area */}
-            <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6">
+            <div className="max-w-5xl mx-auto px-3 md:px-4 mt-4 md:mt-6 space-y-4 md:space-y-6">
                 {/* API Loading Indicator */}
                 {apiLoading && activeTab !== "feed" && (
                     <div className="flex items-center justify-center py-8">

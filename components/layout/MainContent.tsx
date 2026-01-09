@@ -12,6 +12,7 @@ interface MainContentProps {
 
 export default function MainContent({ children }: Readonly<MainContentProps>) {
     const pathname = usePathname();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isQueueOpen } = usePlayer();
 
     const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/");
@@ -19,9 +20,8 @@ export default function MainContent({ children }: Readonly<MainContentProps>) {
     return (
         <main
             className={cn(
-                "flex-1 md:ml-[clamp(200px,18.5vw,280px)] pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden transition-[margin] duration-300",
-                !isFullWidthPage && "lg:pr-[340px]",
-                isQueueOpen && "md:mr-[350px] lg:mr-[400px]"
+                "flex-1 md:ml-[clamp(200px,18.5vw,280px)] pb-[140px] md:pb-[90px] min-h-screen overflow-x-hidden",
+                !isFullWidthPage && "lg:pr-[340px]"
             )}
         >
             {/* Mobile Top Bar */}
