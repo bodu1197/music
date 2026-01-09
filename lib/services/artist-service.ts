@@ -396,18 +396,38 @@ export async function joinCafe(userId: string, artistId: string): Promise<boolea
  */
 export async function leaveCafe(userId: string, artistId: string): Promise<boolean> {
   try {
+    console.log("[ArtistService] Leave cafe attempt:", { userId, artistId });
+
+    // 먼저 해당 follow 레코드가 존재하는지 확인
+    const { data: existing, error: selectError } = await supabase
+      .from("follows")
+      .select("id")
+      .eq("follower_id", userId)
+      .eq("following_type", "artist")
+      .eq("following_id", artistId)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error("[ArtistService] Leave cafe - select error:", selectError);
+    }
+
+    if (!existing) {
+      console.log("[ArtistService] No follow record found to delete");
+      return true; // 이미 탈퇴된 상태
+    }
+
+    // ID로 직접 삭제
     const { error } = await supabase
       .from("follows")
       .delete()
-      .eq("follower_id", userId)
-      .eq("following_type", "artist")
-      .eq("following_id", artistId);
+      .eq("id", existing.id);
 
     if (error) {
       console.error("[ArtistService] Leave cafe error:", error);
       return false;
     }
 
+    console.log("[ArtistService] Leave cafe success");
     return true;
   } catch (e) {
     console.error("[ArtistService] Leave cafe error:", e);

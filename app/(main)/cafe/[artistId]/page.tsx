@@ -117,6 +117,7 @@ export default function CafePage() {
     const [postsLoading, setPostsLoading] = useState(true);
     const [newPost, setNewPost] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [postError, setPostError] = useState<string | null>(null);
 
     // 플레이어
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
@@ -291,8 +292,15 @@ export default function CafePage() {
     const handlePostSubmit = async () => {
         if (!newPost.trim() || !user || !artist?.id) return;
 
+        // 가입한 회원만 글 작성 가능
+        if (!isJoined) {
+            setPostError("카페에 가입한 회원만 글을 작성할 수 있습니다.");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
+            setPostError(null);
 
             const { data, error } = await supabase
                 .from("posts")
@@ -315,6 +323,7 @@ export default function CafePage() {
 
             if (error) {
                 console.error("[CafePage] Post submit error:", error);
+                setPostError("글 등록에 실패했습니다. 다시 시도해주세요.");
                 return;
             }
 
@@ -330,6 +339,7 @@ export default function CafePage() {
             setNewPost("");
         } catch (e) {
             console.error("[CafePage] Post submit error:", e);
+            setPostError("글 등록 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
@@ -642,7 +652,7 @@ export default function CafePage() {
                 {activeTab === "feed" && (
                     <>
                         {/* Post Input */}
-                        {user ? (
+                        {user && isJoined ? (
                             <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-4">
                                 <div className="flex gap-3">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] flex items-center justify-center text-white font-bold flex-shrink-0">
@@ -651,11 +661,18 @@ export default function CafePage() {
                                     <div className="flex-1">
                                         <textarea
                                             value={newPost}
-                                            onChange={(e) => setNewPost(e.target.value)}
+                                            onChange={(e) => {
+                                                setNewPost(e.target.value);
+                                                if (postError) setPostError(null);
+                                            }}
                                             placeholder="팬들과 함께 이야기를 나눠보세요..."
                                             className="w-full bg-transparent text-white placeholder:text-zinc-500 resize-none focus:outline-none min-h-[60px]"
                                             rows={2}
                                         />
+                                        {/* Error Message */}
+                                        {postError && (
+                                            <div className="text-rose-400 text-sm mb-2">{postError}</div>
+                                        )}
                                         <div className="flex justify-end">
                                             <button
                                                 onClick={handlePostSubmit}
@@ -672,6 +689,23 @@ export default function CafePage() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        ) : user && !isJoined ? (
+                            <div className="bg-[#1a1a2e]/80 border border-[#667eea]/30 rounded-xl p-6 text-center">
+                                <UserPlus className="w-8 h-8 text-[#667eea] mx-auto mb-3" />
+                                <p className="text-zinc-400 mb-4">카페에 가입한 회원만 글을 작성할 수 있습니다.</p>
+                                <button
+                                    onClick={toggleJoin}
+                                    disabled={isJoinLoading}
+                                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium mx-auto disabled:opacity-50"
+                                >
+                                    {isJoinLoading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <UserPlus className="w-4 h-4" />
+                                    )}
+                                    카페 가입하기
+                                </button>
                             </div>
                         ) : (
                             <div className="bg-[#1a1a2e]/80 border border-white/10 rounded-xl p-6 text-center">
