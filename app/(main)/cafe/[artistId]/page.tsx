@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -18,6 +19,10 @@ import {
     Play,
     Check,
     LogIn,
+    Video,
+    ChevronDown,
+    Shuffle,
+    Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtistData } from "@/hooks/useArtistData";
@@ -25,7 +30,6 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { supabase } from "@/lib/supabase";
 import { usePlayer, Track } from "@/contexts/PlayerContext";
 import { api } from "@/lib/api";
-import type { Album, Song } from "@/lib/services/artist-service";
 
 // ============================================
 // Types
@@ -43,6 +47,37 @@ interface CafePost {
         avatar_url?: string;
     };
     isAI?: boolean;
+}
+
+interface ArtistAPIData {
+    name: string;
+    description?: string;
+    subscribers?: string;
+    views?: string;
+    thumbnails?: { url: string; width: number; height: number }[];
+    shuffleId?: string;
+    radioId?: string;
+    songs?: {
+        browseId?: string;
+        results?: any[];
+    };
+    albums?: {
+        browseId?: string;
+        params?: string;
+        results?: any[];
+    };
+    singles?: {
+        browseId?: string;
+        params?: string;
+        results?: any[];
+    };
+    videos?: {
+        browseId?: string;
+        results?: any[];
+    };
+    related?: {
+        results?: any[];
+    };
 }
 
 // ============================================
@@ -65,6 +100,18 @@ export default function CafePage() {
         toggleJoin,
     } = useArtistData(artistId);
 
+    // 실시간 API 데이터
+    const [apiData, setApiData] = useState<ArtistAPIData | null>(null);
+    const [apiLoading, setApiLoading] = useState(false);
+
+    // 확장 데이터 상태 (Show All 버튼용)
+    const [allSongs, setAllSongs] = useState<any[] | null>(null);
+    const [allAlbums, setAllAlbums] = useState<any[] | null>(null);
+    const [allSingles, setAllSingles] = useState<any[] | null>(null);
+    const [loadingSongs, setLoadingSongs] = useState(false);
+    const [loadingAlbums, setLoadingAlbums] = useState(false);
+    const [loadingSingles, setLoadingSingles] = useState(false);
+
     // 게시물 상태
     const [posts, setPosts] = useState<CafePost[]>([]);
     const [postsLoading, setPostsLoading] = useState(true);
@@ -75,7 +122,79 @@ export default function CafePage() {
     const { setPlaylist, toggleQueue, isQueueOpen } = usePlayer();
 
     // 활성 탭
-    const [activeTab, setActiveTab] = useState<"feed" | "music" | "albums">("feed");
+    const [activeTab, setActiveTab] = useState<"feed" | "music" | "albums" | "videos" | "related">("feed");
+
+    // 앨범 재생 로딩
+    const [playingId, setPlayingId] = useState<string | null>(null);
+
+    // ============================================
+    // 실시간 API 데이터 로드
+    // ============================================
+    useEffect(() => {
+        async function fetchAPIData() {
+            if (!artistId) return;
+
+            try {
+                setApiLoading(true);
+                const data = await api.music.artist(artistId);
+                setApiData(data);
+            } catch (e) {
+                console.error("[CafePage] API fetch error:", e);
+            } finally {
+                setApiLoading(false);
+            }
+        }
+
+        fetchAPIData();
+    }, [artistId]);
+
+    // ============================================
+    // 전체 노래 로드
+    // ============================================
+    const handleLoadAllSongs = async () => {
+        if (loadingSongs || allSongs) return;
+        setLoadingSongs(true);
+        try {
+            const data = await api.music.artistSongs(artistId);
+            setAllSongs(data.tracks || []);
+        } catch (e) {
+            console.error("Failed to load all songs:", e);
+        } finally {
+            setLoadingSongs(false);
+        }
+    };
+
+    // ============================================
+    // 전체 앨범 로드
+    // ============================================
+    const handleLoadAllAlbums = async () => {
+        if (loadingAlbums || allAlbums) return;
+        setLoadingAlbums(true);
+        try {
+            const data = await api.music.artistAlbums(artistId, "albums");
+            setAllAlbums(data.items || []);
+        } catch (e) {
+            console.error("Failed to load all albums:", e);
+        } finally {
+            setLoadingAlbums(false);
+        }
+    };
+
+    // ============================================
+    // 전체 싱글 로드
+    // ============================================
+    const handleLoadAllSingles = async () => {
+        if (loadingSingles || allSingles) return;
+        setLoadingSingles(true);
+        try {
+            const data = await api.music.artistAlbums(artistId, "singles");
+            setAllSingles(data.items || []);
+        } catch (e) {
+            console.error("Failed to load all singles:", e);
+        } finally {
+            setLoadingSingles(false);
+        }
+    };
 
     // ============================================
     // 게시물 로드
@@ -199,7 +318,6 @@ export default function CafePage() {
                 return;
             }
 
-            // 새 게시물 추가
             const newPostData: CafePost = {
                 ...data,
                 user: {
@@ -218,34 +336,51 @@ export default function CafePage() {
     };
 
     // ============================================
-    // 음악 재생
+    // 음악 재생 핸들러
     // ============================================
-    const playTopSongs = () => {
-        const songs = artist?.artist_data?.top_songs || [];
-        if (songs.length === 0) return;
-
-        const tracks: Track[] = songs.map((s: Song) => ({
-            videoId: s.videoId,
-            title: s.title,
-            artist: s.artists?.map((a) => a.name).join(", ") || artist?.name || "",
-            thumbnail: s.thumbnail || artist?.artist_data?.thumbnail_url || "",
-        }));
-
-        setPlaylist(tracks, 0);
+    const handlePlaySong = (item: any) => {
+        if (!item.videoId) return;
+        const track: Track = {
+            videoId: item.videoId,
+            title: item.title || "Unknown",
+            artist: item.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+            thumbnail: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/images/default-album.svg",
+        };
+        setPlaylist([track], 0);
         if (!isQueueOpen) toggleQueue();
     };
 
-    const playAlbum = async (album: Album) => {
+    const handlePlayAll = () => {
+        const songs = allSongs || apiData?.songs?.results || [];
+        if (songs.length === 0) return;
+
+        const tracks: Track[] = songs
+            .filter((s: any) => s.videoId)
+            .map((s: any) => ({
+                videoId: s.videoId,
+                title: s.title || "Unknown",
+                artist: s.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+                thumbnail: s.thumbnails?.[s.thumbnails.length - 1]?.url || "/images/default-album.svg",
+            }));
+
+        if (tracks.length > 0) {
+            setPlaylist(tracks, 0);
+            if (!isQueueOpen) toggleQueue();
+        }
+    };
+
+    const handlePlayAlbum = async (albumId: string) => {
+        setPlayingId(albumId);
         try {
-            const albumData = await api.music.album(album.browseId);
+            const albumData = await api.music.album(albumId);
             if (albumData?.tracks) {
                 const tracks: Track[] = albumData.tracks
-                    .filter((t: { videoId?: string }) => t.videoId)
-                    .map((t: { videoId: string; title?: string; artists?: { name: string }[] }) => ({
+                    .filter((t: any) => t.videoId)
+                    .map((t: any) => ({
                         videoId: t.videoId,
                         title: t.title || "Unknown",
-                        artist: t.artists?.map((a) => a.name).join(", ") || artist?.name || "",
-                        thumbnail: album.thumbnail || "",
+                        artist: t.artists?.map((a: any) => a.name).join(", ") || apiData?.name || artist?.name || "Unknown",
+                        thumbnail: albumData.thumbnails?.[albumData.thumbnails.length - 1]?.url || "/images/default-album.svg",
                     }));
 
                 if (tracks.length > 0) {
@@ -254,7 +389,9 @@ export default function CafePage() {
                 }
             }
         } catch (e) {
-            console.error("[CafePage] Album play error:", e);
+            console.error("Album fetch error:", e);
+        } finally {
+            setPlayingId(null);
         }
     };
 
@@ -310,6 +447,17 @@ export default function CafePage() {
     }
 
     const artistData = artist.artist_data;
+    const thumbnail = apiData?.thumbnails?.[apiData.thumbnails.length - 1]?.url || artistData?.thumbnail_url || artist.thumbnail_url;
+
+    // 실시간 데이터 (API에서 가져온 데이터 우선 사용)
+    const displaySongs = allSongs || apiData?.songs?.results || [];
+    const displayAlbums = allAlbums || apiData?.albums?.results || [];
+    const displaySingles = allSingles || apiData?.singles?.results || [];
+    const displayVideos = apiData?.videos?.results || [];
+    const displayRelated = apiData?.related?.results || [];
+    const hasSongsBrowseId = !!apiData?.songs?.browseId;
+    const hasAlbumsBrowseId = !!apiData?.albums?.browseId;
+    const hasSinglesBrowseId = !!apiData?.singles?.browseId;
 
     // ============================================
     // 렌더링
@@ -340,14 +488,14 @@ export default function CafePage() {
             </div>
 
             {/* Artist Info Card */}
-            <div className="max-w-4xl mx-auto px-4 -mt-20 relative z-10">
+            <div className="max-w-5xl mx-auto px-4 -mt-20 relative z-10">
                 <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                         {/* Avatar */}
                         <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
-                            {artistData?.thumbnail_url || artist.thumbnail_url ? (
+                            {thumbnail ? (
                                 <Image
-                                    src={artistData?.thumbnail_url || artist.thumbnail_url || ""}
+                                    src={thumbnail}
                                     alt={artist.name}
                                     fill
                                     className="object-cover"
@@ -367,9 +515,36 @@ export default function CafePage() {
                                 <Crown className="w-5 h-5 text-yellow-400" />
                             </div>
                             <p className="text-[#667eea] text-sm font-medium mb-2">Official Fan Cafe</p>
-                            {artistData?.subscribers && (
-                                <p className="text-zinc-400 text-sm mb-4">{artistData.subscribers} subscribers</p>
+                            {(apiData?.subscribers || artistData?.subscribers) && (
+                                <p className="text-zinc-400 text-sm mb-2">{apiData?.subscribers || artistData?.subscribers}</p>
                             )}
+                            {apiData?.views && (
+                                <p className="text-zinc-500 text-xs mb-4">{apiData.views}</p>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
+                                <button
+                                    onClick={handlePlayAll}
+                                    disabled={displaySongs.length === 0}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Play className="w-5 h-5 fill-current" />
+                                    Play
+                                </button>
+                                {apiData?.shuffleId && (
+                                    <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                        <Shuffle className="w-5 h-5" />
+                                        Shuffle
+                                    </button>
+                                )}
+                                {apiData?.radioId && (
+                                    <button className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
+                                        <Radio className="w-5 h-5" />
+                                        Radio
+                                    </button>
+                                )}
+                            </div>
 
                             {/* Stats */}
                             <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
@@ -417,28 +592,30 @@ export default function CafePage() {
                     </div>
 
                     {/* Description */}
-                    {artistData?.description && (
+                    {(apiData?.description || artistData?.description) && (
                         <p className="mt-4 text-zinc-400 text-sm leading-relaxed border-t border-white/10 pt-4">
-                            {artistData.description.slice(0, 300)}
-                            {artistData.description.length > 300 && "..."}
+                            {(apiData?.description || artistData?.description || "").slice(0, 300)}
+                            {(apiData?.description || artistData?.description || "").length > 300 && "..."}
                         </p>
                     )}
                 </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="max-w-4xl mx-auto px-4 mt-6">
-                <div className="flex gap-2 border-b border-white/10 pb-2">
+            <div className="max-w-5xl mx-auto px-4 mt-6">
+                <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
                     {[
                         { id: "feed", label: "피드", icon: MessageSquare },
-                        { id: "music", label: "인기곡", icon: Music },
-                        { id: "albums", label: "앨범", icon: Disc },
+                        { id: "music", label: `노래${displaySongs.length > 0 ? ` (${displaySongs.length}${!allSongs && hasSongsBrowseId ? '+' : ''})` : ''}`, icon: Music },
+                        { id: "albums", label: `앨범${displayAlbums.length > 0 ? ` (${displayAlbums.length}${!allAlbums && hasAlbumsBrowseId ? '+' : ''})` : ''}`, icon: Disc },
+                        { id: "videos", label: `뮤비${displayVideos.length > 0 ? ` (${displayVideos.length})` : ''}`, icon: Video },
+                        { id: "related", label: "비슷한 아티스트", icon: Users },
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all",
+                                "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap text-sm",
                                 activeTab === tab.id
                                     ? "bg-[#667eea]/20 text-[#667eea]"
                                     : "text-zinc-400 hover:text-white hover:bg-white/5"
@@ -452,7 +629,15 @@ export default function CafePage() {
             </div>
 
             {/* Content Area */}
-            <div className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+            <div className="max-w-5xl mx-auto px-4 mt-6 space-y-6">
+                {/* API Loading Indicator */}
+                {apiLoading && activeTab !== "feed" && (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#667eea]" />
+                        <span className="ml-2 text-zinc-400">음악 데이터 로딩 중...</span>
+                    </div>
+                )}
+
                 {/* Feed Tab */}
                 {activeTab === "feed" && (
                     <>
@@ -579,158 +764,247 @@ export default function CafePage() {
                     </>
                 )}
 
-                {/* Music Tab */}
-                {activeTab === "music" && (
+                {/* Music Tab - 실시간 API 데이터 */}
+                {activeTab === "music" && !apiLoading && (
                     <div className="space-y-4">
-                        {/* Play All Button */}
-                        {artistData?.top_songs && artistData.top_songs.length > 0 && (
-                            <button
-                                onClick={playTopSongs}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full text-white font-medium hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
-                            >
-                                <Play className="w-5 h-5" />
-                                전체 재생
-                            </button>
-                        )}
+                        {/* Header with Show All */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Music className="w-5 h-5" />
+                                Songs
+                            </h2>
+                            {hasSongsBrowseId && !allSongs && (
+                                <button
+                                    onClick={handleLoadAllSongs}
+                                    disabled={loadingSongs}
+                                    className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
+                                >
+                                    {loadingSongs ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <ChevronDown className="w-4 h-4" />
+                                    )}
+                                    Show All
+                                </button>
+                            )}
+                        </div>
 
                         {/* Song List */}
-                        <div className="space-y-2">
-                            {(artistData?.top_songs || []).map((song: Song, index: number) => (
+                        <div className="space-y-1">
+                            {displaySongs.map((song: any, i: number) => (
                                 <button
-                                    key={song.videoId}
-                                    onClick={() => {
-                                        setPlaylist(
-                                            [
-                                                {
-                                                    videoId: song.videoId,
-                                                    title: song.title,
-                                                    artist: song.artists?.map((a) => a.name).join(", ") || artist.name,
-                                                    thumbnail: song.thumbnail || artistData?.thumbnail_url || "",
-                                                },
-                                            ],
-                                            0
-                                        );
-                                        if (!isQueueOpen) toggleQueue();
-                                    }}
-                                    className="w-full flex items-center gap-4 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
+                                    key={song.videoId || i}
+                                    type="button"
+                                    onClick={() => handlePlaySong(song)}
+                                    className="w-full flex items-center gap-4 p-4 hover:bg-white/5 border border-transparent hover:border-white/10 rounded-xl cursor-pointer group text-left transition-all"
                                 >
-                                    <span className="w-8 text-zinc-500 text-sm">{index + 1}</span>
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden relative flex-shrink-0">
-                                        {song.thumbnail ? (
-                                            <Image
-                                                src={song.thumbnail}
-                                                alt={song.title}
-                                                fill
-                                                className="object-cover"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                                <Music className="w-5 h-5 text-zinc-600" />
-                                            </div>
+                                    <span className="w-6 text-center text-zinc-500 group-hover:hidden font-mono">{i + 1}</span>
+                                    <Play className="w-4 h-4 text-[#667eea] hidden group-hover:block" />
+                                    <div className="w-12 h-12 bg-white/5 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                        {song.thumbnails?.[0]?.url && (
+                                            <Image src={song.thumbnails[0].url} alt={song.title} fill className="object-cover" unoptimized />
                                         )}
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            <Play className="w-6 h-6 text-white" />
-                                        </div>
                                     </div>
-                                    <div className="flex-1 text-left">
-                                        <p className="text-white font-medium truncate">{song.title}</p>
-                                        <p className="text-zinc-400 text-sm truncate">
-                                            {song.artists?.map((a) => a.name).join(", ") || artist.name}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-white font-medium truncate group-hover:text-[#667eea] transition-colors">{song.title}</h3>
+                                        <p className="text-sm text-zinc-400 truncate">
+                                            {song.album?.name || ""}
                                         </p>
                                     </div>
-                                    {song.plays && <span className="text-zinc-500 text-sm">{song.plays}</span>}
+                                    <span className="text-zinc-500 text-sm font-mono">{song.duration}</span>
                                 </button>
                             ))}
                         </div>
 
-                        {(!artistData?.top_songs || artistData.top_songs.length === 0) && (
-                            <div className="text-center py-12 text-zinc-500">인기곡 정보가 없습니다</div>
+                        {displaySongs.length === 0 && (
+                            <div className="text-center py-12 text-zinc-500">노래 정보가 없습니다</div>
                         )}
                     </div>
                 )}
 
-                {/* Albums Tab */}
-                {activeTab === "albums" && (
-                    <div className="space-y-6">
-                        {/* Albums */}
-                        {artistData?.albums && artistData.albums.length > 0 && (
-                            <div>
-                                <h3 className="text-lg font-semibold text-white mb-4">앨범</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {artistData.albums.map((album: Album) => (
+                {/* Albums Tab - 실시간 API 데이터 */}
+                {activeTab === "albums" && !apiLoading && (
+                    <div className="space-y-8">
+                        {/* Albums Section */}
+                        {displayAlbums.length > 0 && (
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Disc className="w-5 h-5" />
+                                        Albums
+                                    </h2>
+                                    {hasAlbumsBrowseId && !allAlbums && (
                                         <button
-                                            key={album.browseId}
-                                            onClick={() => playAlbum(album)}
-                                            className="group text-left"
+                                            onClick={handleLoadAllAlbums}
+                                            disabled={loadingAlbums}
+                                            className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
                                         >
-                                            <div className="aspect-square rounded-xl overflow-hidden relative mb-2">
-                                                {album.thumbnail ? (
-                                                    <Image
-                                                        src={album.thumbnail}
-                                                        alt={album.title}
-                                                        fill
-                                                        className="object-cover group-hover:scale-105 transition-transform"
-                                                        unoptimized
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                                        <Disc className="w-12 h-12 text-zinc-600" />
-                                                    </div>
+                                            {loadingAlbums ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4" />
+                                            )}
+                                            Show All
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                                    {displayAlbums.map((album: any, i: number) => (
+                                        <button
+                                            key={album.browseId || i}
+                                            type="button"
+                                            onClick={() => album.browseId && handlePlayAlbum(album.browseId)}
+                                            className="group cursor-pointer text-left w-full"
+                                        >
+                                            <div className="relative aspect-square mb-3 bg-white/5 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-white/10 transition-all">
+                                                {album.thumbnails?.[0]?.url && (
+                                                    <Image src={album.thumbnails[0].url} alt={album.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
                                                 )}
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <Play className="w-12 h-12 text-white" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                    {playingId === album.browseId ? (
+                                                        <Loader2 className="w-12 h-12 text-white animate-spin" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-[#667eea] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                                                            <Play className="w-6 h-6 text-white fill-current ml-1" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <p className="text-white font-medium truncate">{album.title}</p>
-                                            <p className="text-zinc-400 text-sm">{album.year || ""}</p>
+                                            <h3 className="text-white font-bold text-sm truncate group-hover:text-[#667eea] transition-colors">{album.title}</h3>
+                                            <p className="text-zinc-500 text-xs mt-1">{album.year}</p>
                                         </button>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
 
-                        {/* Singles */}
-                        {artistData?.singles && artistData.singles.length > 0 && (
-                            <div>
-                                <h3 className="text-lg font-semibold text-white mb-4">싱글 & EP</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {artistData.singles.map((single: Album) => (
+                        {/* Singles Section */}
+                        {displaySingles.length > 0 && (
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Disc className="w-5 h-5" />
+                                        Singles & EP
+                                    </h2>
+                                    {hasSinglesBrowseId && !allSingles && (
                                         <button
-                                            key={single.browseId}
-                                            onClick={() => playAlbum(single)}
-                                            className="group text-left"
+                                            onClick={handleLoadAllSingles}
+                                            disabled={loadingSingles}
+                                            className="flex items-center gap-1 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-full transition-all"
                                         >
-                                            <div className="aspect-square rounded-xl overflow-hidden relative mb-2">
-                                                {single.thumbnail ? (
-                                                    <Image
-                                                        src={single.thumbnail}
-                                                        alt={single.title}
-                                                        fill
-                                                        className="object-cover group-hover:scale-105 transition-transform"
-                                                        unoptimized
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                                        <Disc className="w-12 h-12 text-zinc-600" />
-                                                    </div>
+                                            {loadingSingles ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4" />
+                                            )}
+                                            Show All
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                                    {displaySingles.map((single: any, i: number) => (
+                                        <button
+                                            key={single.browseId || i}
+                                            type="button"
+                                            onClick={() => single.browseId && handlePlayAlbum(single.browseId)}
+                                            className="group cursor-pointer text-left w-full"
+                                        >
+                                            <div className="relative aspect-square mb-3 bg-white/5 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-white/10 transition-all">
+                                                {single.thumbnails?.[0]?.url && (
+                                                    <Image src={single.thumbnails[0].url} alt={single.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
                                                 )}
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <Play className="w-12 h-12 text-white" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                    {playingId === single.browseId ? (
+                                                        <Loader2 className="w-12 h-12 text-white animate-spin" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-[#667eea] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                                                            <Play className="w-6 h-6 text-white fill-current ml-1" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <p className="text-white font-medium truncate">{single.title}</p>
-                                            <p className="text-zinc-400 text-sm">{single.year || ""}</p>
+                                            <h3 className="text-white font-bold text-sm truncate group-hover:text-[#667eea] transition-colors">{single.title}</h3>
+                                            <p className="text-zinc-500 text-xs mt-1">{single.year}</p>
                                         </button>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
 
-                        {(!artistData?.albums || artistData.albums.length === 0) &&
-                            (!artistData?.singles || artistData.singles.length === 0) && (
-                                <div className="text-center py-12 text-zinc-500">앨범 정보가 없습니다</div>
-                            )}
+                        {displayAlbums.length === 0 && displaySingles.length === 0 && (
+                            <div className="text-center py-12 text-zinc-500">앨범 정보가 없습니다</div>
+                        )}
+                    </div>
+                )}
+
+                {/* Videos Tab */}
+                {activeTab === "videos" && !apiLoading && (
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Video className="w-5 h-5" />
+                            Music Videos
+                        </h2>
+                        {displayVideos.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {displayVideos.map((video: any, i: number) => (
+                                    <button
+                                        key={video.videoId || i}
+                                        type="button"
+                                        onClick={() => handlePlaySong(video)}
+                                        className="w-full group text-left"
+                                    >
+                                        <div className="relative aspect-video bg-white/5 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-white/10 transition-all">
+                                            {video.thumbnails?.[0]?.url && (
+                                                <Image src={video.thumbnails[0].url} alt={video.title} fill className="object-cover" unoptimized />
+                                            )}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                <div className="w-14 h-14 rounded-full bg-[#667eea] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                                                    <Play className="w-7 h-7 text-white fill-current ml-1" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3">
+                                            <h3 className="text-white font-bold line-clamp-2 leading-tight group-hover:text-[#667eea] transition-colors">{video.title}</h3>
+                                            <p className="text-sm text-zinc-400 mt-1">{video.views}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-zinc-500">뮤직비디오가 없습니다</div>
+                        )}
+                    </div>
+                )}
+
+                {/* Related Artists Tab */}
+                {activeTab === "related" && !apiLoading && (
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Related Artists
+                        </h2>
+                        {displayRelated.length > 0 ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
+                                {displayRelated.map((related: any, i: number) => (
+                                    <button
+                                        key={related.browseId || i}
+                                        type="button"
+                                        onClick={() => related.browseId && router.push(`/cafe/${related.browseId}`)}
+                                        className="text-center cursor-pointer group"
+                                    >
+                                        <div className="w-full aspect-square rounded-full overflow-hidden bg-zinc-800 mb-2 relative">
+                                            {related.thumbnails?.[0]?.url && (
+                                                <Image src={related.thumbnails[0].url} alt={related.title} fill className="object-cover group-hover:scale-105 transition-transform" unoptimized />
+                                            )}
+                                        </div>
+                                        <h3 className="text-white font-medium text-sm truncate group-hover:text-[#667eea] transition-colors">{related.title}</h3>
+                                        <p className="text-zinc-500 text-xs">{related.subscribers}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-zinc-500">비슷한 아티스트 정보가 없습니다</div>
+                        )}
                     </div>
                 )}
             </div>
