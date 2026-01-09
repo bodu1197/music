@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/auth-provider";
 
 export interface LibraryTrack {
     videoId: string;
@@ -19,6 +20,30 @@ export interface LibraryFolder {
     color: string;
     tracks: LibraryTrack[];
     isDefault?: boolean;
+}
+
+// Database row types for Supabase
+interface DbLibraryFolder {
+    id: string;
+    user_id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+    is_default: boolean | null;
+    created_at: string;
+    updated_at: string;
+}
+
+interface DbLibraryTrack {
+    id: string;
+    folder_id: string;
+    user_id: string;
+    video_id: string;
+    title: string;
+    artist: string | null;
+    thumbnail: string | null;
+    duration: string | null;
+    added_at: string;
 }
 
 interface AddToLibraryModalState {
@@ -44,18 +69,10 @@ interface LibraryContextType {
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
-const DEFAULT_FOLDERS: LibraryFolder[] = [
-    {
-        id: "liked",
-        name: "좋아요한 노래",
-        icon: "❤️",
-        color: "#ff4d6d",
-        tracks: [],
-        isDefault: true,
-    },
-];
+const DEFAULT_FOLDERS: LibraryFolder[] = [];
 
 export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>) {
+    const { user, loading: authLoading } = useAuth();
     const [folders, setFolders] = useState<LibraryFolder[]>(DEFAULT_FOLDERS);
     const [isLoading, setIsLoading] = useState(true);
     const [addToLibraryModal, setAddToLibraryModal] = useState<AddToLibraryModalState>({
@@ -63,16 +80,26 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         track: null,
     });
 
-    // Load from Supabase on mount
+    // Load from Supabase when user is authenticated
     useEffect(() => {
-        loadFromSupabase();
-    }, []);
+        if (authLoading) return;
 
-    const loadFromSupabase = async () => {
+        if (user) {
+            loadFromSupabase();
+        } else {
+            // Not logged in - clear folders
+            setFolders([]);
+            setIsLoading(false);
+        }
+    }, [user, authLoading]);
+
+    const loadFromSupabase = useCallback(async () => {
+        if (!user) return;
+
         try {
             setIsLoading(true);
 
-            // Load folders
+            // Load folders for this user (RLS will filter automatically)
             const { data: foldersData, error: foldersError } = await supabase
                 .from("library_folders")
                 .select("*")
@@ -83,7 +110,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                 return;
             }
 
-            // Load tracks
+            // Load tracks for this user (RLS will filter automatically)
             const { data: tracksData, error: tracksError } = await supabase
                 .from("library_tracks")
                 .select("*")
@@ -95,27 +122,26 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
             }
 
             // Map to local format
-            const loadedFolders: LibraryFolder[] = (foldersData || []).map(folder => ({
+            const loadedFolders: LibraryFolder[] = ((foldersData || []) as DbLibraryFolder[]).map((folder: DbLibraryFolder) => ({
                 id: folder.id,
                 name: folder.name,
                 icon: folder.icon || "📁",
                 color: folder.color || "#667eea",
                 isDefault: folder.is_default || false,
-                tracks: (tracksData || [])
-                    .filter(track => track.folder_id === folder.id)
-                    .map(track => ({
+                tracks: ((tracksData || []) as DbLibraryTrack[])
+                    .filter((track: DbLibraryTrack) => track.folder_id === folder.id)
+                    .map((track: DbLibraryTrack) => ({
                         videoId: track.video_id,
                         title: track.title,
-                        artist: track.artist,
-                        thumbnail: track.thumbnail,
-                        duration: track.duration,
+                        artist: track.artist || "",
+                        thumbnail: track.thumbnail || "",
+                        duration: track.duration || undefined,
                         addedAt: track.added_at,
                     })),
             }));
 
-            // Add default folder if no folders exist
+            // Add default folder if no folders exist for this user
             if (loadedFolders.length === 0) {
-                // Create default folder in Supabase
                 const { data: newFolder, error } = await supabase
                     .from("library_folders")
                     .insert({
@@ -123,6 +149,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                         icon: "❤️",
                         color: "#ff4d6d",
                         is_default: true,
+                        user_id: user.id,
                     })
                     .select()
                     .single();
@@ -139,15 +166,20 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                 }
             }
 
-            setFolders(loadedFolders.length > 0 ? loadedFolders : DEFAULT_FOLDERS);
+            setFolders(loadedFolders);
         } catch (e) {
             console.error("Error loading library:", e);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user]);
 
     const addFolder = useCallback(async (name: string, icon = "📁") => {
+        if (!user) {
+            console.error("User not logged in");
+            return;
+        }
+
         try {
             const { data, error } = await supabase
                 .from("library_folders")
@@ -155,6 +187,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                     name,
                     icon,
                     color: "#667eea",
+                    user_id: user.id,
                 })
                 .select()
                 .single();
@@ -177,9 +210,11 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         } catch (e) {
             console.error("Error adding folder:", e);
         }
-    }, []);
+    }, [user]);
 
     const deleteFolder = useCallback(async (folderId: string) => {
+        if (!user) return;
+
         try {
             const { error } = await supabase
                 .from("library_folders")
@@ -195,9 +230,11 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         } catch (e) {
             console.error("Error deleting folder:", e);
         }
-    }, []);
+    }, [user]);
 
     const renameFolder = useCallback(async (folderId: string, newName: string) => {
+        if (!user) return;
+
         try {
             const { error } = await supabase
                 .from("library_folders")
@@ -215,9 +252,14 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         } catch (e) {
             console.error("Error renaming folder:", e);
         }
-    }, []);
+    }, [user]);
 
     const addTrackToFolder = useCallback(async (folderId: string, track: LibraryTrack) => {
+        if (!user) {
+            console.error("User not logged in");
+            return;
+        }
+
         try {
             // Check if already exists
             const { data: existing } = await supabase
@@ -241,6 +283,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
                     artist: track.artist,
                     thumbnail: track.thumbnail,
                     duration: track.duration,
+                    user_id: user.id,
                 });
 
             if (error) {
@@ -258,9 +301,11 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         } catch (e) {
             console.error("Error adding track:", e);
         }
-    }, []);
+    }, [user]);
 
     const removeTrackFromFolder = useCallback(async (folderId: string, videoId: string) => {
+        if (!user) return;
+
         try {
             const { error } = await supabase
                 .from("library_tracks")
@@ -283,7 +328,7 @@ export function LibraryProvider({ children }: Readonly<{ children: ReactNode }>)
         } catch (e) {
             console.error("Error removing track:", e);
         }
-    }, []);
+    }, [user]);
 
     const isTrackInFolder = useCallback(
         (folderId: string, videoId: string) => {

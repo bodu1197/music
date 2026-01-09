@@ -1,17 +1,32 @@
 "use client";
 
 import { createBrowserClient } from '@supabase/ssr'
-import { md5 } from 'js-md5'; // MD5 해시 라이브러리 임포트
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { md5 } from 'js-md5';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-key';
+// ===========================================
+// Supabase Configuration with proper validation
+// ===========================================
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Missing Supabase environment variables - functionality may be limited');
+// Validate environment variables
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('example'));
+
+if (!isConfigured) {
+    console.error('[Supabase] Missing or invalid environment variables:');
+    console.error('  NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+    console.error('  NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING');
 }
 
 // This client triggers cookie storage in the browser, essential for middleware to see the session
-export const supabase = createBrowserClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase: SupabaseClient = createBrowserClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder-key'
+);
+
+// Export configuration status for conditional features
+export const isSupabaseConfigured = isConfigured;
 
 // ============================================
 // 🔥 Backend-Compatible Cache Key Generation
