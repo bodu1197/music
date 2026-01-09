@@ -40,16 +40,16 @@ CREATE TABLE IF NOT EXISTS search_refresh_log (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. 인덱스 생성
+-- 3. Trigram 확장 (인덱스 생성 전에 먼저 활성화)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- 4. 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_artists_search_refreshed ON artists(last_search_refreshed_at);
 CREATE INDEX IF NOT EXISTS idx_artists_name_trgm ON artists USING gin (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_search_refresh_log_hash ON search_refresh_log(query_hash);
 CREATE INDEX IF NOT EXISTS idx_search_refresh_log_refreshed ON search_refresh_log(last_refreshed_at);
 
--- 4. Trigram 확장 (한글 검색 성능 향상)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- 5. RLS 활성화 및 정책
+-- 5. RLS 활성화 및 정책 (search_refresh_log)
 ALTER TABLE search_refresh_log ENABLE ROW LEVEL SECURITY;
 
 -- 누구나 조회 가능 (캐시 상태 확인용)
