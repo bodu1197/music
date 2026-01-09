@@ -71,15 +71,9 @@ export default function ArtistPage() {
                 setArtist(data);
 
                 // 🎤 Auto-register artist as virtual member (Cafe feature)
+                // POST /api/artists/register → DB에 아티스트 등록 + artist_data 생성
                 if (data?.name) {
-                    const thumbnail = data.thumbnails?.at(-1)?.url;
-                    api.artists.register({
-                        channel_id: artistId,
-                        name: data.name,
-                        thumbnail_url: thumbnail,
-                        description: data.description,
-                        subscribers: data.subscribers
-                    });
+                    api.artists.register(artistId);
                 }
             } catch (e: any) {
                 setError(e.message || "Failed to load artist");

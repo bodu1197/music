@@ -210,20 +210,16 @@ export const api = {
     // Artists API (Cafe Virtual Members)
     // ============================================
     artists: {
-        // Register an artist as a virtual member (auto-called when visiting artist page)
-        register: async (artistData: {
-            channel_id: string;
-            name: string;
-            thumbnail_url?: string;
-            banner_url?: string;
-            description?: string;
-            subscribers?: string;
-        }) => {
+        /**
+         * Register an artist as a virtual member (auto-called when visiting artist page)
+         * POST: 새 아티스트 등록 (channelId로)
+         */
+        register: async (channelId: string) => {
             try {
-                const res = await fetch(`${API_URL}/api/artists/register`, {
+                const res = await fetch('/api/artists/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(artistData)
+                    body: JSON.stringify({ channelId })
                 });
                 if (!res.ok) throw new Error('Failed to register artist');
                 return res.json();
@@ -233,11 +229,23 @@ export const api = {
             }
         },
 
-        // Get a registered artist by channel_id
-        get: async (channelId: string) => {
-            const res = await fetch(`${API_URL}/api/artists/${channelId}`);
-            if (!res.ok) return null;
-            return res.json();
+        /**
+         * Ensure artist_data exists (for search-indexed artists visiting cafe)
+         * PATCH: 검색으로만 등록된 아티스트에 artist_data 생성
+         */
+        ensureData: async (channelId: string) => {
+            try {
+                const res = await fetch('/api/artists/register', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channelId })
+                });
+                if (!res.ok) throw new Error('Failed to ensure artist data');
+                return res.json();
+            } catch (e) {
+                console.error('[API] Artist ensureData error:', e);
+                return null;
+            }
         }
     },
 
