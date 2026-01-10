@@ -64,8 +64,7 @@
 }
 
 body {
-  background-color: rgb(0, 0, 0);
-  /* Force black background */
+  /* background-color: rgb(0, 0, 0); removed to allow theme/page background */
   color: #ffffff;
 }
 
