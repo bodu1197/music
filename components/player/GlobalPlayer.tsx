@@ -48,7 +48,7 @@ export default function GlobalPlayer() {
     const isInLibrary = currentTrack ? isTrackInAnyFolder(currentTrack.videoId) : false;
 
     return (
-        <div className="hidden md:flex fixed bottom-0 left-0 w-full bg-black/90 border-t border-white/10 z-[1001] h-[90px] items-center px-4 md:pl-[245px]">
+        <div className="hidden md:flex fixed bottom-0 left-0 w-full bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/10 z-[1001] h-[90px] items-center px-4 md:pl-[245px]">
             {/* Left Section - Track Info */}
             <div className="flex items-center gap-3 w-[30%] min-w-0">
                 <div

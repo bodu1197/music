@@ -2,8 +2,8 @@
 
 :root {
   /* Force Dark Mode Colors by default */
-  --background: 0 0% 0%;
-  /* Black */
+  --background: 240 20% 4%;
+  /* Deep Navy Black (#08080c) instead of #000000 */
   --foreground: 0 0% 98%;
   /* White */
 

@@ -599,7 +599,7 @@ function CafeArtistCard({
                 {/* Back Button (Mobile/Desktop Integrated) */}
                 <button
                     onClick={() => router.back()}
-                    className="absolute top-3 left-3 z-20 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white/90 transition-colors backdrop-blur-sm"
+                    className="absolute top-3 left-3 z-20 p-2 bg-zinc-900/60 hover:bg-zinc-800/80 rounded-full text-white/90 transition-colors backdrop-blur-sm"
                     aria-label="Go back"
                 >
                     <ArrowLeft className="w-5 h-5" />

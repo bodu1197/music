@@ -31,7 +31,7 @@ export default function PlayerSidebar() {
             <div
                 className={cn(
                     "fixed right-0 top-0 bottom-[139px] md:bottom-[90px] w-full md:w-[350px] lg:w-[400px]",
-                    "bg-[#040404] border-l border-zinc-800 z-50",
+                    "bg-background/95 border-l border-white/10 z-50",
                     "flex flex-col overflow-hidden",
                     "transition-transform duration-300",
                     isQueueOpen ? "translate-x-0" : "translate-x-full"
