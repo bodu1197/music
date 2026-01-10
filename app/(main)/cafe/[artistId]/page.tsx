@@ -863,37 +863,35 @@ export default function CafePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20">
-            {/* Hero Banner - 높이 축소 */}
-            <div className="relative w-full h-28 md:h-40 bg-gradient-to-r from-[#667eea] to-[#764ba2]">
-                {artistData?.banner_url && (
-                    <Image src={artistData.banner_url} alt={artist.name} fill className="object-cover opacity-50" unoptimized />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f23] to-transparent" />
+        <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20 pt-[20px]">
+            {/* 뒤로 가기 버튼 (Absolute에서 Relative/Fixed 로 변경하거나 상단 배치) */}
+            <div className="max-w-5xl mx-auto px-3 md:px-4 mb-4">
                 <button
                     onClick={() => router.back()}
-                    className="absolute top-[20px] left-4 flex items-center gap-2 px-3 py-1.5 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors z-10"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     <span className="text-sm">뒤로</span>
                 </button>
             </div>
 
-            {/* Artist Info Card */}
-            <CafeArtistCard
-                artist={artist}
-                artistData={artistData}
-                apiData={apiData}
-                thumbnail={thumbnail ?? null}
-                displaySongs={displaySongs}
-                posts={posts}
-                user={user}
-                isJoined={isJoined}
-                isJoinLoading={isJoinLoading}
-                toggleJoin={toggleJoin}
-                handlePlayAll={handlePlayAll}
-                router={router}
-            />
+            {/* Artist Info Card - Hero Banner 없이 바로 시작 */}
+            <div className="max-w-5xl mx-auto px-3 md:px-4 relative z-10">
+                <CafeArtistCard
+                    artist={artist}
+                    artistData={artistData}
+                    apiData={apiData}
+                    thumbnail={thumbnail ?? null}
+                    displaySongs={displaySongs}
+                    posts={posts}
+                    user={user}
+                    isJoined={isJoined}
+                    isJoinLoading={isJoinLoading}
+                    toggleJoin={toggleJoin}
+                    handlePlayAll={handlePlayAll}
+                    router={router}
+                />
+            </div>
 
             {/* Tab Navigation */}
             <div className="max-w-5xl mx-auto px-3 md:px-4 mt-4 md:mt-6">
