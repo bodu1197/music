@@ -20,7 +20,7 @@ export default function Post({ username, imageUrl, caption, timestamp, likes }: 
             <div className="flex items-center justify-between py-3 px-1">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-purple-600 p-[2px]">
-                        <div className="w-full h-full rounded-full bg-black border-2 border-black overflow-hidden relative">
+                        <div className="w-full h-full rounded-full bg-zinc-950 border-2 border-zinc-950 overflow-hidden relative">
                             {/* Fallback avatar */}
                             <div className="w-full h-full bg-zinc-700" />
                         </div>

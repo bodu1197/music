@@ -34,7 +34,7 @@ export default function ShopPage() {
                             <div className="w-full h-full flex items-center justify-center bg-zinc-900 group-hover:scale-105 transition-transform duration-300">
                                 <ShoppingBag className="w-8 h-8 text-zinc-700" />
                             </div>
-                            <div className="absolute top-2 right-2 bg-black/50 px-2 py-1 rounded text-xs font-bold backdrop-blur-sm">
+                            <div className="absolute top-2 right-2 bg-zinc-900/80 px-2 py-1 rounded text-xs font-bold backdrop-blur-sm">
                                 {product.price}
                             </div>
                         </div>

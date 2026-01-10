@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-black text-white`}>
+      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-background text-white`}>
         <AuthProvider>
           <PrefetchProvider>
             {children}

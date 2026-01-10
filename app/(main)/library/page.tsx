@@ -89,7 +89,7 @@ export default function LibraryPage() {
 
             {/* Create New Folder Modal */}
             {isCreating && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-[#1a1a2e] rounded-2xl p-6 w-full max-w-md mx-4 border border-white/10">
                         <h2 className="text-xl font-bold text-white mb-4">새 폴더 만들기</h2>
                         <input

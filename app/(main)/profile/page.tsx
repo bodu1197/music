@@ -22,7 +22,7 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16 mb-12">
                 <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-zinc-800 flex-shrink-0 relative overflow-hidden">
                     <div className="w-full h-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-[2px]">
-                        <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+                        <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center">
                             <span className="text-4xl">👤</span>
                         </div>
                     </div>
