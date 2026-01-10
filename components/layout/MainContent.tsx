@@ -15,7 +15,7 @@ export default function MainContent({ children }: Readonly<MainContentProps>) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isQueueOpen } = usePlayer();
 
-    const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/") || pathname.startsWith("/cafe/");
+    const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/");
 
     return (
         <main

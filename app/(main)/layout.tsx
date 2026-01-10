@@ -20,7 +20,7 @@ export default function MainLayout({
     children: React.ReactNode;
 }>) {
     const pathname = usePathname();
-    const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/") || pathname.startsWith("/cafe/");
+    const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/");
 
     return (
         <PlayerProvider>
