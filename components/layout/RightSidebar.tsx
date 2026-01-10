@@ -12,7 +12,7 @@ export default function RightSidebar() {
     ];
 
     return (
-        <div className="hidden lg:block w-[22.2%] max-w-[400px] min-w-[300px] bg-transparent py-4 px-0 border-l border-white/10 flex flex-col flex-shrink-0 flex-grow-0 overflow-hidden h-screen">
+        <div className="hidden lg:block w-[22.2%] max-w-[400px] min-w-[300px] bg-[#0f0f23] py-4 px-0 border-l border-white/10 flex flex-col flex-shrink-0 flex-grow-0 overflow-hidden h-screen">
             {/* User Profile Teaser */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
