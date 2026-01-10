@@ -568,6 +568,9 @@ function getTabLabel(baseLabel: string, count: number, hasMore: boolean): string
 // ============================================
 // Component: Cafe Artist Card
 // ============================================
+// ============================================
+// Component: Cafe Artist Card
+// ============================================
 interface CafeArtistCardProps {
     readonly artist: any;
     readonly artistData: any;
@@ -591,96 +594,129 @@ function CafeArtistCard({
     const description = apiData?.description || artistData?.description;
 
     return (
-        <div className="max-w-5xl mx-auto px-3 md:px-4 -mt-10 relative z-10">
-            <div className="bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-2xl">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
-                    {/* Avatar */}
-                    <div className="w-20 h-20 md:w-32 md:h-32 rounded-full overflow-hidden border-3 md:border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative">
-                        {thumbnail ? (
-                            <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
-                        ) : (
-                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                <Music className="w-8 h-8 md:w-12 md:h-12 text-zinc-600" />
+        <div className="max-w-5xl mx-auto px-3 md:px-4 relative z-10">
+            <div className="bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-2xl relative overflow-hidden">
+                {/* Back Button (Mobile/Desktop Integrated) */}
+                <button
+                    onClick={() => router.back()}
+                    className="absolute top-3 left-3 z-20 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white/90 transition-colors backdrop-blur-sm"
+                    aria-label="Go back"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-8 md:mt-0">
+                    {/* Header Section: Avatar + Name (Mobile: Row, Desktop: Part of Col) */}
+                    <div className="flex items-center gap-4 w-full md:w-auto md:block">
+                        {/* Avatar */}
+                        <div className="w-16 h-16 md:w-36 md:h-36 rounded-full overflow-hidden border-2 md:border-4 border-[#667eea] shadow-lg shadow-[#667eea]/30 flex-shrink-0 relative mx-auto md:mx-0">
+                            {thumbnail ? (
+                                <Image src={thumbnail} alt={artist.name} fill className="object-cover" unoptimized />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                    <Music className="w-8 h-8 md:w-12 md:h-12 text-zinc-600" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Mobile Only Info */}
+                        <div className="flex-1 md:hidden min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <h1 className="text-lg font-bold text-white truncate">{artist.name}</h1>
+                                <Crown className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                             </div>
-                        )}
+                            <p className="text-[#667eea] text-xs font-medium mb-1">Official Fan Cafe</p>
+                            <div className="flex items-center gap-3 text-xs text-zinc-400">
+                                <span>{subscribers}</span>
+                                <span className="w-1 h-1 rounded-full bg-zinc-600"></span>
+                                <span>{apiData?.views}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Info */}
+                    {/* Desktop Content & Mobile Actions */}
                     <div className="flex-1 text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">{artist.name}</h1>
-                            <Crown className="w-5 h-5 text-yellow-400" />
+                        {/* Desktop Name & Info */}
+                        <div className="hidden md:block">
+                            <div className="flex items-center gap-2 mb-2">
+                                <h1 className="text-3xl font-bold text-white">{artist.name}</h1>
+                                <Crown className="w-5 h-5 text-yellow-400" />
+                            </div>
+                            <p className="text-[#667eea] text-sm font-medium mb-2">Official Fan Cafe</p>
+                            <div className="flex items-center gap-3 text-zinc-400 text-sm mb-4">
+                                {subscribers && <span>{subscribers}</span>}
+                                {apiData?.views && <span>Views {apiData.views}</span>}
+                            </div>
                         </div>
-                        <p className="text-[#667eea] text-sm font-medium mb-2">Official Fan Cafe</p>
-                        {subscribers && <p className="text-zinc-400 text-sm mb-2">{subscribers}</p>}
-                        {apiData?.views && <p className="text-zinc-500 text-xs mb-4">{apiData.views}</p>}
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start mb-3 md:mb-4">
+                        {/* Mobile Stats (Compact) */}
+                        <div className="flex items-center justify-between md:justify-start gap-4 mb-4 bg-white/5 rounded-lg p-2 md:bg-transparent md:p-0">
+                            <div className="flex items-center gap-2 text-zinc-300 md:text-zinc-400 text-xs md:text-sm flex-1 justify-center md:justify-start border-r border-white/10 md:border-none">
+                                <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#667eea]" />
+                                <span>{(artistData?.follower_count || 0).toLocaleString()} <span className="hidden md:inline">members</span></span>
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-300 md:text-zinc-400 text-xs md:text-sm flex-1 justify-center md:justify-start">
+                                <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#667eea]" />
+                                <span>{(artistData?.post_count || posts.length)} <span className="hidden md:inline">posts</span></span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons Row */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide md:flex-wrap">
+                            {/* Join Button (Primary Action) */}
+                            {user ? (
+                                <button
+                                    onClick={toggleJoin}
+                                    disabled={isJoinLoading}
+                                    className={cn(
+                                        "flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all flex-shrink-0 min-w-[100px]",
+                                        isJoined
+                                            ? "bg-white/10 text-white border border-white/20"
+                                            : "bg-[#667eea] text-white shadow-lg shadow-[#667eea]/20"
+                                    )}
+                                >
+                                    {getJoinButtonIcon(isJoinLoading, isJoined)}
+                                    {isJoined ? "가입됨" : "가입"}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => router.push("/login")}
+                                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-[#667eea] text-white shadow-lg shadow-[#667eea]/20 transition-all flex-shrink-0 min-w-[100px]"
+                                >
+                                    <LogIn className="w-3.5 h-3.5" />
+                                    로그인
+                                </button>
+                            )}
+
                             <button
                                 onClick={handlePlayAll}
                                 disabled={displaySongs.length === 0}
-                                className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:shadow-lg hover:shadow-[#667eea]/25 text-white text-sm md:text-base font-bold rounded-full transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs md:text-sm font-semibold rounded-full transition-all flex-shrink-0"
                             >
-                                <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                                <Play className="w-3.5 h-3.5 fill-current" />
                                 Play
                             </button>
+
                             {apiData?.shuffleId && (
-                                <button className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm md:text-base font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                    <Shuffle className="w-4 h-4 md:w-5 md:h-5" />
+                                <button className="flex items-center justify-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs md:text-sm font-semibold rounded-full transition-all flex-shrink-0">
+                                    <Shuffle className="w-3.5 h-3.5" />
                                     Shuffle
                                 </button>
                             )}
+
                             {apiData?.radioId && (
-                                <button className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm md:text-base font-semibold rounded-full transition-all hover:scale-105 backdrop-blur-sm">
-                                    <Radio className="w-4 h-4 md:w-5 md:h-5" />
+                                <button className="flex items-center justify-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs md:text-sm font-semibold rounded-full transition-all flex-shrink-0">
+                                    <Radio className="w-3.5 h-3.5" />
                                     Radio
                                 </button>
                             )}
                         </div>
-
-                        {/* Stats */}
-                        <div className="flex items-center justify-center md:justify-start gap-4 md:gap-6 text-xs md:text-sm">
-                            <div className="flex items-center gap-1.5 md:gap-2 text-zinc-400">
-                                <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                <span>{(artistData?.follower_count || 0).toLocaleString()} members</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 md:gap-2 text-zinc-400">
-                                <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                <span>{(artistData?.post_count || posts.length)} posts</span>
-                            </div>
-                        </div>
                     </div>
-
-                    {/* Join Button */}
-                    {user ? (
-                        <button
-                            onClick={toggleJoin}
-                            disabled={isJoinLoading}
-                            className={cn(
-                                "flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-semibold transition-all",
-                                isJoined
-                                    ? "bg-white/10 text-white border border-white/20"
-                                    : "bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30"
-                            )}
-                        >
-                            {getJoinButtonIcon(isJoinLoading, isJoined)}
-                            {isJoined ? "가입됨" : "카페 가입"}
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => router.push("/login")}
-                            className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white hover:shadow-lg hover:shadow-[#667eea]/30 transition-all"
-                        >
-                            <LogIn className="w-4 h-4 md:w-5 md:h-5" />
-                            로그인하고 가입
-                        </button>
-                    )}
                 </div>
 
-                {/* Description */}
+                {/* Description (Desktop Only or Collapsed) */}
                 {description && (
-                    <p className="mt-4 text-zinc-400 text-sm leading-relaxed border-t border-white/10 pt-4">
+                    <p className="mt-4 text-zinc-500 text-xs md:text-sm leading-relaxed border-t border-white/10 pt-3 hidden md:block">
                         {description.slice(0, 300)}
                         {description.length > 300 && "..."}
                     </p>
@@ -864,34 +900,21 @@ export default function CafePage() {
 
     return (
         <div className="min-h-screen bg-[linear-gradient(135deg,#0f0f23_0%,#1a1a2e_100%)] pb-20 pt-[20px]">
-            {/* 뒤로 가기 버튼 (Absolute에서 Relative/Fixed 로 변경하거나 상단 배치) */}
-            <div className="max-w-5xl mx-auto px-3 md:px-4 mb-4">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="text-sm">뒤로</span>
-                </button>
-            </div>
-
-            {/* Artist Info Card - Hero Banner 없이 바로 시작 */}
-            <div className="max-w-5xl mx-auto px-3 md:px-4 relative z-10">
-                <CafeArtistCard
-                    artist={artist}
-                    artistData={artistData}
-                    apiData={apiData}
-                    thumbnail={thumbnail ?? null}
-                    displaySongs={displaySongs}
-                    posts={posts}
-                    user={user}
-                    isJoined={isJoined}
-                    isJoinLoading={isJoinLoading}
-                    toggleJoin={toggleJoin}
-                    handlePlayAll={handlePlayAll}
-                    router={router}
-                />
-            </div>
+            {/* Artist Info Card - Card 내부에 Back 버튼 포함됨 */}
+            <CafeArtistCard
+                artist={artist}
+                artistData={artistData}
+                apiData={apiData}
+                thumbnail={thumbnail ?? null}
+                displaySongs={displaySongs}
+                posts={posts}
+                user={user}
+                isJoined={isJoined}
+                isJoinLoading={isJoinLoading}
+                toggleJoin={toggleJoin}
+                handlePlayAll={handlePlayAll}
+                router={router}
+            />
 
             {/* Tab Navigation */}
             <div className="max-w-5xl mx-auto px-3 md:px-4 mt-4 md:mt-6">
