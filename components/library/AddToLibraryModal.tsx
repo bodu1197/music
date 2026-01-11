@@ -138,18 +138,26 @@ export default function AddToLibraryModal() {
     return (
         <dialog
             open
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] m-0 max-w-none max-h-none w-full h-full border-none"
-            onClick={handleClose}
-            onKeyDown={(e) => {
-                if (e.key === "Escape") handleClose();
-            }}
+            aria-labelledby="modal-title"
+            aria-modal="true"
+            className="fixed inset-0 bg-transparent flex items-center justify-center z-[100] m-0 max-w-none max-h-none w-full h-full border-none"
         >
+            {/* Backdrop button for accessibility */}
+            <button
+                type="button"
+                aria-label="모달 닫기"
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-default"
+                onClick={handleClose}
+                onKeyDown={(e) => {
+                    if (e.key === "Escape") handleClose();
+                }}
+            />
             <div
-                className="bg-[#1a1a2e] rounded-2xl w-full max-w-md mx-4 border border-white/10 overflow-hidden"
+                className="relative bg-[#1a1a2e] rounded-2xl w-full max-w-md mx-4 border border-white/10 overflow-hidden"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h2 className="text-lg font-bold text-white">라이브러리에 추가</h2>
+                    <h2 id="modal-title" className="text-lg font-bold text-white">라이브러리에 추가</h2>
                     <button
                         onClick={() => handleClose()}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
