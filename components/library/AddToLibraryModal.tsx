@@ -186,7 +186,6 @@ export default function AddToLibraryModal() {
         >
             <div
                 className="bg-[#1a1a2e] rounded-2xl w-full max-w-md mx-4 border border-white/10 overflow-hidden"
-                role="document"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">

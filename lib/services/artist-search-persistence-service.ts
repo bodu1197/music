@@ -13,7 +13,7 @@
  */
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 // ============================================
 // Constants

@@ -135,7 +135,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // ============================================
     if (filter === "artists") {
       const searchResponse = await searchArtistsWithPersistence(query, {
-        limit: limit ? parseInt(limit, 10) : 50,
+        limit: limit ? Number.parseInt(limit, 10) : 50,
         skipBackgroundRefresh: false,
         mergeWithApi: true,
       });

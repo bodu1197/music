@@ -13,7 +13,7 @@ interface MainContentProps {
 export default function MainContent({ children }: Readonly<MainContentProps>) {
     const pathname = usePathname();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { isQueueOpen } = usePlayer();
+    // const { isQueueOpen } = usePlayer();
 
     const isFullWidthPage = pathname === "/search" || pathname.startsWith("/artist/");
 
