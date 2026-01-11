@@ -7,7 +7,7 @@ interface ImageWithFallbackProps extends ImageProps {
     fallbackSrc?: string;
 }
 
-export function ImageWithFallback({ src, fallbackSrc = "/images/default-album.svg", alt, ...props }: Readonly<ImageWithFallbackProps>) {
+export function ImageWithFallback({ src, fallbackSrc = "/images/default-album.svg", alt, loading = "lazy", ...props }: Readonly<ImageWithFallbackProps>) {
     const [imgSrc, setImgSrc] = useState(src);
 
     useEffect(() => {
@@ -19,6 +19,7 @@ export function ImageWithFallback({ src, fallbackSrc = "/images/default-album.sv
             {...props}
             src={imgSrc}
             alt={alt}
+            loading={loading}
             onError={() => {
                 // If the current src is not already the fallback, switch to fallback
                 if (imgSrc !== fallbackSrc) {
