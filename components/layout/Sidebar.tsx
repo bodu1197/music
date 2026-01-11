@@ -2,7 +2,7 @@
 
 import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, PlusSquare, User, ShoppingBag, Send, Music2, BarChart2, Sparkles, Search, Compass, Library, Coffee } from "lucide-react";
+import { Home, PlusSquare, User, Send, Music2, BarChart2, Sparkles, Search, Compass, Library, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
@@ -13,7 +13,6 @@ export default function Sidebar() {
 
     const navItems = [
         { name: "Home", href: "/", icon: Home },
-        { name: "Shop", href: "/shop", icon: ShoppingBag },
         { name: "Messages", href: "/messages", icon: Send },
         { name: "Create", href: "/create", icon: PlusSquare },
         {
